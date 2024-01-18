@@ -1,0 +1,118 @@
+from pathlib import Path
+from unittest import TestCase
+
+import constants
+from charts.timeseries_chart import TimeseriesChart
+from charts.timeseries_chart_comparison import TimeSeriesChartComparison
+from charts.timeseries_chart_versus import TimeSeriesChartVersus
+from registry import resolve
+from registry.benchmark_db import BenchmarkDB
+from registry.resolve import ProfileDB
+from vendor.ptpd.vendor import PTPDVendor
+from vendor.registry import VendorDB
+
+
+class TestTimeseriesChart(TestCase):
+    # def test_create(self):
+    #     profile = PTPDTimeSeriesProfile.load_str(TEST_TIMESERIES_PROFILE)
+    #     chart = TimeseriesChart()
+    #     chart.create(profile)
+    #     chart.save("test-series.png")
+
+    def test_individual_charts(self):
+        profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
+
+        for profile in profiles:
+            chart =  TimeseriesChart(profile)
+            profile_path = Path(profile._file_path)
+            chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
+
+    def test_comparison(self):
+        ptpd_profile = ProfileDB().resolve_most_recent(
+            resolve.VALID_PROCESSED_PROFILE(),
+            resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+            resolve.BY_VENDOR(VendorDB.PTPD),
+        )
+        linuxptp_profile = ProfileDB().resolve_most_recent(
+            resolve.VALID_PROCESSED_PROFILE(),
+            resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+            resolve.BY_VENDOR(VendorDB.LINUXPTP),
+        )
+
+        chart = TimeSeriesChartVersus(ptpd_profile, linuxptp_profile)
+        chart.set_titles("PTPd", "LinuxPTP")
+        chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parent=True)
+
+    def test_history(self):
+        for vendor in VendorDB.all():
+            profiles = ProfileDB().resolve_all(
+                resolve.VALID_PROCESSED_PROFILE(),
+                resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+                resolve.BY_VENDOR(vendor)
+            )
+
+            if not profiles:
+                continue
+
+            chart = TimeSeriesChartComparison(
+                profiles,
+                [profile.start_time.replace(second=0, microsecond=0) for profile in profiles]
+            )
+            chart.axes.set_title(f"Profile History: Test using {vendor}")
+            chart.save(constants.CHARTS_DIR.joinpath("history").joinpath(f"test-history-{vendor}.png"), make_parent=True)
+
+    # def create_figure(self, profile: BaseProfile):
+    #
+        # seaborn.lineplot(
+        #     frame,
+        #     x="boxplot_x", y=PTPDTimeSeriesProfile.COLUMN_CLOCK_OFFSET,
+        #     ax=axes[1]
+        # )
+        # seaborn.lineplot(
+        #     frame,
+        #     x=PTPDTimeSeriesProfile.COLUMN_TIMESTAMP, y='clock_offset_mean',
+        #     ax=axes[1]
+        # )
+        # seaborn.lineplot(
+        #     frame,
+        #     x=PTPDTimeSeriesProfile.COLUMN_TIMESTAMP, y='clock_offset_mean_confidence_low',
+        #     ax=axes[1]
+        # )
+        # seaborn.lineplot(
+        #     frame,
+        #     x=PTPDTimeSeriesProfile.COLUMN_TIMESTAMP, y='clock_offset_mean_confidence_high',
+        #     ax=axes[1]
+        # )
+
+        # seaborn.lineplot(
+        #     # x=frame[PTPDTimeSeriesProfile.COLUMN_TIMESTAMP],
+        #     profile.rolling_clock_offset(frame, window_size=timedelta(seconds=180)).apply(
+        #         lambda values: (values < 0).sum() / len(values)
+        #     ),
+        #     ax=axes[1]
+        # )
+        # seaborn.lineplot(
+        #     # x=frame[PTPDTimeSeriesProfile.COLUMN_TIMESTAMP],
+        #     profile.resampled_clock_offset(frame, window_size=timedelta(seconds=10)).std(),
+        #     ax=axes[1][0]
+        # )
+
+        # axes[1].yaxis.set_data_interval(0, 1)
+
+        # seaborn.violinplot(
+        #     x=frame["boxplot_x"], y=frame[PTPDTimeSeriesProfile.COLUMN_CLOCK_OFFSET_ABS],
+        #     ax=axes[1]
+        # )
+
+        # frame["differences"] = frame["clock_offset"].diff()
+        # seaborn.lineplot(frame, x="timestamp", y="differences", ax=axes[1])
+        # TimeseriesChart.decorate_plot(axes[1])
+
+        # for ax_row in axes:
+        #     ax_row[0].hlines(
+        #         y=[ax_row[0].yaxis.get_view_interval()[0] + abs(ax_row[0].yaxis.get_view_interval()[0] * 0.1)] * len(frame),
+        #         xmin=frame[PTPDTimeSeriesProfile.COLUMN_TIMESTAMP],
+        #         xmax=frame[PTPDTimeSeriesProfile.COLUMN_TIMESTAMP].shift(),
+        #         colors=frame[PTPDTimeSeriesProfile.COLUMN_STATIONARY_TEST_CONFIDENCE].map(
+        #             lambda value: "green" if value > 0 else "red")
+        #     )

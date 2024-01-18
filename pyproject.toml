@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptp-perf"
+version = "0.1.0"
+description = "Command line interface for creating PTP-Perf benchmarks"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: Other/Proprietary License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: C++",
+]
+dependencies = [
+    "rpyc",
+    "pydantic",
+]
+
+[project.urls]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]

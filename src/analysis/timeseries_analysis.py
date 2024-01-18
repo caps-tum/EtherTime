@@ -1,0 +1,2 @@
+class TimeSeriesAnalyzer:
+    pass

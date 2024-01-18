@@ -1,0 +1,12 @@
+- /lib
+- dds-perf-client/cmake-build-*
+- dds-perf-client/build
+- /util/local/BenchmarkChartsReport/cmake-build-*
+- .idea
+- /.git
+- /measurements
+- /measurements_charts
+- /measurements_raw
+- /doc
+- /docs
+- __pycache__
