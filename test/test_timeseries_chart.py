@@ -44,10 +44,14 @@ class TestTimeseriesChart(TestCase):
         chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parent=True)
 
     def test_history(self):
+        self.create_history_charts(BenchmarkDB.TEST)
+        self.create_history_charts(BenchmarkDB.DEMO, y_log=True)
+
+    def create_history_charts(self, benchmark, y_log=False):
         for vendor in VendorDB.all():
             profiles = ProfileDB().resolve_all(
                 resolve.VALID_PROCESSED_PROFILE(),
-                resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+                resolve.BY_BENCHMARK(benchmark),
                 resolve.BY_VENDOR(vendor)
             )
 
@@ -58,8 +62,11 @@ class TestTimeseriesChart(TestCase):
                 profiles,
                 [profile.start_time.replace(second=0, microsecond=0) for profile in profiles]
             )
-            chart.axes.set_title(f"Profile History: Test using {vendor}")
-            chart.save(constants.CHARTS_DIR.joinpath("history").joinpath(f"test-history-{vendor}.png"), make_parent=True)
+            if y_log:
+                chart.axes.set_yscale('log')
+            chart.axes.set_title(f"Profile History: {benchmark.name} using {vendor}")
+            chart.save(constants.CHARTS_DIR.joinpath("history").joinpath(f"{benchmark.id}-history-{vendor}.png"),
+                       make_parent=True)
 
     # def create_figure(self, profile: BaseProfile):
     #

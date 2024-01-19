@@ -65,7 +65,7 @@ class Timeseries:
         return None
 
     @staticmethod
-    def from_series(timestamps: pd.Series, clock_offsets: pd.Series, normalize_time: bool = True):
+    def from_series(timestamps: pd.Series, clock_offsets: pd.Series, normalize_time: bool = True, resample=None):
 
         if normalize_time:
             # Move the origin to the epoch
@@ -76,6 +76,9 @@ class Timeseries:
 
         result_frame = clock_offsets.to_frame("clock_diff").set_index(timestamps)
         Timeseries.check_monotonic_index(result_frame)
+
+        if resample is not None:
+            result_frame = result_frame.resample(resample).mean()
 
         return Timeseries(
             Timeseries.serialize_frame(result_frame)
@@ -197,7 +200,7 @@ class Timeseries:
 class MergedTimeSeries(Timeseries):
 
     @staticmethod
-    def from_series(original_series: Iterable[Timeseries], labels: Iterable[Any]):
+    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any]):
         frames = []
         for series, label in zip(original_series, labels):
             frame = series.data_frame.copy()

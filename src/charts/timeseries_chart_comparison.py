@@ -13,10 +13,10 @@ class TimeSeriesChartComparison(ChartContainer):
 
     def __init__(self, profiles: Iterable[BaseProfile], labels: Iterable[Any]):
         self.figure, self.axes = plt.subplots(
-            nrows=1, ncols=1, figsize=(18, 7),
+            nrows=1, ncols=1, figsize=(14, 7),
         )
 
-        merged_series = MergedTimeSeries.from_series(
+        merged_series = MergedTimeSeries.merge_series(
             original_series=[profile.time_series for profile in profiles],
             labels=labels,
         )

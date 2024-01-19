@@ -3,6 +3,7 @@ import io
 import logging
 import shutil
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -106,5 +107,5 @@ class PTPDVendor(Vendor):
         clock_offsets = frame["Offset From Master"]
 
         return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).set_timeseries_data(
-            timestamps, clock_offsets
+            timestamps, clock_offsets, resample=timedelta(seconds=1),
         )

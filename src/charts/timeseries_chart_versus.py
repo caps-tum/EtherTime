@@ -25,7 +25,7 @@ class TimeSeriesChartVersus(ChartContainer):
         profile2.time_series.plot_timeseries(self.axes[2], title=profile2.id, palette_index=1)
         profile2.summary_statistics.plot_annotate(self.axes[2])
 
-        merge_series = MergedTimeSeries.from_series(
+        merge_series = MergedTimeSeries.merge_series(
             [profile1.time_series, profile2.time_series],
             labels=[0, 1]
         )

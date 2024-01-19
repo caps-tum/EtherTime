@@ -78,12 +78,12 @@ class BaseProfile:
     def format_id_timestamp(timestamp: datetime):
         return timestamp.strftime('%Y-%m-%d-%H-%M-%S')
 
-    def set_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, normalize_time : bool = True) -> Self:
+    def set_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, normalize_time : bool = True, resample: timedelta = None) -> Self:
         if self.time_series is not None:
             raise RuntimeError("Tried to insert time series data into profile by profile already has time series data.")
 
         self.time_series = Timeseries.from_series(
-            timestamps, clock_offsets, normalize_time=normalize_time
+            timestamps, clock_offsets, normalize_time=normalize_time, resample=resample,
         )
         self.summary_statistics = self.time_series.summarize()
 
