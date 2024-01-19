@@ -36,7 +36,15 @@ We can remedy this by splitting the data into two phases, the converging phase a
 
 #### Determining synchronizedness
 
+### Hardware Setup
 
+We are conducting the performance measurements on a Raspberry Pi 4 cluster interconnected via Ethernet.
+
+![pi_setup_small.jpg](res%2Fpi_setup_small.jpg)
+
+We want to be able to physically verify clock differences according to pulses sent to a microcontroller:
+
+![setup_schematic.png](res%2Fsetup_schematic.png)
 
 ### Timekeeping on a global scale
 
