@@ -1,5 +1,6 @@
 import datetime
 import io
+import math
 import time
 from dataclasses import dataclass
 from datetime import timedelta
@@ -83,6 +84,18 @@ class Timeseries:
         return Timeseries(
             Timeseries.serialize_frame(result_frame)
         )
+
+    def create_convergence_criterium(self) -> pd.Series:
+        resampled_data: pd.Series = self.get_clock_diff(abs=False).resample(timedelta(seconds=1)).mean()
+        # rolling =
+        window = 10
+        rolling_means = resampled_data.rolling(window=window, center=True).mean()
+        # rolling_std_devs = resampled_data.rolling(window=window, center=True).std()
+        rolling_std_devs = resampled_data.std()
+
+        confidence_interval_factor = 2.58 / math.sqrt(window)
+
+        return (abs(rolling_means) - rolling_std_devs * confidence_interval_factor).rolling(window=10, center=True).sum()
 
     @staticmethod
     def serialize_frame(result_frame):
