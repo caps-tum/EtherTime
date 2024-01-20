@@ -39,6 +39,20 @@ gantt
     Finalization: finalization, after review, 4w
 ```
 
+### Planned Experiments
+
+We aim to collect data for the following experiments:
+
+| Name                     | Description                                                                                      | Notes                                                                                                                                                                                       |
+|--------------------------|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Baseline**             | 1-1 Synchronization quality                                                                      | Potential Metrics:<br>    Clock difference (synchronization quality)<br>    Convergence time<br>    Jitter (metric?) <br> Difference between reported clock offset and actual clock offset. |
+| Resilience               | Measure relative performance when contention is present<br>- CPU contention - Network contention | Contention can be generated e.g. using iPerf and perhaps with differing levels of intensity                                                                                                 |
+| Unprioritized contention | Contention same interface & traffic  class                                                       |                                                                                                                                                                                             |
+| Prioritized contention   | Contention on lower traffic class                                                                |                                                                                                                                                                                             |
+| Isolated contention      | Contention on other interface                                                                    |                                                                                                                                                                                             |
+| Scalability              | Synchronization across switch using more nodes                                                   | More hardware intensive, need compatible switch and access to more nodes                                                                                                                    |
+_Experiments marked in bold are considered a priority._
+
 ### Literature
 For a list of related works, see [here](literature.md).
 
