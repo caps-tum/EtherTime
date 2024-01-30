@@ -1,5 +1,6 @@
 import asyncio
 import enum
+import inspect
 import logging
 import os
 import re
@@ -390,7 +391,7 @@ async def async_gather_with_progress(*coroutines: Coroutine[None, None, T], labe
         logging.info(f"{label} ({len(done)}/{len(tasks)} completed)\033[A")
         done, pending = await asyncio.wait(tasks, timeout=1)
 
-    logging.info(f"{label} ({len(done)} completed, {len([task for task in tasks if task.exception()])} errors)")
+    logging.info(f"{label} ({len(done)}/{len(tasks)} completed, {len([task for task in tasks if task.exception()])} errors)")
     # First print all the errors
     for task in tasks:
         if task.exception() is not None:
@@ -400,12 +401,16 @@ async def async_gather_with_progress(*coroutines: Coroutine[None, None, T], labe
 
 async def async_wait_for_condition(get_progress: Callable, target: int = 1, label: str = "Tasks running"):
     while True:
-        progress = get_progress()
+        if inspect.iscoroutinefunction(get_progress):
+            progress = await get_progress()
+        else:
+            progress = get_progress()
+
         if progress == target:
             break
         logging.info(f"{label} ({progress}/{target} completed)\033[A")
         await asyncio.sleep(0.5)
-    logging.info(f"{label} ({progress} completed)")
+    logging.info(f"{label} ({progress}/{target} completed)")
 
 
 def time_since_epoch_seconds():

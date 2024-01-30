@@ -30,8 +30,11 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
     )
 
     logging.info("Preparing machines...")
-    for machine in cluster.machines:
-        rpc_server.get_remote_service(machine.id).prepare()
+    await util.async_gather_with_progress(*[
+        rpc_server.remote_function_run_as_async(
+            rpc_server.get_remote_service(machine.id).prepare
+        ) for machine in cluster.machines
+    ], label="Preparing system...")
 
     profiles: List[str] = await util.async_gather_with_progress(*[
         rpc_server.remote_function_run_as_async(
@@ -66,7 +69,7 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str]):
                         benchmark=BenchmarkDB.get(benchmark), vendor=VendorDB.get(vendor)
                     )
                 except Exception as e:
-                    logging.error(f'Error: {e}')
+                    util.log_exception(e)
 
     finally:
         rpc_server.stop_rpc_server()
