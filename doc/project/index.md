@@ -14,8 +14,8 @@ gantt
     
     section Preliminary
     Literature Review :a1, 2022-01-08, 2w
-    Hardware/Software Setup :a2, 2022-01-08, 2w
-    Preliminary Results (2x Vendors) :a3, 2022-01-15, 2w
+    Hardware and Software Setup :a2, 2022-01-08, 2w
+    Preliminary Results with 2 Vendors :a3, 2022-01-15, 2w
     
     section More In-depth
     Add additional vendors :a4, 2022-01-29, 2w
@@ -30,7 +30,7 @@ gantt
     
     section Paper
     Write paper: write, after extensions, 3w
-    Review/edits: review, after write, 1w
+    Review and edits: review, after write, 1w
 
     section Additional
     Additional improvements: additional, after extensions, 4w
