@@ -31,7 +31,7 @@ On the other hand, if the clock synchronization is not optimal, then the time to
 ![slow_convergence.png](res%2Fslow_convergence.png)
 _Clock convergence is a lot slower in the worst case. Despite an initial offset of just a few milliseconds, the clock does not fully converge in 5 minutes._
 
-Repeating the same benchmark several times can therefore have an undesired outcome if the starting conditions are not controlled, negatively affecting the quality of the results.
+Repeating the same benchmark several times can therefore have an undesired outcome if the starting conditions are not controlled, negatively affecting the quality of the results. The following data is from 4 identical runs of the above experiment, showing completely different observation density functions. 
 
 ![unreproducible_measurements.png](res%2Funreproducible_measurements.png)
 _Rerunning the same experiment can yield wildly different results when the environment is not properly controlled._
@@ -49,6 +49,8 @@ We are conducting the performance measurements on a Raspberry Pi 4 cluster inter
 We want to be able to physically verify clock differences according to pulses sent to a microcontroller:
 
 ![setup_schematic.png](res%2Fsetup_schematic.png)
+
+The microcontroller reads pulses sent from each of the Raspberry-Pis and uses its internal cycle counter to determine the difference between the signals, which is later converted to an estimate of the total clock difference. Note that there are multiple sources of error that need to be estimated: The variance with which the Raspberry-Pis can emit pulses and the potential variance with which they can be read by the microcontroller. 
 
 ### Timekeeping on a global scale
 
