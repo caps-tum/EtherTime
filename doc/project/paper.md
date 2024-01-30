@@ -11,6 +11,8 @@ Nowadays, with the availability of the internet, satellite communications and di
 ### Applications that require time
 A classical example of an application that requires precise notions of time is geolocation. GPS and related technologies rely on signal propagation delays to determine relative positioning, and the time difference between clock sources (i.e. the satellites) needs to be precisely compensated so that delay differences can be measured accurately, thus leading to a good location estimation. Failure to compensate clock differences or even the presence of adversarial signals can quickly degrade the resulting location quality.
 
+Timing is also critical for fault-tolerant systems. Architectures such as double- or triple-modular lock-step redundancy, where algorithms are run independently on different machines to automatically detect and correct errors, rely on a common notion of time to make progress even when a machine has failed. Such systems are found frequently in high-reliability applications such as aviation, where computer systems are relied on for controlling machinery with strict timing requirements. Failed redundancy-engineering has seen some infamous examples recently, with deadly Boeing 737-Max incidents prompting the introduction of new laws for flight control computer error resilience [cite].  
+
 Fault-Tolerance systems, with the possibility of affecting safety/security.
 
 Performance measurements, especially distributed ones.
