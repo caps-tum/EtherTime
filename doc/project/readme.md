@@ -6,7 +6,7 @@ A survey of PTP time-synchronization considerations. This work is conducted at t
 
 The survey project is structured into the following rough components: a preliminary stage for collecting initial measurements, and several extensions of the basics. 
 
-_Note: This doesn't render correctly on GitHub yet because GitHub uses an old version of mermaid_
+_Note: This doesn't render correctly on GitHub yet because GitHub uses an old version of mermaid. Copy the code here to view the diagram: https://mermaid.live_
 ```mermaid
 %% Prompt: 6 month time plan from january (Gantt)
 gantt
