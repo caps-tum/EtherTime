@@ -1,5 +1,6 @@
 import datetime
 import io
+import logging
 import math
 import time
 from dataclasses import dataclass
@@ -35,6 +36,8 @@ class SummaryStatistics:
         )
 
 
+COLUMN_CLOCK_DIFF = "clock_diff"
+
 
 @dataclass
 class Timeseries:
@@ -57,7 +60,7 @@ class Timeseries:
 
     @property
     def clock_diff(self) -> pd.Series:
-        return self.data_frame["clock_diff"]
+        return self.data_frame[COLUMN_CLOCK_DIFF]
 
     def get_clock_diff(self, abs: bool) -> pd.Series:
         return self.clock_diff.abs() if abs else self.clock_diff
@@ -75,8 +78,34 @@ class Timeseries:
         if not pandas.api.types.is_timedelta64_dtype(timestamps.dtype):
             raise RuntimeError(f"Received a time series the is not a timedelta (type: {timestamps.dtype}).")
 
-        result_frame = clock_offsets.to_frame("clock_diff").set_index(timestamps)
+        result_frame = clock_offsets.to_frame(COLUMN_CLOCK_DIFF).set_index(timestamps)
         Timeseries.check_monotonic_index(result_frame)
+
+        # Do some data post-processing to improve quality.
+        # Remove the first big clock step and the convergence phase.
+
+        # Remove any beginning zero values (no clock_difference information yet) from start
+        # (first non-zero value makes cumulative sum >= 0)
+        crop_condition = (result_frame[COLUMN_CLOCK_DIFF] != 0).cumsum()
+        result_frame = result_frame[crop_condition != 0]
+
+        # First, detect the clock step (difference >= 1 second).
+        first_difference = result_frame[COLUMN_CLOCK_DIFF].diff().abs()
+        clock_steps = first_difference[first_difference >= 1]
+        if len(clock_steps) != 1:
+            raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
+        clock_step_time = clock_steps.index[0]
+        clock_step_magnitude = clock_steps.values[0]
+        # The clock step should occur in the first minute and has a magnitude of 1 minute,
+        # thus should occur before timestamp 2 minutes.
+        if not (55 <= clock_step_magnitude <= 65):
+            raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
+        if clock_step_time >= timedelta(minutes=2):
+            raise RuntimeError(f"The clock step was not within the first minute of runtime: {clock_steps}")
+
+        # Now crop after clock step
+        logging.info(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
+        result_frame = result_frame[result_frame.index > clock_step_time]
 
         if resample is not None:
             result_frame = result_frame.resample(resample).mean()

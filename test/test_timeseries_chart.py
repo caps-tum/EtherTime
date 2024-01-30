@@ -23,7 +23,7 @@ class TestTimeseriesChart(TestCase):
         profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
 
         for profile in profiles:
-            chart =  TimeseriesChart(profile, include_convergence_criterium=True)
+            chart =  TimeseriesChart(profile, include_convergence_criterium=False)
             profile_path = Path(profile._file_path)
             chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
 

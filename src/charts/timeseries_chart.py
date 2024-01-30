@@ -22,6 +22,7 @@ class TimeseriesChart(ChartContainer):
         profile.time_series.plot_timeseries(self.axes[0], title=profile.id)
         profile.time_series.plot_timeseries_distribution(self.axes[1])
         profile.summary_statistics.plot_annotate(self.axes[0])
+        # self.axes[0].set_yscale('log')
 
         if include_convergence_criterium:
             secondary_axis = self.axes[0].twinx()
