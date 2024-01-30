@@ -8,5 +8,6 @@ def get_repository_root() -> Path:
         return repository_location
     raise RuntimeError(f"Failed to resolve repository root: {repository_location}.")
 
-MEASUREMENTS_DIR = get_repository_root().joinpath("measurements_raw")
-CHARTS_DIR = get_repository_root().joinpath("measurements_charts")
+PTPPERF_REPOSITORY_ROOT = get_repository_root()
+MEASUREMENTS_DIR = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("profiles")
+CHARTS_DIR = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("charts")
