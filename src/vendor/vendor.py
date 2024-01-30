@@ -6,6 +6,7 @@ from invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
     from profiles.base_profile import BaseProfile
+    from profiles.timeseries_profile import TimeseriesProfile
 
 
 @dataclass
@@ -58,5 +59,5 @@ class Vendor:
     def check_executable_present(executable) -> bool:
         return shutil.which(executable) is not None
 
-    def convert_profile(self, profile: "BaseProfile"):
+    def convert_profile(self, profile: "BaseProfile") -> "TimeseriesProfile":
         raise NotImplementedError(f"Cannot convert the profile for vendor {self.name}")

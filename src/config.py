@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import util
 from machine import Cluster, Machine
 
@@ -22,6 +24,7 @@ configs = {
                 address="rpi08",
                 remote_root="/home/rpi/ptp-perf",
                 ptp_master=False,
+                initial_clock_offset=timedelta(minutes=-1),
                 **RASPBERRY_PI_PTP_SETTINGS,
             )
         ]

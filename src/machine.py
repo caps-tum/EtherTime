@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional, List, Union
 
@@ -88,7 +89,10 @@ class Machine(RPCTarget):
     ptp_master: bool = False
     ptp_software_timestamping: bool = False
     ptp_use_phc2sys: bool = True
+    initial_clock_offset: Optional[timedelta] = None
 
+    def __str__(self):
+        return self.id
 
 
 @dataclass
