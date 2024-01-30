@@ -17,7 +17,7 @@ class RPCClientService(rpyc.Service):
     def run_rpc_client(self, host: str, port: int):
         """Connect to a remote rpc server at host:port and run until completion."""
         self.connection = rpyc.connect(host, port, service=self)
-        logging.info("RPC connection established.")
+        logging.debug("RPC connection established.")
         self.connection.root.connection_id(self.client_id)
 
         try:

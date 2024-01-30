@@ -25,7 +25,7 @@ class RPCServerService(rpyc.Service):
         self.identifier = id
         from rpc.server import RPCServer
         RPCServer.register_client(id, self)
-        logging.info(f"RPC client identified: {id}")
+        logging.debug(f"RPC client identified: {id}")
 
     def remote_service(self) -> "RPCClientService":
         return self.connection.root
