@@ -9,6 +9,8 @@ _Vincent Bode, Arpan Gujarati_
 Nowadays, with the availability of the internet, satellite communications and digital clocks, we often take for granted that we can tell the time anywhere and anytime. And for most use cases, a rough estimate of time on the order of magnitude of seconds is perfectly sufficient. After all, sub-second granularity is irrelevant as people follow their daily schedules, and for project plans that span years or even decades a day or two more will not make a difference. However, in communications, real-time systems and circuitry, we often operate on an entirely different scale, with sub-nanosecond-level differences quickly becoming significant in areas like chip design [cite]. Clearly, there is a very broad range of accuracies that we need to keep time in, and it is our mission to evaluate to what degree we can rely on time on modern computer systems in a range of contexts.
 
 ### Applications that require time
+A classical example of an application that requires precise notions of time is geolocation. GPS and related technologies rely on signal propagation delays to determine relative positioning, and the time difference between clock sources (i.e. the satellites) needs to be precisely compensated so that delay differences can be measured accurately, thus leading to a good location estimation. Failure to compensate clock differences or even the presence of adversarial signals can quickly degrade the resulting location quality.
+
 Fault-Tolerance systems, with the possibility of affecting safety/security.
 
 Performance measurements, especially distributed ones.
