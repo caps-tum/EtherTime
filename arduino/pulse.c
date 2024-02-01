@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <time.h>
+#include <sched.h>
 
 
 #define BCM2711_PI4_PERI_BASE  0xFE000000
@@ -73,9 +74,16 @@ void run_cpu_direct() {
   };
   long last_nsec = 0;
 
+  // Set scheduler to realtime
+  struct sched_param schedparm;
+  memset(&schedparm, 0, sizeof(schedparm));
+  schedparm.sched_priority = 99; // highest rt priority
+  sched_setscheduler(0, SCHED_FIFO, &schedparm);
+
   // Do it. Endless loop, directly setting.
   printf("Starting pulses 1 per second.\n");
   for (;;) {
+    usleep(900 * 1000);
     // Wait for nsec counter to flow backwards;
     do {
         last_nsec = current_time.tv_nsec;
@@ -90,6 +98,7 @@ void run_cpu_direct() {
     clock_gettime(CLOCK_REALTIME, &current_time);
     printf("Signal: %lu - %lu ns\n", last_nsec, current_time.tv_nsec);
 
+    usleep(900 * 1000);
     // Wait for nsec counter to flow backwards;
     do {
         last_nsec = current_time.tv_nsec;

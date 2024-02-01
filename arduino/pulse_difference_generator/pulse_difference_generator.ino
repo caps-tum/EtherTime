@@ -6,7 +6,7 @@ const uint32_t CYCLES_PER_SECOND = 48 * 1000 * 1000; // 48 MHz
 const size_t NUM_TRACES = 1;
 
 // Must be a power of 2
-const size_t TRACE_LENGTH = 1024;
+const size_t TRACE_LENGTH = 64;
 
 typedef struct {
   uint8_t pin = 0;
@@ -81,13 +81,13 @@ void loop() {
   trace.index = 0;
   trace.state[trace.index] = READ_ALL_PINS;
 
-  noInterrupts();
+//   noInterrupts();
   uint32_t cycles = 0;
   uint32_t start = micros();
   // for(; cycles < 1 * 1000000;) {
-  //   cycles++;
   // uint32_t flanksRecorded = 0;
   while(trace.index < TRACE_LENGTH - 1) {
+    cycles++;
 
     // Read the pins, all at once using a register.
     // bool result = digitalRead(traces[trace].pin);
@@ -98,9 +98,9 @@ void loop() {
       trace.index = (trace.index + 1) & (TRACE_LENGTH - 1);
 
       // Methods to read the time: number of loop cycles, using a register, or the arduino function
-      // traces[trace].data[index] = cycles;
-      trace.timestamps[trace.index] = SysTick->VAL;
-      // traces[trace].data[index] = micros();
+      // trace.timestamps[trace.index] = cycles;
+//       trace.timestamps[trace.index] = SysTick->VAL;
+      trace.timestamps[trace.index] = micros();
 
       trace.state[trace.index] = result;
       //digitalWrite(LED_BUILTIN, result);
@@ -113,10 +113,10 @@ void loop() {
     // delay(1);
     //delayMicroseconds(1);
   }
-  interrupts();
+//   interrupts();
 
   uint32_t stop = micros();
-  uint32_t final_time = rtc.getSeconds();
+  uint32_t final_time = 3600 * rtc.getHours() * 60 * rtc.getMinutes() + rtc.getSeconds();
 
   Serial.print("Finished: ");
   Serial.print(final_time);
