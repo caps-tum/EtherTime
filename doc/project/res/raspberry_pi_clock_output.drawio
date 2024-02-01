@@ -1,0 +1,174 @@
+<mxfile host="app.diagrams.net" modified="2024-02-01T03:40:17.223Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0" etag="m9ih1sTMCw-PpZNGGeSr" version="22.1.17" type="device">
+  <diagram name="Page-1" id="yg2vQtCzOjtEMaxWZN6v">
+    <mxGraphModel dx="1304" dy="711" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-1" value="&lt;div style=&quot;font-size: 19px;&quot;&gt;Raspberry Pi&lt;br style=&quot;font-size: 19px;&quot;&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;aspect=fixed;align=left;verticalAlign=top;fontSize=19;fontStyle=1;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="80" y="230" width="410" height="410" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-5" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="90" y="280" width="270" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-3" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.clock;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-5">
+          <mxGeometry width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-4" value="High-Resolution Clock (Oscillator)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-5">
+          <mxGeometry x="50" y="7.5" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-6" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="90" y="340" width="270" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-7" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.clock;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-6">
+          <mxGeometry width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-8" value="Real-time clock (Low resolution)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-6">
+          <mxGeometry x="50" y="7.5" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-9" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="90" y="500" width="270" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-10" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.clock;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-9">
+          <mxGeometry width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-11" value="System Clock" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-9">
+          <mxGeometry x="50" y="7.5" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-12" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="90" y="410" width="270" height="46.5" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-14" value="Kernel" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-12">
+          <mxGeometry x="50" y="7.5" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-15" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/CrystalClear/128x128/apps/tux.png" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-12">
+          <mxGeometry x="-3" y="-1.5" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-16" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;edgeStyle=elbowEdgeStyle;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-4" target="HZhyhMfIyXB1KFQfmA_R-14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="510" as="sourcePoint" />
+            <mxPoint x="420" y="460" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="410" y="418" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-17" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-15" target="HZhyhMfIyXB1KFQfmA_R-10">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="510" as="sourcePoint" />
+            <mxPoint x="420" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-19" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="90" y="580" width="270" height="46.5" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-20" value="NTP" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-19">
+          <mxGeometry x="50" y="7.5" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-22" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn3.iconfinder.com/data/icons/internet-and-web-4/78/internt_web_technology-01-128.png" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-19">
+          <mxGeometry x="1" y="3.25" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-23" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;edgeStyle=elbowEdgeStyle;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-20" target="HZhyhMfIyXB1KFQfmA_R-11">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="510" as="sourcePoint" />
+            <mxPoint x="420" y="460" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="360" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-25" value="" style="triangle;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="230" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-26" value="" style="triangle;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="310" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-27" value="" style="triangle;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="390" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-28" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;dashed=1;dashPattern=8 8;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-4" target="HZhyhMfIyXB1KFQfmA_R-25">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="375" y="290" as="sourcePoint" />
+            <mxPoint x="425" y="240" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="360" y="300" />
+              <mxPoint x="410" y="300" />
+              <mxPoint x="410" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-29" value="&lt;b&gt;Hardware-PWM&lt;/b&gt;&lt;br&gt;Perfect clock output, but unaffected by NTP" style="text;html=1;strokeColor=default;fillColor=default;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;perimeterSpacing=0;spacing=2;dashed=1;spacingLeft=2;" vertex="1" parent="1">
+          <mxGeometry x="364" y="140" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-30" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1" target="HZhyhMfIyXB1KFQfmA_R-29">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="270" as="sourcePoint" />
+            <mxPoint x="420" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-31" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn2.iconfinder.com/data/icons/onebit/PNG/terminal_prompt.png" vertex="1" parent="1">
+          <mxGeometry x="420" y="456.5" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-32" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;dashed=1;dashPattern=8 8;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-11" target="HZhyhMfIyXB1KFQfmA_R-31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="313" as="sourcePoint" />
+            <mxPoint x="500" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-33" value="&lt;b&gt;Software-PWM&lt;/b&gt;&lt;br&gt;Can run off of software clock, but latency becomes an issue" style="text;html=1;strokeColor=default;fillColor=default;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;perimeterSpacing=0;spacing=2;dashed=1;spacingLeft=2;" vertex="1" parent="1">
+          <mxGeometry x="520" y="530" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-34" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-33" target="HZhyhMfIyXB1KFQfmA_R-31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="280" as="sourcePoint" />
+            <mxPoint x="439" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-35" value="" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;dashed=1;dashPattern=8 8;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-31" target="HZhyhMfIyXB1KFQfmA_R-26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="730" as="sourcePoint" />
+            <mxPoint x="430" y="491" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="444" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-36" value="" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.waveforms.square_wave;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="650" y="240" width="67.5" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-37" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endFill=1;" edge="1" parent="1" source="HZhyhMfIyXB1KFQfmA_R-25">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="430" as="sourcePoint" />
+            <mxPoint x="630" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-38" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="550" y="349.55" as="sourcePoint" />
+            <mxPoint x="630" y="349.55" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-39" value="" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.waveforms.slow_square_wave;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="67.5" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-41" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="295" y="660" width="270" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-42" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.clock;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-41">
+          <mxGeometry width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-43" value="Software Clock" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-41">
+          <mxGeometry x="50" y="7.5" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-44" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="110" y="660" width="270" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-45" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.clock;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-44">
+          <mxGeometry width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="HZhyhMfIyXB1KFQfmA_R-46" value="Hardware Clock" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="HZhyhMfIyXB1KFQfmA_R-44">
+          <mxGeometry x="50" y="7.5" width="220" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

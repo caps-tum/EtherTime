@@ -48,9 +48,28 @@ We are conducting the performance measurements on a Raspberry Pi 4 cluster inter
 
 We want to be able to physically verify clock differences according to pulses sent to a microcontroller:
 
-![setup_schematic.png](res%2Fsetup_schematic.png)
+![hardware_setup.drawio.svg](res%2Fhardware_setup.drawio.svg)
 
 The microcontroller reads pulses sent from each of the Raspberry-Pis and uses its internal cycle counter to determine the difference between the signals, which is later converted to an estimate of the total clock difference. Note that there are multiple sources of error that need to be estimated: The variance with which the Raspberry-Pis can emit pulses and the potential variance with which they can be read by the microcontroller. 
+
+#### Problem: Outputting the time signal
+
+As stated above, the accuracy of our hardware clock evaluation depends on the Raspberry Pis being able to output reliable clock signals. Raspberry-Pis support emitting hardware clocks on GPIO pins (this is referred to as hardware PWM), which allows us to very precisely measure the Raspberry Pi's physical clock on the Arduino. When setup like this, a single Raspberry Pi's signal flanks appear almost perfectly evenly spaced to the Arduino, meaning that deviations are well below 1 microsecond. By calculating the phase difference between the two signals each emitted by a Raspberry Pi, we can thus very accurately determine the offset between the hardware clocks on both devices, and additionally determine the drift between the oscillators by tracking the phase shift over time.
+
+However, there is one key caveat to this approach: the timing functions used by PTP (both via stepping the clock or adjusting the clock's tick-rate) never physically modify the hardware oscillator. While this might seem obvious for clock steps that modify the clock instantaneously, where it would be necessary to stop or super-charge the clock with all the unwanted hardware side-effects, this also applies to the clock slew, where clock frequency adjustments are made to gradually bring clocks closer together. Both the clock step and the clock slew modify only the kernel's internal software clock, which tracks the hardware oscillator with an offset and a rate adjustment. Thus, any adjustments to the kernel's software clock are invisible to the hardware oscillator, meaning that we cannot measure it using pure hardware support.
+
+On the other hand, we can use software that reads the kernel's software clock and outputs a pulse at the precise boundary between two seconds (software PWM). This clock signal follows both the clock steps and any clock slew initiated by PTP, thus allowing us to measure the actual difference between the clocks. However, this approach suffers from the usual issues regarding real-time computing on commodity hardware: it is difficult to force the latency below the microsecond range due to the presence of interference by interrupts, scheduling and other system management happening in the background. This means that the signal edges occur much less precisely, negatively affecting the signal quality. A sample trace of clock differences shows this quite clearly:
+
+![software_pwm_clock_drift.svg](res%2Fsoftware_pwm_clock_drift.svg)<br>
+_Clock Drift when Emitted by Software PWM: A signal is visible but the range is over 100us._
+
+While we can see an estimated clock drift of about 350us, the noise in the signal causes a range of over 100us, making this clock source less suitable for precision measurement. Real-time systems employ tricks like tuning the scheduler or disabling interrupts to reduce the scheduling variability. However, by doing so, we would be influencing the effect we are trying to observe in the first place, as both NTP/PTP and the kernel's timing features require interrupts to function to be able to perform their work.
+
+The following figure illustrates the dilemma: Either we use the hardware capabilities to read the on-board oscillator causing use to inadvertently bypass NTP/PTP, or we use software to read the system clock at the cost of much worse signal quality. 
+
+![raspberry_pi_clock_output.drawio.svg](res%2Fraspberry_pi_clock_output.drawio.svg)
+
+This issue has yet to be resolved.
 
 ### Timekeeping on a global scale
 
