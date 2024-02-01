@@ -29,7 +29,7 @@ class RPCTarget:
     async def rpc_start(self):
         # Copy code changes to remote before launching RPC
         if self.deploy_root:
-            await self.synchronize_rsync(rpc_get_local_root(), upload=True)
+            await self.synchronize_repository()
 
         self._rpc_ssh_connection = Invocation.of_command(
             "ssh",
@@ -44,6 +44,9 @@ class RPCTarget:
             self._rpc_ssh_connection.communicate(),
             name=f"RPC Process Communication ({self.id})"
         )
+
+    async def synchronize_repository(self):
+        return await self.synchronize_rsync(rpc_get_local_root(), upload=True)
 
     async def synchronize_rsync(self, path: PathOrStr, upload: bool = True, mkpath: bool = False):
         """Copy the local path to this worker using rsync.
