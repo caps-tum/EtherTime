@@ -8,9 +8,9 @@ def analyze():
     profile_db = ProfileDB()
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
 
+        print(f"Converting {profile.filename}")
         processed = profile.vendor.convert_profile(profile)
         if processed is not None:
-            print(f"Converting {profile.filename}")
             processed.save(profile_db.base_directory.joinpath(processed.filename))
 
 

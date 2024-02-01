@@ -1,14 +1,16 @@
 import copy
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Self, Optional, Literal, Dict
 
+import numpy as np
 import pandas as pd
 from pydantic import RootModel
 
 from profiles.benchmark import Benchmark
-from profiles.data_container import SummaryStatistics, Timeseries
+from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF
 from util import PathOrStr
 from vendor.vendor import Vendor
 
@@ -78,13 +80,80 @@ class BaseProfile:
     def format_id_timestamp(timestamp: datetime):
         return timestamp.strftime('%Y-%m-%d-%H-%M-%S')
 
-    def set_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, normalize_time : bool = True, resample: timedelta = None) -> Self:
+    def process_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, resample: timedelta = None) -> Self:
         if self.time_series is not None:
             raise RuntimeError("Tried to insert time series data into profile by profile already has time series data.")
+        if not (pd.api.types.is_datetime64_dtype(timestamps.dtype) or pd.api.types.is_timedelta64_dtype(timestamps.dtype)):
+            raise RuntimeError(f"Received a time series the is not a datetime64 (type: {timestamps.dtype}).")
 
-        self.time_series = Timeseries.from_series(
-            timestamps, clock_offsets, normalize_time=normalize_time, resample=resample,
-        )
+        # Normalize time: Move the origin to the epoch
+        timestamps = timestamps - timestamps.min()
+
+        result_frame = clock_offsets.to_frame(COLUMN_CLOCK_DIFF).set_index(timestamps)
+        Timeseries.check_monotonic_index(result_frame)
+
+        # Do some data post-processing to improve quality.
+
+        # Step 1: Remove the first big clock step.
+
+        # Remove any beginning zero values (no clock_difference information yet) from start
+        # (first non-zero value makes cumulative sum >= 0)
+        crop_condition = (result_frame[COLUMN_CLOCK_DIFF] != 0).cumsum()
+        result_frame = result_frame[crop_condition != 0]
+
+        # First, detect the clock step (difference >= 1 second).
+        first_difference = result_frame[COLUMN_CLOCK_DIFF].diff().abs()
+        clock_steps = first_difference[first_difference >= 1]
+        if len(clock_steps) != 1:
+            raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
+        clock_step_time = clock_steps.index[0]
+        clock_step_magnitude = clock_steps.values[0]
+        # The clock step should occur in the first minute and has a magnitude of 1 minute,
+        # thus should occur before timestamp 2 minutes.
+        if not (55 <= clock_step_magnitude <= 65):
+            raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
+        if clock_step_time >= timedelta(minutes=2):
+            raise RuntimeError(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
+
+        # Now crop after clock step
+        logging.debug(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
+        result_frame = result_frame[result_frame.index > clock_step_time]
+
+        # If we need to resample, do it now
+        # This needs to happen after determining the clock step as the "missing values" that occur because of the clock
+        # step will insert NaN into the series (even though they are not really missing)
+        if resample is not None:
+            result_frame = result_frame.resample(resample).mean()
+
+
+        series_with_convergence = Timeseries.from_series(result_frame)
+
+        # Detect when the clock is synchronized and crop the convergence.
+        # We say that the signal is converged when there are both negative and positive offsets within the window.
+        window_centered = 10
+        window_converged = 60
+        rolling_data = series_with_convergence.clock_diff.rolling(window=window_centered, center=True)
+        centered: pd.Series = (rolling_data.min() < 0) & (rolling_data.max() > 0)
+        converged: pd.Series = centered.rolling(window=window_converged, center=True).median().apply(np.floor)
+
+        # Fill the NA values that we have at the boundaries
+        # Not optimal, this might also fill N/A values somewhere in the center.
+        converged.ffill(inplace=True)
+        converged.bfill(inplace=True)
+
+        convergence_changes = converged[converged.diff() != 0]
+
+        # Once we converge, we should stay converged.
+        if not converged.any():
+            logging.warning(f"Clocks never converged for profile {self.id}.")
+        if not converged.is_monotonic_increasing:
+            raise RuntimeError(f"Clock diverged after converging: {convergence_changes}")
+
+        result_frame = result_frame[converged == 1]
+
+        series_without_convergence = Timeseries.from_series(result_frame)
+
+        self.time_series = series_without_convergence
         self.summary_statistics = self.time_series.summarize()
 
         return self

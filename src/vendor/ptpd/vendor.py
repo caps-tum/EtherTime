@@ -106,6 +106,5 @@ class PTPDVendor(Vendor):
         timestamps = pd.to_datetime(frame["# Timestamp"])
         clock_offsets = frame["Offset From Master"]
 
-        return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).set_timeseries_data(
-            timestamps, clock_offsets, resample=timedelta(seconds=1),
-        )
+        return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).process_timeseries_data(
+            timestamps, clock_offsets, resample=timedelta(seconds=1))

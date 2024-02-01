@@ -1,7 +1,7 @@
 import re
 import typing
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from config import current_configuration
 from invoke.invocation import Invocation
@@ -94,6 +94,6 @@ class LinuxPTPVendor(Vendor):
         if len(timestamps) == 0:
             return None
 
-        return BaseProfile.template_from_existing(profile, ProfileType.PROCESSED).set_timeseries_data(
+        return BaseProfile.template_from_existing(profile, ProfileType.PROCESSED).process_timeseries_data(
             pd.Series(timestamps), pd.Series(offsets)
         )

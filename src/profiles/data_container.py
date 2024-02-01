@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Iterable, Any
+from typing import Iterable, Any, Optional
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker
@@ -19,10 +19,10 @@ from utilities import units
 
 @dataclass
 class SummaryStatistics:
-    clock_diff_median: float
-    clock_diff_p99: float
-    clock_diff_max: float
-    clock_diff_std: float
+    clock_diff_median: Optional[float]
+    clock_diff_p99: Optional[float]
+    clock_diff_max: Optional[float]
+    clock_diff_std: Optional[float]
 
     def plot_annotate(self, ax: plt.Axes):
         import matplotlib.ticker
@@ -69,49 +69,10 @@ class Timeseries:
         return None
 
     @staticmethod
-    def from_series(timestamps: pd.Series, clock_offsets: pd.Series, normalize_time: bool = True, resample=None):
-
-        if normalize_time:
-            # Move the origin to the epoch
-            timestamps = timestamps - timestamps.min()
-
-        if not pandas.api.types.is_timedelta64_dtype(timestamps.dtype):
-            raise RuntimeError(f"Received a time series the is not a timedelta (type: {timestamps.dtype}).")
-
-        result_frame = clock_offsets.to_frame(COLUMN_CLOCK_DIFF).set_index(timestamps)
-        Timeseries.check_monotonic_index(result_frame)
-
-        # Do some data post-processing to improve quality.
-        # Remove the first big clock step and the convergence phase.
-
-        # Remove any beginning zero values (no clock_difference information yet) from start
-        # (first non-zero value makes cumulative sum >= 0)
-        crop_condition = (result_frame[COLUMN_CLOCK_DIFF] != 0).cumsum()
-        result_frame = result_frame[crop_condition != 0]
-
-        # First, detect the clock step (difference >= 1 second).
-        first_difference = result_frame[COLUMN_CLOCK_DIFF].diff().abs()
-        clock_steps = first_difference[first_difference >= 1]
-        if len(clock_steps) != 1:
-            raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
-        clock_step_time = clock_steps.index[0]
-        clock_step_magnitude = clock_steps.values[0]
-        # The clock step should occur in the first minute and has a magnitude of 1 minute,
-        # thus should occur before timestamp 2 minutes.
-        if not (55 <= clock_step_magnitude <= 65):
-            raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
-        if clock_step_time >= timedelta(minutes=2):
-            raise RuntimeError(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
-
-        # Now crop after clock step
-        logging.debug(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
-        result_frame = result_frame[result_frame.index > clock_step_time]
-
-        if resample is not None:
-            result_frame = result_frame.resample(resample).mean()
+    def from_series(frame: pd.DataFrame):
 
         return Timeseries(
-            Timeseries.serialize_frame(result_frame)
+            Timeseries.serialize_frame(frame)
         )
 
     def create_convergence_criterium(self) -> pd.Series:
