@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import constants
 from profiles.base_profile import BaseProfile, ProfileType
@@ -24,11 +24,14 @@ class ProfileDB:
             filters = []
         return [profile for profile in self.load_profiles() if all(filter_function(profile) for filter_function in filters)]
 
-    def resolve_most_recent(self, *filters: PROFILE_FILTER):
-        return sorted(
-            self.resolve_all(*filters),
-            key=lambda profile: profile.start_time
-        )[-1]
+    def resolve_most_recent(self, *filters: PROFILE_FILTER) -> Optional[BaseProfile]:
+        try:
+            return sorted(
+                self.resolve_all(*filters),
+                key=lambda profile: profile.start_time
+            )[-1]
+        except IndexError:
+            return None
 
     def default_save_location(self, profile: BaseProfile):
         return self.base_directory.joinpath(profile.filename)

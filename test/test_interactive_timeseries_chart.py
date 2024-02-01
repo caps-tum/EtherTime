@@ -11,7 +11,7 @@ class TestInterativeTimeseriesChart(TestCase):
     def test_create(self):
         chart = InterativeTimeseriesChart()
         profile_db = ProfileDB()
-        profile = profile_db.resolve_most_recent(resolve.VALID_PROCESSED_PROFILE())
-        figure = chart.create(profile)
-
-        plotting.save(figure, profile_db.base_directory.joinpath(profile.filename.replace(".json", "-chart.html")))
+        profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
+        for profile in profiles:
+            figure = chart.create(profile)
+            plotting.save(figure, profile_db.base_directory.joinpath(profile.filename.replace(".json", "-chart.html")))

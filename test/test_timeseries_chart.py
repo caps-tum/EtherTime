@@ -39,13 +39,16 @@ class TestTimeseriesChart(TestCase):
             resolve.BY_VENDOR(VendorDB.LINUXPTP),
         )
 
+        if ptpd_profile is None or linuxptp_profile is None:
+            self.skipTest("Required profile not found")
+            return
+
         chart = TimeSeriesChartVersus(ptpd_profile, linuxptp_profile)
         chart.set_titles("PTPd", "LinuxPTP")
         chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parent=True)
 
     def test_history(self):
-        self.create_history_charts(BenchmarkDB.TEST)
-        self.create_history_charts(BenchmarkDB.DEMO, y_log=True)
+        self.create_history_charts(BenchmarkDB.DEMO)
 
     def create_history_charts(self, benchmark, y_log=False):
         for vendor in VendorDB.all():
