@@ -101,10 +101,10 @@ class Timeseries:
         if not (55 <= clock_step_magnitude <= 65):
             raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
         if clock_step_time >= timedelta(minutes=2):
-            raise RuntimeError(f"The clock step was not within the first minute of runtime: {clock_steps}")
+            raise RuntimeError(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
 
         # Now crop after clock step
-        logging.info(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
+        logging.debug(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
         result_frame = result_frame[result_frame.index > clock_step_time]
 
         if resample is not None:
