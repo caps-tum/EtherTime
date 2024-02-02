@@ -36,6 +36,29 @@ class SummaryStatistics:
         )
 
 
+@dataclass
+class ConvergenceStatistics:
+    convergence_time: timedelta
+    convergence_max_offset: float
+    convergence_rate: float
+
+    def plot_annotate(self, ax: plt.Axes):
+        import matplotlib.ticker
+        formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
+        rate_formatter = matplotlib.ticker.EngFormatter(unit="s/s", places=0, usetex=True)
+
+        # Just discard microseconds for display
+        display_convergence_time = self.convergence_time - timedelta(microseconds=self.convergence_time.microseconds)
+
+        ax.annotate(
+            f"Convergence Time: {display_convergence_time}\n"
+            f"Initial Step Error: {formatter.format_data(self.convergence_max_offset)}\n"
+            f"Convergence Rate: {rate_formatter.format_data(self.convergence_rate)}\n",
+            xy=(0.95, 0.95), xycoords='axes fraction',
+            verticalalignment='top', horizontalalignment='right',
+        )
+
+
 COLUMN_CLOCK_DIFF = "clock_diff"
 
 
@@ -55,7 +78,7 @@ class Timeseries:
     def data_frame(self):
         read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
         read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
-        Timeseries.check_monotonic_index(read_frame)
+        self.check_monotonic_index(read_frame)
         return read_frame
 
     @property
@@ -213,6 +236,11 @@ class MergedTimeSeries(Timeseries):
         return MergedTimeSeries(
             Timeseries.serialize_frame(pd.concat(frames))
         )
+
+    @staticmethod
+    def check_monotonic_index(result_frame):
+        # Do nothing here. The index will probably not be monotonically increasing.
+        pass
 
     def get_discriminator(self):
         return self.data_frame["merge_source"]

@@ -1,5 +1,6 @@
 import copy
 import logging
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -10,7 +11,7 @@ import pandas as pd
 from pydantic import RootModel
 
 from profiles.benchmark import Benchmark
-from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF
+from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics
 from util import PathOrStr
 from vendor.vendor import Vendor
 
@@ -30,6 +31,9 @@ class BaseProfile:
 
     summary_statistics: Optional[SummaryStatistics] = None
     time_series: Optional[Timeseries] = None
+
+    convergence_statistics: Optional[ConvergenceStatistics] = None
+    time_series_unfiltered: Optional[Timeseries] = None
     raw_data: Optional[Dict[str, Optional[str]]] = None
 
     _file_path: Optional[str] = None
@@ -127,6 +131,7 @@ class BaseProfile:
 
 
         series_with_convergence = Timeseries.from_series(result_frame)
+        self.time_series_unfiltered = series_with_convergence
 
         # Detect when the clock is synchronized and crop the convergence.
         # We say that the signal is converged when there are both negative and positive offsets within the window.
@@ -145,14 +150,34 @@ class BaseProfile:
 
         # Once we converge, we should stay converged.
         if not converged.any():
-            logging.warning(f"Clocks never converged for profile {self.id}.")
+            logging.warning(f"Clock never converged for profile {self.id}.")
+        if converged.isna().all():
+            raise RuntimeError(f"Profile too short, convergence test resulted in only N/A values.")
         if not converged.is_monotonic_increasing:
-            raise RuntimeError(f"Clock diverged after converging: {convergence_changes}")
+            logging.warning(f"Clock diverged after converging.\n{convergence_changes}")
 
-        result_frame = result_frame[converged == 1]
+        # Initial convergence point
+        # This is the first point where the converged value becomes 1.0
+        convergence_time = converged[converged == 1].index.min()
 
+        # Create some convergence statistics
+        convergence_series = result_frame[result_frame.index <= convergence_time]
+
+        convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
+        if math.isnan(convergence_max_offset):
+            logging.warning("No convergence data on profile, convergence was instant.")
+            convergence_max_offset = 0
+
+
+        self.convergence_statistics = ConvergenceStatistics(
+            convergence_time=convergence_time,
+            convergence_max_offset=convergence_max_offset,
+            convergence_rate=convergence_max_offset / convergence_time.total_seconds()
+        )
+
+        # Now create the actual data
+        result_frame = result_frame[result_frame.index > convergence_time]
         series_without_convergence = Timeseries.from_series(result_frame)
-
         self.time_series = series_without_convergence
         self.summary_statistics = self.time_series.summarize()
 

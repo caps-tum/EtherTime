@@ -23,9 +23,24 @@ class TestTimeseriesChart(TestCase):
         profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
 
         for profile in profiles:
-            chart =  TimeseriesChart(profile, include_convergence_criterium=False)
             profile_path = Path(profile._file_path)
+
+            # We create two charts, one only showing the filtered data and one showing the convergence.
+            chart =  TimeseriesChart(
+                title=profile.id,
+                timeseries=profile.time_series,
+                summary_statistics=profile.summary_statistics,
+            )
             chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
+
+            if profile.time_series_unfiltered is not None:
+                chart_convergence = TimeseriesChart(
+                    title=profile.id + " (convergence included)",
+                    timeseries=profile.time_series_unfiltered,
+                    summary_statistics=profile.convergence_statistics,
+                )
+                chart_convergence.add_boundary(profile.convergence_statistics.convergence_time)
+                chart_convergence.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-unfiltered.png"))
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(
@@ -48,7 +63,7 @@ class TestTimeseriesChart(TestCase):
         chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parent=True)
 
     def test_history(self):
-        self.create_history_charts(BenchmarkDB.DEMO)
+        self.create_history_charts(BenchmarkDB.BASE)
 
     def create_history_charts(self, benchmark, y_log=False):
         for vendor in VendorDB.all():
