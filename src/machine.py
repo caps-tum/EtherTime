@@ -83,6 +83,11 @@ class Process:
 
 
 @dataclass(kw_only=True)
+class PluginSettings:
+    iperf_server: bool = False
+    stress_ng_cpus: int = 0
+
+@dataclass(kw_only=True)
 class Machine(RPCTarget):
     id: str
     ptp_interface: str
@@ -90,6 +95,8 @@ class Machine(RPCTarget):
     ptp_software_timestamping: bool = False
     ptp_use_phc2sys: bool = True
     initial_clock_offset: Optional[timedelta] = None
+
+    plugin_settings: Optional[PluginSettings] = None
 
     def __str__(self):
         return self.id

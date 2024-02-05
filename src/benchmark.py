@@ -40,6 +40,10 @@ async def benchmark(profile: BaseProfile):
     profile.machine_id = current_configuration.machine.id
 
     try:
+        for adapter in profile.benchmark.adapters:
+            logging.info(f"Activating benchmark adapter: {adapter}")
+            await adapter.on_pre_benchmark_worker(profile)
+
         logging.info(f"Starting {profile.vendor}...")
         await profile.vendor.start()
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
@@ -47,6 +51,9 @@ async def benchmark(profile: BaseProfile):
     finally:
         await profile.vendor.stop()
         logging.info(f"Stopped {profile.vendor}...")
+
+        for adapter in profile.benchmark.adapters:
+            await adapter.on_post_benchmark_worker(profile)
 
     profile.vendor.collect_data(profile)
     return profile
