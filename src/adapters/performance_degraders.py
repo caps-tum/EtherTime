@@ -1,14 +1,11 @@
 import asyncio
 import logging
-from contextlib import AsyncExitStack
-from dataclasses import dataclass
 from typing import Optional
 
-from adapters.benchmark_adapter import BenchmarkAdapter
 from config import current_configuration
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
-from util import async_process_communicate, unpack_one_value_or_error
+from util import unpack_one_value_or_error
 
 
 async def start_background_task(invocation: Invocation) -> Invocation:
@@ -18,56 +15,54 @@ async def start_background_task(invocation: Invocation) -> Invocation:
     return invocation
 
 
-@dataclass()
-class NetworkPerformanceDegrader(BenchmarkAdapter):
-    target_bandwidth: Optional[str] = None
+class NetworkPerformanceDegrader:
     iperf_invocation: Optional[Invocation] = None
 
-    async def on_pre_benchmark_worker(self, benchmark_run: BaseProfile):
+    async def start(self, target_bandwidth: Optional[int]):
         server_address = unpack_one_value_or_error(
-            [machine.address for machine in current_configuration.cluster.machines if machine.plugin_settings.iperf_server],
-            "Exactly one machine should be specified as the iPerf server to use the network performance degrader plugin"
+            [worker.plugin_settings.iperf_address for worker in current_configuration.cluster.machines if worker.plugin_settings.iperf_server],
+            "Exactly one worker should be specified as the iPerf server to use the network performance degrader plugin"
         )
 
-        logging.info(f"Determined iperf server address: {server_address}")
-        logging.info(f"Launching iperf on {len(current_configuration.cluster)} workers...")
+        logging.debug(f"Determined iperf server address: {server_address}")
 
         iperf_command = ["iperf", "-i", "1"]
-        if self.target_bandwidth:
-            iperf_command.append(f"--bandwidth={self.target_bandwidth}")
+        if target_bandwidth:
+            iperf_command.append(f"--bandwidth={target_bandwidth}M")
 
         if current_configuration.machine.plugin_settings.iperf_server:
             logging.info("Launching iPerf server...")
             self.iperf_invocation = await start_background_task(Invocation.of_command(*iperf_command, '-s'))
         else:
-            logging.debug("Waiting momentarily for iPerf servers to come up...")
+            logging.debug("Waiting momentarily for iPerf server to come up...")
             await asyncio.sleep(0.5)
-            logging.info("Launching iPerf clients...")
+            logging.info("Launching iPerf client...")
+            # Launching clients
             self.iperf_invocation = await start_background_task(
-                Invocation.of_command(*iperf_command, '-c', server_address, '-d', '-t', '0')
+                Invocation.of_command(*iperf_command, '-c', server_address, '-d', '-t', '0'),
             )
 
-    async def on_post_benchmark_worker(self, benchmark_run: BaseProfile):
+    async def stop(self):
         logging.info("Shutting down running iperf peers...")
         await self.iperf_invocation.terminate()
 
-@dataclass()
-class CPUPerformanceDegrader(BenchmarkAdapter):
-    target_load: Optional[float] = None
-    stress_ng_invocation: Optional[Invocation] = None
 
-    async def on_pre_benchmark_worker(self, benchmark_run: BaseProfile):
-        logging.info(f"Launching stress-ng on {len(current_configuration.cluster)} workers...")
+class CPUPerformanceDegrader:
+    stressng_process: Optional[Invocation] = None
+
+    async def start(self, target_load: Optional[int]):
 
         stress_ng_command = ["stress-ng", "-M"]
-        if self.target_load:
-            stress_ng_command += ["-l", self.target_load]
+        if target_load is not None:
+            stress_ng_command += ["-l", target_load]
 
         logging.info("Launching stress_ng tasks...")
-        self.stress_ng_invocation = await start_background_task(
-            Invocation.of_command(*stress_ng_command, '-c', current_configuration.machine.plugin_settings.stress_ng_cpus)
-        )
+        for machine in current_configuration.cluster.machines:
+            self.stressng_process = await start_background_task(
+                Invocation.of_command(*stress_ng_command, '-c', machine.plugin_settings.stress_ng_cpus)
+            )
 
-    async def on_post_benchmark_worker(self, benchmark_run: BaseProfile):
-        logging.info("Shutting down running iperf peers...")
-        await self.stress_ng_invocation.terminate()
+
+    async def stop(self):
+        logging.info("Shutting down running stress_ng...")
+        await self.stressng_process.terminate()

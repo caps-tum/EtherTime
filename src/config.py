@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import util
-from machine import Cluster, Machine
+from machine import Cluster, Machine, PluginSettings
 
 RASPBERRY_PI_PTP_SETTINGS = {
     'ptp_interface': 'eth0',
@@ -18,6 +18,11 @@ configs = {
                 remote_root="/home/rpi/ptp-perf",
                 ptp_master=True,
                 **RASPBERRY_PI_PTP_SETTINGS,
+                plugin_settings=PluginSettings(
+                    iperf_server=True,
+                    iperf_address="10.0.0.6",
+                    stress_ng_cpus=4,
+                )
             ),
             Machine(
                 id="rpi08",
@@ -26,6 +31,11 @@ configs = {
                 ptp_master=False,
                 initial_clock_offset=timedelta(minutes=-1),
                 **RASPBERRY_PI_PTP_SETTINGS,
+                plugin_settings=PluginSettings(
+                    iperf_server=False,
+                    iperf_address="10.0.0.8",
+                    stress_ng_cpus=4,
+                )
             )
         ]
     )

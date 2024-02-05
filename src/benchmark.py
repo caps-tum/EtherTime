@@ -1,8 +1,9 @@
 import asyncio
 import logging
-import time
-from datetime import timedelta, datetime
+from contextlib import AsyncExitStack
+from datetime import datetime
 
+from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from config import current_configuration
 from constants import PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
@@ -39,10 +40,19 @@ async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
 
+    background_tasks = AsyncExitStack()
+
     try:
-        for adapter in profile.benchmark.adapters:
-            logging.info(f"Activating benchmark adapter: {adapter}")
-            await adapter.on_pre_benchmark_worker(profile)
+        if profile.benchmark.artificial_load_network > 0:
+            # Start iPerf
+            artificial_network_load = NetworkPerformanceDegrader()
+            await artificial_network_load.start(profile.benchmark.artificial_load_network)
+            background_tasks.callback(artificial_network_load.stop)
+        if profile.benchmark.artificial_load_cpu > 0:
+            # Start Stress_ng
+            artificial_cpu_load = CPUPerformanceDegrader()
+            await artificial_cpu_load.start(profile.benchmark.artificial_load_cpu)
+            background_tasks.callback(artificial_cpu_load.stop)
 
         logging.info(f"Starting {profile.vendor}...")
         await profile.vendor.start()
@@ -52,8 +62,7 @@ async def benchmark(profile: BaseProfile):
         await profile.vendor.stop()
         logging.info(f"Stopped {profile.vendor}...")
 
-        for adapter in profile.benchmark.adapters:
-            await adapter.on_post_benchmark_worker(profile)
+        await background_tasks.aclose()
 
     profile.vendor.collect_data(profile)
     return profile

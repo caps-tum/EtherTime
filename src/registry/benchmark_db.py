@@ -24,15 +24,13 @@ class BenchmarkDB(BaseRegistry):
         """Create a network contention benchmark for a target bandwidth.
         :param type: How the load should be generated.
         :param load_level: Percentage of load of (assumed GBit) interface to apply."""
-        target_bitrate = load_level * 1000 / 100 # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
+        target_bitrate = load_level * 1000 // 100 # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
         if type == NetworkContentionType.UNPRIORITIZED:
             return Benchmark(
                 id=f"net_{type.value}_load_{load_level}",
                 name=f"Unprioritized Network {load_level}% Load",
                 duration=timedelta(minutes=60),
-                adapters=[
-                    NetworkPerformanceDegrader(target_bandwidth=f"{target_bitrate}M"),
-                ],
+                artificial_load_network=target_bitrate,
             )
 
 
