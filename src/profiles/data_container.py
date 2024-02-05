@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Iterable, Any, Optional
+from typing import Iterable, Any, Optional, Dict
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker
@@ -35,6 +35,14 @@ class SummaryStatistics:
             verticalalignment='top', horizontalalignment='right',
         )
 
+    def export(self, unit_multiplier: int) -> Dict:
+        return {
+            'Clock Difference (Median)': self.clock_diff_median * unit_multiplier,
+            'Clock Difference (99-th Percentile)': self.clock_diff_p99 * unit_multiplier,
+            'Clock Difference (Max)': self.clock_diff_max * unit_multiplier,
+            'Clock Difference (Std)': self.clock_diff_std * unit_multiplier,
+        }
+
 
 @dataclass
 class ConvergenceStatistics:
@@ -57,6 +65,13 @@ class ConvergenceStatistics:
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
         )
+
+    def export(self, unit_multiplier: int) -> Dict:
+        return {
+            'Convergence Time': self.convergence_time.total_seconds(),
+            'Convergence Max Offset': self.convergence_max_offset * unit_multiplier,
+            'Convergence Rate': self.convergence_rate * unit_multiplier,
+        }
 
 
 COLUMN_CLOCK_DIFF = "clock_diff"
