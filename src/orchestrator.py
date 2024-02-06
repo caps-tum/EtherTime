@@ -63,6 +63,7 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str]):
 
         for benchmark in benchmarks:
             for vendor in vendors:
+                logging.info(f"Now running benchmark: {benchmark} for vendor {vendor}")
                 try:
                     await do_benchmark(
                         rpc_server, cluster,

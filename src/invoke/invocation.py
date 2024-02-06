@@ -162,9 +162,10 @@ class Invocation:
     async def terminate(self):
         """Send the program a SIGTERM to politely shut it down and then finalize the process."""
         if self._process is not None:
-            logging.info(f"Terminating {self.command[0]}...")
-            self._process.terminate()
-            logging.info("Finalizing process PTPd...")
+            if self._process.returncode is None:
+                logging.info(f"Terminating {self.command[0]}...")
+                self._process.terminate()
+            logging.info(f"Finalizing process {self.command[0]}...")
             if self._process_communication_task:
                 await self._process_communication_task
 
