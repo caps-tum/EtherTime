@@ -21,13 +21,14 @@ class TimeSeriesChartComparison(ChartContainer):
             labels=labels,
         )
 
-        merged_series.plot_timeseries_distribution(
+        self.plot_timeseries_distribution(
+            merged_series,
             self.axes,
             invert_axis=False,
             split=False,
             discriminator_as_x=True
         )
-        merged_series.plot_decorate_yaxis(
+        self.plot_decorate_yaxis(
             self.axes, is_absolute_clockdiff=True
         )
         self.axes.xaxis.set_label_text("Profile Date")

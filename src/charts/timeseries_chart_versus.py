@@ -19,17 +19,19 @@ class TimeSeriesChartVersus(ChartContainer):
         )
         plt.subplots_adjust(wspace=0.05)
 
-        profile1.time_series.plot_timeseries(self.axes[0], title=profile1.id)
+        self.plot_timeseries(profile1.time_series, self.axes[0], title=profile1.id)
         profile1.summary_statistics.plot_annotate(self.axes[0])
 
-        profile2.time_series.plot_timeseries(self.axes[2], title=profile2.id, palette_index=1)
+        self.plot_timeseries(profile2.time_series, self.axes[2], title=profile2.id, palette_index=1)
+        self.axes[2].set_ylabel(None)
         profile2.summary_statistics.plot_annotate(self.axes[2])
 
         merge_series = MergedTimeSeries.merge_series(
             [profile1.time_series, profile2.time_series],
             labels=[0, 1]
         )
-        merge_series.plot_timeseries_distribution(
+        self.plot_timeseries_distribution(
+            merge_series,
             self.axes[1],
             invert_axis=False,
             discriminator_as_hue=True,

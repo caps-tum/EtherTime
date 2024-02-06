@@ -38,18 +38,18 @@ class TestTimeseriesChart(TestCase):
                     timeseries=profile.time_series_unfiltered,
                     summary_statistics=profile.convergence_statistics,
                 )
-                chart_convergence.add_boundary(profile.convergence_statistics.convergence_time)
+                chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
                 chart_convergence.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-unfiltered.png"))
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(
             resolve.VALID_PROCESSED_PROFILE(),
-            resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+            resolve.BY_BENCHMARK(BenchmarkDB.BASE),
             resolve.BY_VENDOR(VendorDB.PTPD),
         )
         linuxptp_profile = ProfileDB().resolve_most_recent(
             resolve.VALID_PROCESSED_PROFILE(),
-            resolve.BY_BENCHMARK(BenchmarkDB.TEST),
+            resolve.BY_BENCHMARK(BenchmarkDB.BASE),
             resolve.BY_VENDOR(VendorDB.LINUXPTP),
         )
 

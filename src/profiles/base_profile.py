@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Self, Optional, Literal, Dict
+from typing import Self, Optional, Literal, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,19 @@ class ProfileType:
     RAW = "raw"
     PROCESSED = "processed"
 
+class ProfileTags:
+    # Load
+    CATEGORY_LOAD = "category_load"
+
+    # Component
+    COMPONENT_CPU = "component_cpu"
+    COMPONENT_NET = "component_net"
+
+    # Isolation
+    ISOLATION_UNPRIORITIZED = "isolation_unprioritized"
+    ISOLATION_PRIORITIZED = "isolation_prioritized"
+    ISOLATION_ISOLATED = "isolation_isolated"
+
 @dataclass(kw_only=True)
 class BaseProfile:
     id: str
@@ -27,6 +40,7 @@ class BaseProfile:
     vendor_id: str
     profile_type: Literal["raw", "processed"]
     machine_id: Optional[str]
+    tags: List[str] = field(default_factory=list)
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
     summary_statistics: Optional[SummaryStatistics] = None

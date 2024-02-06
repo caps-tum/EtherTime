@@ -35,7 +35,7 @@ class SummaryStatistics:
             verticalalignment='top', horizontalalignment='right',
         )
 
-    def export(self, unit_multiplier: int) -> Dict:
+    def export(self, unit_multiplier: int = 1) -> Dict:
         return {
             'Clock Difference (Median)': self.clock_diff_median * unit_multiplier,
             'Clock Difference (99-th Percentile)': self.clock_diff_p99 * unit_multiplier,
@@ -66,7 +66,7 @@ class ConvergenceStatistics:
             verticalalignment='top', horizontalalignment='right',
         )
 
-    def export(self, unit_multiplier: int) -> Dict:
+    def export(self, unit_multiplier: int = 1) -> Dict:
         return {
             'Convergence Time': self.convergence_time.total_seconds(),
             'Convergence Max Offset': self.convergence_max_offset * unit_multiplier,
@@ -138,91 +138,6 @@ class Timeseries:
         if not result_frame.index.is_monotonic_increasing:
             raise RuntimeError("Timeseries index is not monotonically increasing.")
 
-    def plot_timeseries(self, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0):
-        import seaborn
-
-        data = self.get_clock_diff(abs)
-
-        if points:
-            seaborn.scatterplot(
-                ax=ax,
-                data=data,
-                color="0.8",
-                edgecolors="0.6",
-            )
-
-        if moving_average:
-            averages = data.rolling(
-                window=timedelta(seconds=30),
-                center=True,
-                # win_type='triang',
-            ).mean()
-            seaborn.lineplot(
-                ax=ax,
-                data=averages,
-                path_effects=[patheffects.Stroke(linewidth=2.5, foreground='black'), patheffects.Normal()],
-                color=seaborn.color_palette()[palette_index]
-            )
-
-        def format_time(value: float, _) -> str:
-            delta = datetime.timedelta(microseconds=value * units.NANOSECONDS_TO_MICROSECOND)
-            return str(delta)
-            # value *= units.NANOSECONDS_TO_SECONDS
-            # if value >= 3600:
-            #     return str(value / 3600) + "h"
-            # if value >= 60:
-            #     return str(value / 60) + "m"
-            # return str(value) + "s"
-
-        locator = matplotlib.ticker.MaxNLocator(
-            nbins=6,
-            steps=[1, 3, 6, 10],
-        )
-        ax.xaxis.set_major_locator(locator)
-        formatter = matplotlib.ticker.FuncFormatter(format_time)
-        ax.xaxis.set_major_formatter(formatter)
-        ax.xaxis.set_label_text("Timestamp")
-
-        self.plot_decorate_yaxis(ax, abs)
-
-        if title is not None:
-            ax.set_title(title)
-
-    @staticmethod
-    def plot_decorate_yaxis(ax: plt.Axes, is_absolute_clockdiff):
-        from matplotlib.ticker import EngFormatter
-
-        time_offset_formatter = EngFormatter(unit='s')
-        ax.yaxis.set_major_formatter(time_offset_formatter)
-        ax.yaxis.set_label_text("Absolute Clock Offset" if is_absolute_clockdiff else "Clock Offset")
-
-    def plot_timeseries_distribution(self, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
-                                     discriminator_as_hue: bool = False, discriminator_as_x: bool = False, split=True):
-        import seaborn
-
-        data = self.get_clock_diff(abs)
-
-        extra_args = {}
-        if discriminator_as_hue:
-            extra_args["hue"] = self.get_discriminator()
-        if discriminator_as_x:
-            extra_args["x"] = self.get_discriminator()
-
-        seaborn.violinplot(
-            y=data,
-            inner="quart",
-            split=split,
-            inner_kws={'color': '0.9'},
-            cut=0,
-            ax=ax,
-            **extra_args
-        )
-
-        if ax.get_legend():
-            ax.get_legend().remove()
-
-        if invert_axis:
-            ax.invert_xaxis()
 
     def summarize(self) -> SummaryStatistics:
         data = self.get_clock_diff(abs=True)

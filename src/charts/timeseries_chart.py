@@ -1,11 +1,9 @@
-from datetime import timedelta
 from typing import List, Union
 
 from matplotlib import pyplot as plt
 
 from charts.chart_container import ChartContainer
 from profiles.data_container import Timeseries, SummaryStatistics, ConvergenceStatistics
-from utilities import units
 
 
 class TimeseriesChart(ChartContainer):
@@ -19,15 +17,10 @@ class TimeseriesChart(ChartContainer):
         )
         plt.subplots_adjust(wspace=0.05)
 
-        timeseries.plot_timeseries(self.axes[0], title=title)
-        timeseries.plot_timeseries_distribution(self.axes[1])
+
+        self.plot_timeseries(timeseries, self.axes[0], title=title)
+        self.plot_timeseries_distribution(timeseries, self.axes[1])
         if summary_statistics is not None:
             summary_statistics.plot_annotate(self.axes[0])
         # self.axes[0].set_yscale('log')
 
-    def add_boundary(self, timestamp: timedelta):
-        self.axes[0].axvline(
-            timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND,
-            linestyle='--',
-            color='tab:red'
-        )
