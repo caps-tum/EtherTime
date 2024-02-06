@@ -2,7 +2,7 @@ from typing import Dict
 
 from registry.base_registry import BaseRegistry
 from vendor.linuxptp import LinuxPTPVendor
-from vendor.ptpd.vendor import PTPDVendor
+from vendor.ptpd import PTPDVendor
 from vendor.systemd_ntp import SystemDNTPVendor
 from vendor.vendor import Vendor
 

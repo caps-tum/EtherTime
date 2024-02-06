@@ -8,7 +8,6 @@ from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
-from vendor.ptpd.vendor import PTPDVendor
 from vendor.registry import VendorDB
 
 
