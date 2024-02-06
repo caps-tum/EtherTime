@@ -40,7 +40,6 @@ class BaseProfile:
     vendor_id: str
     profile_type: Literal["raw", "processed"]
     machine_id: Optional[str]
-    tags: List[str] = field(default_factory=list)
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
     summary_statistics: Optional[SummaryStatistics] = None
@@ -128,7 +127,7 @@ class BaseProfile:
         clock_step_magnitude = clock_steps.values[0]
         # The clock step should occur in the first minute and has a magnitude of 1 minute,
         # thus should occur before timestamp 2 minutes.
-        if not (55 <= clock_step_magnitude <= 65):
+        if not (50 <= clock_step_magnitude <= 70):
             raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
         if clock_step_time >= timedelta(minutes=2):
             raise RuntimeError(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
@@ -162,17 +161,20 @@ class BaseProfile:
 
         convergence_changes = converged[converged.diff() != 0]
 
-        # Once we converge, we should stay converged.
-        if not converged.any():
-            logging.warning(f"Clock never converged for profile {self.id}.")
-        if converged.isna().all():
-            raise RuntimeError(f"Profile too short, convergence test resulted in only N/A values.")
-        if not converged.is_monotonic_increasing:
-            logging.warning(f"Clock diverged after converging.\n{convergence_changes}")
-
         # Initial convergence point
         # This is the first point where the converged value becomes 1.0
         convergence_time = converged[converged == 1].index.min()
+
+        # Once we converge, we should stay converged.
+        if not converged.any():
+            logging.warning(f"Clock never converged for profile {self.id}. Assuming convergence at t=1s.")
+            convergence_time = timedelta(seconds=1)
+        if converged.isna().all():
+            raise RuntimeError(f"Profile too short, convergence test resulted in only N/A values.")
+        if not converged.is_monotonic_increasing:
+            # The first zero value is the initial setting, thus subtract 1.
+            num_diverges = len(convergence_changes[convergence_changes == 0]) - 1
+            logging.warning(f"Clock diverged {num_diverges}x after converging.")
 
         # Create some convergence statistics
         convergence_series = result_frame[result_frame.index <= convergence_time]

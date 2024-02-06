@@ -49,4 +49,4 @@ def BY_TYPE(profile_type: str):
     return lambda profile: profile.profile_type == profile_type
 
 def BY_TAGS(*tags: str):
-    return lambda profile: all(tag in profile.tags for tag in tags)
+    return lambda profile: all(tag in profile.benchmark.tags for tag in tags)

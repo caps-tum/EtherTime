@@ -1,10 +1,10 @@
 from datetime import timedelta
 from enum import Enum
-from typing import Dict
 
-from adapters.performance_degraders import NetworkPerformanceDegrader
+from profiles.base_profile import ProfileTags
 from profiles.benchmark import Benchmark
 from registry.base_registry import BaseRegistry
+
 
 class NetworkContentionType(str, Enum):
     UNPRIORITIZED = "unprioritized"
@@ -31,6 +31,7 @@ class BenchmarkDB(BaseRegistry):
                 name=f"Unprioritized Network {load_level}% Load",
                 duration=timedelta(minutes=60),
                 artificial_load_network=target_bitrate,
+                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED],
             )
 
 
