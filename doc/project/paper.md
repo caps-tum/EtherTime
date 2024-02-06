@@ -52,6 +52,8 @@ We want to be able to physically verify clock differences according to pulses se
 
 The microcontroller reads pulses sent from each of the Raspberry-Pis and uses its internal cycle counter to determine the difference between the signals, which is later converted to an estimate of the total clock difference. Note that there are multiple sources of error that need to be estimated: The variance with which the Raspberry-Pis can emit pulses and the potential variance with which they can be read by the microcontroller. 
 
+![pi_wiring.jpg](res%2Fpi_wiring.jpg)
+
 #### Problem: Outputting the time signal
 
 As stated above, the accuracy of our hardware clock evaluation depends on the Raspberry Pis being able to output reliable clock signals. Raspberry-Pis support emitting hardware clocks on GPIO pins (this is referred to as hardware PWM), which allows us to very precisely measure the Raspberry Pi's physical clock on the Arduino. When setup like this, a single Raspberry Pi's signal flanks appear almost perfectly evenly spaced to the Arduino, meaning that deviations are well below 1 microsecond. By calculating the phase difference between the two signals each emitted by a Raspberry Pi, we can thus very accurately determine the offset between the hardware clocks on both devices, and additionally determine the drift between the oscillators by tracking the phase shift over time.
