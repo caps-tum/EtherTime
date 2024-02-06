@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import util
 from machine import Cluster, Machine, PluginSettings
+from util import ImmediateException, str_join
 
 RASPBERRY_PI_PTP_SETTINGS = {
     'ptp_interface': 'eth0',
@@ -9,7 +10,7 @@ RASPBERRY_PI_PTP_SETTINGS = {
     'ptp_software_timestamping': True,
 }
 
-configs = {
+clusters = {
     "Pi Cluster": Cluster(
         machines=[
             Machine(
@@ -38,6 +39,16 @@ configs = {
                 )
             )
         ]
+    ),
+    "Pi Manager": Cluster(
+        machines=[
+            Machine(
+                id="rpi07",
+                address="rpi07",
+                remote_root="/home/rpi/ptp-perf",
+                **RASPBERRY_PI_PTP_SETTINGS,
+            )
+        ]
     )
 }
 
@@ -48,7 +59,7 @@ class Configuration:
 current_configuration = Configuration()
 
 # Currently we default to the first (only) defined cluster
-current_configuration.cluster = configs["Pi Cluster"]
+current_configuration.cluster = clusters["Pi Cluster"]
 
 def verify(configuration: Configuration):
     """Verify that the configuration is valid."""
@@ -65,3 +76,15 @@ def set_machine(id: str):
         [machine for machine in current_configuration.cluster.machines if machine.id == id],
         message=f"No or too many machines found for machine id {id}.",
     )
+
+def get_configuration_by_cluster_name(name: str) -> Configuration:
+    try:
+        cluster = clusters[name]
+    except KeyError:
+        raise ImmediateException(f"Configuration not found: {name} (from {str_join(clusters.keys())})")
+
+    configuration = Configuration()
+    configuration.cluster = cluster
+
+    verify(configuration)
+    return configuration
