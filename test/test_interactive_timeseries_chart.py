@@ -1,5 +1,5 @@
 import re
-import uuid
+from pathlib import Path
 from unittest import TestCase
 
 from bokeh import plotting
@@ -16,7 +16,7 @@ class TestInterativeTimeseriesChart(TestCase):
         profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
         for profile in profiles:
             figure = chart.create(profile)
-            output_file = profile_db.base_directory.joinpath(profile.filename.replace(".json", "-chart.html"))
+            output_file = Path(profile._file_path).parent.joinpath(profile.filename.replace(".json", "-chart.html"))
             plotting.save(
                 figure,
                 filename=output_file,
