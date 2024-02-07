@@ -81,6 +81,9 @@ class PTPDVendor(Vendor):
         if self._process is not None:
             await self._process.terminate()
 
+    async def restart(self, kill: bool = True):
+        await self._process.restart(kill, ignore_return_code=True)
+
     def collect_data(self, profile: "BaseProfile"):
         profile.raw_data = {
             'log': Path(self.log_file_path).read_text(),

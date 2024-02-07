@@ -94,9 +94,12 @@ class Invocation:
 
 
     async def start_async(self) -> Self:
+        # The actually launched command can differ (e.g. sudo)
+        actual_command = self.command.copy()
+
         if self.privileged:
             if settings.PRIVILEGED_USING_SUDO:
-                self.command.insert(0, "sudo")
+                actual_command.insert(0, "sudo")
             else:
                 raise InvocationFailedException("Invocation requested privileges but no privilege escalation configured.")
 
@@ -113,17 +116,17 @@ class Invocation:
 
         if self.shell:
             self._process = await subprocess.create_subprocess_shell(
-                util.unpack_one_value_or_error(self.command, "Attempted to invoke shell with multiple commands"),
+                util.unpack_one_value_or_error(actual_command, "Attempted to invoke shell with multiple commands"),
                 **common_invocation_arguments
             )
         else:
             self._process = await subprocess.create_subprocess_exec(
-                *self.command,
+                *actual_command,
                 **common_invocation_arguments
             )
 
-
-        if self.capture_output:
+        # Don't reset output if its already there (process restart)
+        if self.capture_output and self.output is None:
             self.output = ""
 
         return self
@@ -183,14 +186,33 @@ class Invocation:
             await self._process.communicate()
             await self.finalize_async()
 
+    async def restart(self, kill: bool = False, ignore_return_code: bool = False):
+        if not kill or not ignore_return_code:
+            raise NotImplementedError("Unsupported options for process restart.")
 
-    async def finalize_async(self):
+        if self._process is not None:
+            if self._process.returncode is not None:
+                try:
+                    logging.info(f"Killing {self.command[0]}")
+                    self._process.kill()
+                except ProcessLookupError:
+                    pass # The process has already exited.
+
+            # We don't want to verify exit code.
+            # await self.finalize_async(skip_verify_return_code=ignore_return_code)
+
+        await self.start_async()
+
+
+
+
+    async def finalize_async(self, skip_verify_return_code: bool = False):
         """Waits until exit code is available and verifies the exit code if necessary."""
         while self._process.returncode is None:
             await asyncio.sleep(0.1)
         self.return_code = self._process.returncode
 
-        if self.verify_return_code and self.return_code != self.expected_return_code:
+        if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
             if self.dump_output_on_failure:
                 for line in self.output.splitlines():
                     logging.info(f"| {line}")

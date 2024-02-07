@@ -1,6 +1,7 @@
 from datetime import timedelta
 from enum import Enum
 
+import config
 from profiles.base_profile import ProfileTags
 from profiles.benchmark import Benchmark
 from registry.base_registry import BaseRegistry
@@ -18,6 +19,13 @@ class BenchmarkDB(BaseRegistry):
     TEST = Benchmark("test", "Test", tags=[], duration=timedelta(minutes=1))
 
     DEMO = Benchmark("demo", "Demo", tags=[], duration=timedelta(minutes=5))
+
+    # Software crash, once every 30 seconds
+    SOFTWARE_FAULT = Benchmark(
+        "software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE], duration=timedelta(minutes=60),
+        fault_tolerance_software_fault_interval=timedelta(seconds=30),
+        fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
+    )
 
     @staticmethod
     def network_contention(type: NetworkContentionType, load_level: int):
@@ -50,7 +58,7 @@ class BenchmarkDB(BaseRegistry):
 
 
 BenchmarkDB.register_all(
-    BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
+    BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO, BenchmarkDB.SOFTWARE_FAULT,
 )
 
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:

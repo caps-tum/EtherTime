@@ -30,6 +30,10 @@ class Vendor:
     async def stop(self):
         raise NotImplementedError()
 
+    async def restart(self, kill: bool = True):
+        raise NotImplementedError()
+
+
     @property
     def install_supported(self):
         return False

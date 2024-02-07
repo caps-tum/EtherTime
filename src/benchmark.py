@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from asyncio import CancelledError
 from contextlib import AsyncExitStack
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from config import current_configuration
@@ -10,6 +11,7 @@ from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition
 from vendor.registry import VendorDB
+from vendor.vendor import Vendor
 
 
 async def prepare():
@@ -35,6 +37,15 @@ async def prepare():
 
     logging.info(f"{current_configuration.machine} time is now {datetime.now()}")
 
+async def restart_vendor_repeatedly(vendor: Vendor, interval: timedelta):
+    # We do this until we are cancelled
+    try:
+        while True:
+            await asyncio.sleep(interval.total_seconds())
+            logging.info(f"Scheduled software fault imminent on {current_configuration.machine}.")
+            await vendor.restart(kill=True)
+    except CancelledError:
+        pass
 
 async def benchmark(profile: BaseProfile):
 
@@ -53,6 +64,12 @@ async def benchmark(profile: BaseProfile):
             artificial_cpu_load = CPUPerformanceDegrader()
             await artificial_cpu_load.start(profile.benchmark.artificial_load_cpu)
             background_tasks.push_async_callback(artificial_cpu_load.stop)
+
+        # Launch background "crashes" of vendor if necessary
+        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == current_configuration.machine.id:
+            logging.info(f"Scheduling software faults every {profile.benchmark.fault_tolerance_software_fault_interval} on {current_configuration.machine.id}")
+            restart_task = asyncio.create_task(restart_vendor_repeatedly(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval))
+            background_tasks.callback(lambda: restart_task.cancel())
 
         logging.info(f"Starting {profile.vendor}...")
         await profile.vendor.start()

@@ -23,6 +23,7 @@ class ProfileType:
 
 class ProfileTags:
     # Load
+    CATEGORY_FAULT = "category_fault"
     CATEGORY_LOAD = "category_load"
 
     # Component
@@ -33,6 +34,10 @@ class ProfileTags:
     ISOLATION_UNPRIORITIZED = "isolation_unprioritized"
     ISOLATION_PRIORITIZED = "isolation_prioritized"
     ISOLATION_ISOLATED = "isolation_isolated"
+
+    # Fault types
+    FAULT_SOFTWARE = "fault_software"
+
 
 @dataclass(kw_only=True)
 class BaseProfile:

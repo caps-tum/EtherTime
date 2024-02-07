@@ -57,6 +57,12 @@ class LinuxPTPVendor(Vendor):
         if self._process_phc2sys is not None:
             await self._process_phc2sys.terminate()
 
+    async def restart(self, kill: bool = True):
+        await self._process_ptp4l.restart(kill, ignore_return_code=True)
+        if self._process_phc2sys is not None:
+            await self._process_phc2sys.restart(kill, ignore_return_code=True)
+
+
     def collect_data(self, profile: "BaseProfile"):
         profile.raw_data = {
             'ptp4l_log': self._process_ptp4l.output if self._process_ptp4l is not None else None,
