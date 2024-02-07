@@ -1,10 +1,10 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 
-from bokeh.models import DatetimeTickFormatter, WheelZoomTool, BoxAnnotation, FuncTickFormatter, CustomJSTickFormatter, \
-    DatetimeTicker, RangeTool
+from bokeh import plotting
+from bokeh.models import WheelZoomTool, BoxAnnotation, CustomJSTickFormatter, \
+    DatetimeTicker
 
 from profiles.base_profile import BaseProfile
-from bokeh import plotting
 
 BOKEH_TIME_SCALE = 1000
 
