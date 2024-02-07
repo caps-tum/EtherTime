@@ -18,6 +18,8 @@ classifiers = [
 dependencies = [
     "rpyc",
     "pydantic",
+    "pandas",
+    "matplotlib",
 ]
 
 [project.urls]
