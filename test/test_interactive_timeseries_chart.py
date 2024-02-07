@@ -1,3 +1,5 @@
+import re
+import uuid
 from unittest import TestCase
 
 from bokeh import plotting
@@ -14,9 +16,23 @@ class TestInterativeTimeseriesChart(TestCase):
         profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
         for profile in profiles:
             figure = chart.create(profile)
+            output_file = profile_db.base_directory.joinpath(profile.filename.replace(".json", "-chart.html"))
             plotting.save(
                 figure,
-                filename=profile_db.base_directory.joinpath(profile.filename.replace(".json", "-chart.html")),
+                filename=output_file,
                 resources="cdn",
                 title=f"{profile.id}",
             )
+
+            # Post process the output files replacing random UUIDs with predictable ones.
+            contents = output_file.read_text()
+            replacements = {}
+            for match in re.finditer('(?i)"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"', contents):
+                match_string = match.group(0)
+                if match_string not in replacements.keys():
+                    replacements[match_string] = f'"{abs(hash(output_file.name))}-id-{len(replacements)}"'
+
+            for search, replace in replacements.items():
+                contents = contents.replace(search, replace)
+
+            output_file.write_text(contents)
