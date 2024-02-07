@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import constants
 import util
@@ -14,7 +15,7 @@ def analyze():
         logging.info(f"Converting {profile.filename}")
         processed = profile.vendor.convert_profile(profile)
         if processed is not None:
-            processed.save(profile_db.base_directory.joinpath(processed.filename))
+            processed.save(Path(profile._file_path).parent.joinpath(processed.filename))
 
 
 if __name__ == '__main__':
