@@ -19,18 +19,20 @@ from utilities import units
 
 @dataclass
 class SummaryStatistics:
-    clock_diff_median: Optional[float]
-    clock_diff_p99: Optional[float]
-    clock_diff_max: Optional[float]
-    clock_diff_std: Optional[float]
+    clock_diff_median: Optional[float] = None
+    clock_diff_p99: Optional[float] = None
+    clock_diff_max: Optional[float] = None
+    clock_diff_std: Optional[float] = None
+    path_delay_median: Optional[float] = None
+    path_delay_std: Optional[float] = None
 
     def plot_annotate(self, ax: plt.Axes):
         import matplotlib.ticker
         formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
         ax.annotate(
-            f"Median: {formatter.format_data(self.clock_diff_median)}\n"
+            f"Median: {formatter.format_data(self.clock_diff_median)} ± {formatter.format_data(self.clock_diff_std)}\n"
             f"$P_{{99}}$: {formatter.format_data(self.clock_diff_p99)}\n"
-            f"Std: {formatter.format_data(self.clock_diff_std)}",
+            f"Path Delay: {formatter.format_data(self.path_delay_median)} ± {formatter.format_data(self.path_delay_std)}\n",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
         )
@@ -75,6 +77,7 @@ class ConvergenceStatistics:
 
 
 COLUMN_CLOCK_DIFF = "clock_diff"
+COLUMN_PATH_DELAY = "path_delay"
 
 
 @dataclass
@@ -99,6 +102,10 @@ class Timeseries:
     @property
     def clock_diff(self) -> pd.Series:
         return self.data_frame[COLUMN_CLOCK_DIFF]
+
+    @property
+    def path_delay(self) -> pd.Series:
+        return self.data_frame[COLUMN_PATH_DELAY]
 
     def get_clock_diff(self, abs: bool) -> pd.Series:
         return self.clock_diff.abs() if abs else self.clock_diff
@@ -129,11 +136,14 @@ class Timeseries:
 
     def summarize(self) -> SummaryStatistics:
         data = self.get_clock_diff(abs=True)
+        path_delay_data = self.path_delay
         return SummaryStatistics(
             clock_diff_median=data.median(),
             clock_diff_p99=data.quantile(0.99),
             clock_diff_max=data.max(),
             clock_diff_std=data.std(),
+            path_delay_median=self.path_delay.median(),
+            path_delay_std=self.path_delay.std(),
         )
 
     @property

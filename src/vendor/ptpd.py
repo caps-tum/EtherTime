@@ -105,6 +105,8 @@ class PTPDVendor(Vendor):
 
         timestamps = pd.to_datetime(frame["# Timestamp"])
         clock_offsets = frame["Offset From Master"]
+        path_delays = frame["One Way Delay"]
 
         return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).process_timeseries_data(
-            timestamps, clock_offsets, resample=timedelta(seconds=1))
+            timestamps, clock_offsets, path_delays, resample=timedelta(seconds=1)
+        )

@@ -84,16 +84,18 @@ class LinuxPTPVendor(Vendor):
 
         timestamps = []
         offsets = []
+        path_delays = []
         for match in re.finditer(
             pattern="ptp4l\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
             string=log,
         ):
             timestamps.append(timedelta(seconds=float(match.group("timestamp"))))
             offsets.append(int(match.group("master_offset")) * units.NANOSECONDS_TO_SECONDS)
+            path_delays.append(int(match.group("path_delay")) * units.NANOSECONDS_TO_SECONDS)
 
         if len(timestamps) == 0:
             return None
 
         return BaseProfile.template_from_existing(profile, ProfileType.PROCESSED).process_timeseries_data(
-            pd.Series(timestamps), pd.Series(offsets)
+            pd.Series(timestamps), pd.Series(offsets), pd.Series(path_delays)
         )

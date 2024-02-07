@@ -11,7 +11,8 @@ import pandas as pd
 from pydantic import RootModel
 
 from profiles.benchmark import Benchmark
-from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics
+from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
+    COLUMN_PATH_DELAY
 from util import PathOrStr
 from vendor.vendor import Vendor
 
@@ -97,7 +98,7 @@ class BaseProfile:
     def format_id_timestamp(timestamp: datetime):
         return timestamp.strftime('%Y-%m-%d-%H-%M-%S')
 
-    def process_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, resample: timedelta = None) -> Self:
+    def process_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, path_delays: pd.Series, resample: timedelta = None) -> Self:
         if self.time_series is not None:
             raise RuntimeError("Tried to insert time series data into profile by profile already has time series data.")
         if not (pd.api.types.is_datetime64_dtype(timestamps.dtype) or pd.api.types.is_timedelta64_dtype(timestamps.dtype)):
@@ -106,7 +107,13 @@ class BaseProfile:
         # Normalize time: Move the origin to the epoch
         timestamps = timestamps - timestamps.min()
 
-        result_frame = clock_offsets.to_frame(COLUMN_CLOCK_DIFF).set_index(timestamps)
+        result_frame = pd.DataFrame(
+            data={
+                COLUMN_CLOCK_DIFF: clock_offsets.reset_index(drop=True),
+                COLUMN_PATH_DELAY: path_delays.reset_index(drop=True)
+            }
+        )
+        result_frame.set_index(timestamps, drop=True, inplace=True)
         Timeseries.check_monotonic_index(result_frame)
 
         # Do some data post-processing to improve quality.
