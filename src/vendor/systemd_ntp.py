@@ -22,7 +22,7 @@ class SystemDNTPVendor(Vendor):
         await self.toggle_ntp_service(active=False)
 
     async def toggle_ntp_service(self, active: bool):
-        logging.info(("Activating" if active else "Deactivating") + " SystemD NTP service...")
+        logging.debug(("Activating" if active else "Deactivating") + " SystemD NTP service...")
         await Invocation.of_command("timedatectl", "set-ntp", "true" if active else "false").as_privileged().hide_unless_failure().run()
 
     async def check_clock_synchronized(self):
