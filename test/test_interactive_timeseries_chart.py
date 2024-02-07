@@ -30,7 +30,7 @@ class TestInterativeTimeseriesChart(TestCase):
             for match in re.finditer('(?i)"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"', contents):
                 match_string = match.group(0)
                 if match_string not in replacements.keys():
-                    replacements[match_string] = f'"{abs(hash(output_file.name))}-id-{len(replacements)}"'
+                    replacements[match_string] = f'"{output_file.stem}-id-{len(replacements)}"'
 
             for search, replace in replacements.items():
                 contents = contents.replace(search, replace)
