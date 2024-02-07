@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 from bokeh import plotting
 
-from charts.interactive_timeseries_chart import InterativeTimeseriesChart
+from charts.interactive_timeseries_chart import InteractiveTimeseriesChart
 from constants import CHARTS_DIR
 from registry import resolve
 from registry.resolve import ProfileDB

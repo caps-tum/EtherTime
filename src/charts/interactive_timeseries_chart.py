@@ -9,7 +9,7 @@ from profiles.base_profile import BaseProfile
 BOKEH_TIME_SCALE = 1000
 
 
-class InterativeTimeseriesChart:
+class InteractiveTimeseriesChart:
 
     def create(self, profile: BaseProfile):
         figure = plotting.figure(
