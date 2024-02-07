@@ -31,28 +31,30 @@ class TestLoadCharts(TestCase):
             nrows=2,
         )
 
+        chart.plot_statistic(lambda profile: ComparisonDataPoint(
+            x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
+            y=profile.summary_statistics.clock_diff_median,
+            hue=profile.vendor.name,
+        ), x_axis_label="Network Utilization", hue_name="Vendor")
         chart.plot_statistic(
             lambda profile: ComparisonDataPoint(
                 x=profile.benchmark.artificial_load_network / 10, # GBit/s to %
-                y=profile.summary_statistics.clock_diff_median,
-                hue=profile.vendor.name,
+                y=profile.summary_statistics.clock_diff_p99,
+                hue=f"{profile.vendor.name} P_{{99}}",
             ),
             x_axis_label="Network Utilization",
             hue_name="Vendor",
+            linestyle='dotted',
         )
         # chart.current_axes.set_yscale('log')
         chart.current_axes.xaxis.set_major_formatter(PercentFormatter())
 
         chart.set_current_axes(1, 0)
-        chart.plot_statistic(
-            lambda profile: ComparisonDataPoint(
-                x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-                y=profile.summary_statistics.path_delay_median,
-                hue=profile.vendor.name,
-            ),
-            x_axis_label="Network Utilization",
-            hue_name="Vendor",
-        )
+        chart.plot_statistic(lambda profile: ComparisonDataPoint(
+            x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
+            y=profile.summary_statistics.path_delay_median,
+            hue=profile.vendor.name,
+        ), x_axis_label="Network Utilization", hue_name="Vendor")
         chart.current_axes.xaxis.set_major_formatter(PercentFormatter())
         chart.current_axes.set_ylabel('Path Delay')
 

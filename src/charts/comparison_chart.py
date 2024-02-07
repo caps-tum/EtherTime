@@ -35,7 +35,8 @@ class ComparisonChart(ChartContainer):
             for axes_row in self.axes:
                 self.plot_decorate_yaxis(axes_row[0], True)
 
-    def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str, hue_name: str = None):
+    def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str,
+                       hue_name: str = None, linestyle=None):
         data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
         data = pd.DataFrame(data_points)
 
@@ -45,6 +46,7 @@ class ComparisonChart(ChartContainer):
             y=data['y'],
             hue=data['hue'].rename(hue_name),
             marker='o',
+            linestyle=linestyle,
         )
 
         self.current_axes.set_xlabel(x_axis_label)
