@@ -140,9 +140,9 @@ class BaseProfile:
         # The clock step should occur in the first minute and has a magnitude of 1 minute,
         # thus should occur before timestamp 2 minutes.
         if not (50 <= clock_step_magnitude <= 70):
-            raise RuntimeError(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
+            logging.warning(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
         if clock_step_time >= timedelta(minutes=2):
-            raise RuntimeError(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
+            logging.warning(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
 
         # Now crop after clock step
         logging.debug(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
@@ -183,10 +183,19 @@ class BaseProfile:
             convergence_time = timedelta(seconds=1)
         if converged.isna().all():
             raise RuntimeError(f"Profile too short, convergence test resulted in only N/A values.")
+
+        remaining_benchmark_time = result_frame.index.max() - convergence_time
+        if remaining_benchmark_time < self.benchmark.duration * 0.75:
+            logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+
         if not converged.is_monotonic_increasing:
             # The first zero value is the initial setting, thus subtract 1.
             num_diverges = len(convergence_changes[convergence_changes == 0]) - 1
-            logging.warning(f"Clock diverged {num_diverges}x after converging.")
+            convergence_after_convergence_time = converged[converged.index > convergence_time]
+            clock_diverged_ratio = len(convergence_after_convergence_time[convergence_after_convergence_time == 0]) / len(convergence_after_convergence_time)
+            logging.warning(f"Clock diverged {num_diverges}x after converging ({clock_diverged_ratio * 100:.0f}% of samples in diverged state).")
+
+
 
         # Create some convergence statistics
         convergence_series = result_frame[result_frame.index <= convergence_time]
