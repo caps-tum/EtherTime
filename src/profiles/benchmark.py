@@ -12,4 +12,5 @@ class Benchmark:
     duration: datetime.timedelta = None
 
     artificial_load_network: Optional[int] = 0
+    artificial_load_network_dscp_priority: Optional[str] = None
     artificial_load_cpu: Optional[int] = 0

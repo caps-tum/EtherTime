@@ -18,7 +18,7 @@ async def start_background_task(invocation: Invocation) -> Invocation:
 class NetworkPerformanceDegrader:
     iperf_invocation: Optional[Invocation] = None
 
-    async def start(self, target_bandwidth: Optional[int]):
+    async def start(self, target_bandwidth: Optional[int], dscp_priority: Optional[str] = None):
         server_address = unpack_one_value_or_error(
             [worker.plugin_settings.iperf_address for worker in current_configuration.cluster.machines if worker.plugin_settings.iperf_server],
             "Exactly one worker should be specified as the iPerf server to use the network performance degrader plugin"
@@ -29,6 +29,8 @@ class NetworkPerformanceDegrader:
         iperf_command = ["iperf", "-i", "1"]
         if target_bandwidth:
             iperf_command.append(f"--bandwidth={target_bandwidth}M")
+        if dscp_priority:
+            iperf_command.append(f"--tos={dscp_priority}")
 
         if current_configuration.machine.plugin_settings.iperf_server:
             logging.info("Launching iPerf server...")

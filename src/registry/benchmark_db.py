@@ -24,15 +24,29 @@ class BenchmarkDB(BaseRegistry):
         """Create a network contention benchmark for a target bandwidth.
         :param type: How the load should be generated.
         :param load_level: Percentage of load of (assumed GBit) interface to apply."""
-        target_bitrate = load_level * 1000 // 100 # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
+
+        common_options = {
+            'artificial_load_network': load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
+            'duration': timedelta(minutes=60),
+        }
+
         if type == NetworkContentionType.UNPRIORITIZED:
             return Benchmark(
                 id=f"net_{type.value}_load_{load_level}",
                 name=f"Unprioritized Network {load_level}% Load",
-                duration=timedelta(minutes=60),
-                artificial_load_network=target_bitrate,
                 tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED],
+                **common_options,
             )
+        if type == NetworkContentionType.PRIORITIZED:
+            return Benchmark(
+                id=f"net_{type.value}_load_{load_level}",
+                name=f"Prioritized Network {load_level}% Load",
+                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_PRIORITIZED],
+                artificial_load_network_dscp_priority='cs1', # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
+                **common_options,
+            )
+        else:
+            raise RuntimeError(f"Unknown network contention type: {type}")
 
 
 BenchmarkDB.register_all(
@@ -41,3 +55,6 @@ BenchmarkDB.register_all(
 
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
     BenchmarkDB.register(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, load_level=load_level))
+
+# Just one prioritized benchmark for now at 100%
+BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, load_level=100))

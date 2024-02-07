@@ -46,7 +46,7 @@ async def benchmark(profile: BaseProfile):
         if profile.benchmark.artificial_load_network > 0:
             # Start iPerf
             artificial_network_load = NetworkPerformanceDegrader()
-            await artificial_network_load.start(profile.benchmark.artificial_load_network)
+            await artificial_network_load.start(profile.benchmark.artificial_load_network, profile.benchmark.artificial_load_network_dscp_priority)
             background_tasks.push_async_callback(artificial_network_load.stop)
         if profile.benchmark.artificial_load_cpu > 0:
             # Start Stress_ng
