@@ -46,7 +46,7 @@ class NetworkPerformanceDegrader:
 
     async def stop(self):
         logging.info("Shutting down running iperf peers...")
-        await self.iperf_invocation.terminate()
+        await self.iperf_invocation.terminate(timeout=5)
 
 
 class CPUPerformanceDegrader:
@@ -67,4 +67,4 @@ class CPUPerformanceDegrader:
 
     async def stop(self):
         logging.info("Shutting down running stress_ng...")
-        await self.stressng_process.terminate()
+        await self.stressng_process.terminate(timeout=5)

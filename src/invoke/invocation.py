@@ -159,15 +159,26 @@ class Invocation:
         )
         return self
 
-    async def terminate(self):
+    async def terminate(self, timeout: float = None):
         """Send the program a SIGTERM to politely shut it down and then finalize the process."""
         if self._process is not None:
+            # Send a termination signal
             if self._process.returncode is None:
                 logging.info(f"Terminating {self.command[0]}...")
                 self._process.terminate()
+
+            # Wait for process to exit while handling IO
             logging.info(f"Finalizing process {self.command[0]}...")
             if self._process_communication_task:
-                await self._process_communication_task
+                try:
+                    await asyncio.wait_for(self._process_communication_task, timeout=timeout)
+                except TimeoutError:
+                    logging.info("Process did not terminate within timeout.")
+
+            # If process still has not exited, kill
+            if self._process.returncode is None:
+                logging.info(f"Killing {self.command[0]} (shutdown timeout {timeout}s exceeded)")
+                self._process.kill()
 
             await self._process.communicate()
             await self.finalize_async()
