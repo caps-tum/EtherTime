@@ -47,6 +47,21 @@ async def restart_vendor_repeatedly(vendor: Vendor, interval: timedelta):
     except CancelledError:
         pass
 
+async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_tolerance_prompt_downtime: timedelta):
+    # We do this until we are cancelled
+    # Do some math so that we actually trigger at each interval
+    actual_interval = fault_tolerance_prompt_interval - fault_tolerance_prompt_downtime
+    try:
+        await asyncio.sleep(fault_tolerance_prompt_downtime.total_seconds())
+        while True:
+            await asyncio.sleep(actual_interval.total_seconds())
+            logging.warning(f"======= Unplug the hardware NOW! ========")
+            await asyncio.sleep(fault_tolerance_prompt_downtime.total_seconds())
+            logging.warning(f"======= Replug the hardware NOW! ========")
+    except CancelledError:
+        pass
+
+
 async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
@@ -64,6 +79,12 @@ async def benchmark(profile: BaseProfile):
             artificial_cpu_load = CPUPerformanceDegrader()
             await artificial_cpu_load.start(profile.benchmark.artificial_load_cpu)
             background_tasks.push_async_callback(artificial_cpu_load.stop)
+
+        # Launch background hardware prompts if necessary. We only do this on the ptp_master
+        if profile.benchmark.fault_tolerance_prompt_interval is not None and current_configuration.machine.ptp_master:
+            logging.warning(f"Will prompt repeatedly every {profile.benchmark.fault_tolerance_prompt_interval} so that you can manually power cycle the hardware.")
+            prompt_task = asyncio.create_task(prompt_repeatedly(profile.benchmark.fault_tolerance_prompt_interval, profile.benchmark.fault_tolerance_prompt_downtime))
+            background_tasks.callback(lambda: prompt_task.cancel())
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == current_configuration.machine.id:

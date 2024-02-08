@@ -19,3 +19,6 @@ class Benchmark:
 
     fault_tolerance_software_fault_interval: Optional[timedelta] = None
     fault_tolerance_software_fault_machine: Optional[str] = None
+
+    fault_tolerance_prompt_interval: Optional[timedelta] = None
+    fault_tolerance_prompt_downtime: Optional[timedelta] = None

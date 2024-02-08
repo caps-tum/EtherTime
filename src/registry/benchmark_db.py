@@ -20,11 +20,21 @@ class BenchmarkDB(BaseRegistry):
 
     DEMO = Benchmark("demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
+    BASE_TWO_CLIENTS = Benchmark("1_to_2", "1 Master 2 Clients", tags=[], duration=timedelta(minutes=60))
+
     # Software crash, once every 30 seconds
     SOFTWARE_FAULT = Benchmark(
         "software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE], duration=timedelta(minutes=60),
         fault_tolerance_software_fault_interval=timedelta(seconds=30),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
+    )
+
+    HARDWARE_FAULT_SWITCH = Benchmark(
+        "hardware_fault_switch", "Hardware Fault (Switch)",
+        tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
+        duration=timedelta(minutes=5),
+        fault_tolerance_prompt_interval=timedelta(seconds=30),
+        fault_tolerance_prompt_downtime=timedelta(seconds=5),
     )
 
     @staticmethod
@@ -58,7 +68,8 @@ class BenchmarkDB(BaseRegistry):
 
 
 BenchmarkDB.register_all(
-    BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO, BenchmarkDB.SOFTWARE_FAULT,
+    BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT, BenchmarkDB.HARDWARE_FAULT_SWITCH,
 )
 
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:

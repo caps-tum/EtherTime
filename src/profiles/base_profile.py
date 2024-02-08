@@ -37,6 +37,11 @@ class ProfileTags:
 
     # Fault types
     FAULT_SOFTWARE = "fault_software"
+    FAULT_HARDWARE = "fault_hardware"
+
+    # Fault locations
+    FAULT_LOCATION_SWITCH = "fault_location_switch"
+
 
 
 @dataclass(kw_only=True)
@@ -182,7 +187,8 @@ class BaseProfile:
             logging.warning(f"Clock never converged for profile {self.id}. Assuming convergence at t=1s.")
             convergence_time = timedelta(seconds=1)
         if converged.isna().all():
-            raise RuntimeError(f"Profile too short, convergence test resulted in only N/A values.")
+            logging.warning(f"Profile too short, convergence test resulted in only N/A values. Assuming convergence at t=1s")
+            convergence_time = timedelta(seconds=1)
 
         remaining_benchmark_time = result_frame.index.max() - convergence_time
         if remaining_benchmark_time < self.benchmark.duration * 0.75:
