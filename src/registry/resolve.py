@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 import constants
+from machine import Machine
 from profiles.base_profile import BaseProfile, ProfileType
 from profiles.benchmark import Benchmark
 from vendor.vendor import Vendor
@@ -50,3 +51,6 @@ def BY_TYPE(profile_type: str):
 
 def BY_TAGS(*tags: str):
     return lambda profile: all(tag in profile.benchmark.tags for tag in tags)
+
+def BY_MACHINE(machine: Machine):
+    return lambda profile: profile.machine_id == machine.id
