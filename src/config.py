@@ -12,7 +12,7 @@ RASPBERRY_PI_PTP_SETTINGS = {
 
 PTP_SLAVE_SETTINGS = {
     'ptp_master': False,
-    'initial_clock_offset': timedelta(minutes=1),
+    'initial_clock_offset': timedelta(minutes=-1),
 }
 
 MACHINE_RPI06 = Machine(
