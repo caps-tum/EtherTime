@@ -20,6 +20,7 @@ class BenchmarkDB(BaseRegistry):
 
     DEMO = Benchmark("demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
+    NO_SWITCH = Benchmark("no_switch", "No Switch", tags=[], duration=timedelta(minutes=60))
     BASE_TWO_CLIENTS = Benchmark("1_to_2", "1 Master 2 Clients", tags=[], duration=timedelta(minutes=60))
 
     # Software crash, once every 30 seconds
@@ -70,6 +71,7 @@ class BenchmarkDB(BaseRegistry):
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
     BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT, BenchmarkDB.HARDWARE_FAULT_SWITCH,
+    BenchmarkDB.NO_SWITCH,
 )
 
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:

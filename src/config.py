@@ -60,8 +60,8 @@ class Configuration:
 current_configuration = Configuration()
 
 # Currently we default to the first (only) defined cluster
-# current_configuration.cluster = clusters["Pi Cluster"]
-current_configuration.cluster = clusters["3-Pi"]
+current_configuration.cluster = clusters["Pi Cluster"]
+# current_configuration.cluster = clusters["3-Pi"]
 
 
 def verify(configuration: Configuration):
