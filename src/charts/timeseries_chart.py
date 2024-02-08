@@ -17,10 +17,17 @@ class TimeseriesChart(ChartContainer):
         )
         plt.subplots_adjust(wspace=0.05)
 
+        self.plot_decorate_title(ax=self.axes[0], title=title)
 
-        self.plot_timeseries(timeseries, self.axes[0], title=title)
-        self.plot_timeseries_distribution(timeseries, self.axes[1])
         if summary_statistics is not None:
             summary_statistics.plot_annotate(self.axes[0])
         # self.axes[0].set_yscale('log')
 
+    def add_clock_difference(self, timeseries: Timeseries):
+        self.plot_timeseries(timeseries.clock_diff, self.axes[0], abs=True)
+        self.plot_timeseries_distribution(timeseries.clock_diff, self.axes[1])
+
+
+    def add_path_delay(self, timeseries: Timeseries):
+        self.plot_timeseries(timeseries.path_delay, ax=self.axes[0], palette_index=3)
+        self.plot_timeseries_distribution(timeseries.path_delay, self.axes[1], palette_index=3)

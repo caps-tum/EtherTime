@@ -108,6 +108,9 @@ class BaseProfile:
     def format_id_timestamp(timestamp: datetime):
         return timestamp.strftime('%Y-%m-%d-%H-%M-%S')
 
+    def get_title(self, extra_info: str = None):
+        return f"{self.benchmark.name} ({self.vendor.name}" + (f", {extra_info})" if extra_info is not None else ")")
+
     def process_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, path_delays: pd.Series, resample: timedelta = None) -> Self:
         if self.time_series is not None:
             raise RuntimeError("Tried to insert time series data into profile by profile already has time series data.")

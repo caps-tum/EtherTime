@@ -19,10 +19,10 @@ class TimeSeriesChartVersus(ChartContainer):
         )
         plt.subplots_adjust(wspace=0.05)
 
-        self.plot_timeseries(profile1.time_series, self.axes[0], title=profile1.id)
+        self.plot_timeseries(profile1.time_series.clock_diff, self.axes[0], title=profile1.id)
         profile1.summary_statistics.plot_annotate(self.axes[0])
 
-        self.plot_timeseries(profile2.time_series, self.axes[2], title=profile2.id, palette_index=1)
+        self.plot_timeseries(profile2.time_series.clock_diff, self.axes[2], title=profile2.id, palette_index=1)
         self.axes[2].set_ylabel(None)
         profile2.summary_statistics.plot_annotate(self.axes[2])
 
@@ -31,10 +31,10 @@ class TimeSeriesChartVersus(ChartContainer):
             labels=[0, 1]
         )
         self.plot_timeseries_distribution(
-            merge_series,
+            merge_series.clock_diff,
             self.axes[1],
             invert_axis=False,
-            discriminator_as_hue=True,
+            hue_discriminator=merge_series.get_discriminator(),
         )
 
     def set_titles(self, title1: str, title2: str):

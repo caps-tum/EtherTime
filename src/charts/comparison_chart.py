@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn
 from matplotlib import pyplot as plt
 
-from charts.chart_container import ChartContainer
+from charts.chart_container import ChartContainer, YAxisLabelType
 from profiles.base_profile import BaseProfile
 
 
@@ -33,7 +33,7 @@ class ComparisonChart(ChartContainer):
 
         if y_axis_decorate:
             for axes_row in self.axes:
-                self.plot_decorate_yaxis(axes_row[0], True)
+                self.plot_decorate_yaxis(axes_row[0], ylabel=YAxisLabelType.OFFSET_GENERIC)
 
     def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str,
                        hue_name: str = None, linestyle=None):

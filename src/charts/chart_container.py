@@ -3,11 +3,18 @@ from pathlib import Path
 
 import matplotlib.ticker
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib import pyplot as plt, patheffects
 
 from profiles.data_container import Timeseries
 from util import PathOrStr
 from utilities import units
+
+class YAxisLabelType:
+    CLOCK_DIFF_ABS = "Absolute Clock Offset"
+    CLOCK_DIFF = "Clock Offset"
+    PATH_DELAY = "Path Delay"
+    OFFSET_GENERIC = "Offset"
 
 
 class ChartContainer:
@@ -22,12 +29,12 @@ class ChartContainer:
 
 
     @staticmethod
-    def plot_decorate_yaxis(ax: plt.Axes, is_absolute_clockdiff: bool):
+    def plot_decorate_yaxis(ax: plt.Axes, ylabel: str):
         from matplotlib.ticker import EngFormatter
 
         time_offset_formatter = EngFormatter(unit='s')
         ax.yaxis.set_major_formatter(time_offset_formatter)
-        ax.yaxis.set_label_text("Absolute Clock Offset" if is_absolute_clockdiff else "Clock Offset")
+        ax.yaxis.set_label_text(ylabel)
 
 
     @staticmethod
@@ -66,21 +73,24 @@ class ChartContainer:
         if title is not None:
             ax.set_title(title)
 
-    def plot_timeseries(self, timeseries: Timeseries, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0):
+    def plot_timeseries(self, data: pd.Series, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0):
         import seaborn
 
-        data = timeseries.get_clock_diff(abs)
+        if abs:
+            data = data.abs()
 
-        self.plot_decorate_yaxis(ax=ax, is_absolute_clockdiff=abs)
+        self.plot_decorate_yaxis(ax=ax, ylabel=YAxisLabelType.CLOCK_DIFF_ABS if abs else YAxisLabelType.CLOCK_DIFF)
         self.plot_decorate_xaxis_timeseries(ax)
         self.plot_decorate_title(ax, title)
+
+        base_color = seaborn.color_palette()[palette_index]
 
         if points:
             seaborn.scatterplot(
                 ax=ax,
                 data=data,
-                color="0.8",
-                edgecolors="0.6",
+                color=(*base_color, 0.3),
+                edgecolors=(*base_color, 0.7),
             )
 
         if moving_average:
@@ -93,20 +103,15 @@ class ChartContainer:
                 ax=ax,
                 data=averages,
                 path_effects=[patheffects.Stroke(linewidth=2.5, foreground='black'), patheffects.Normal()],
-                color=seaborn.color_palette()[palette_index]
+                color=base_color
             )
 
-    def plot_timeseries_distribution(self, timeseries: Timeseries, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
-                                     discriminator_as_hue: bool = False, discriminator_as_x: bool = False, split=True):
+    def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
+                                     hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0):
         import seaborn
 
-        data = timeseries.get_clock_diff(abs)
-
-        extra_args = {}
-        if discriminator_as_hue:
-            extra_args["hue"] = timeseries.get_discriminator()
-        if discriminator_as_x:
-            extra_args["x"] = timeseries.get_discriminator()
+        if abs:
+            data = data.abs()
 
         seaborn.violinplot(
             y=data,
@@ -115,7 +120,10 @@ class ChartContainer:
             inner_kws={'color': '0.9'},
             cut=0,
             ax=ax,
-            **extra_args
+            hue=hue_discriminator,
+            x=x_discriminator,
+            color=seaborn.color_palette()[palette_index] if hue_discriminator is None else None,
+            density_norm='count',
         )
 
         if ax.get_legend():

@@ -24,17 +24,28 @@ class TestTimeseriesChart(TestCase):
         for profile in profiles:
             profile_path = Path(profile._file_path)
 
-            # We create two charts, one only showing the filtered data and one showing the convergence.
+            # We create multiple charts:
+            # one only showing the filtered data, one showing the convergence, and one including the path delay
             chart =  TimeseriesChart(
-                title=profile.id,
+                title=profile.get_title(),
                 timeseries=profile.time_series,
                 summary_statistics=profile.summary_statistics,
             )
+            chart.add_clock_difference(profile.time_series)
             chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
+
+            chart =  TimeseriesChart(
+                title=profile.get_title("with Path Delay"),
+                timeseries=profile.time_series,
+                summary_statistics=profile.summary_statistics,
+            )
+            chart.add_path_delay(profile.time_series)
+            chart.add_clock_difference(profile.time_series)
+            chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-path-delay.png"))
 
             if profile.time_series_unfiltered is not None:
                 chart_convergence = TimeseriesChart(
-                    title=profile.id + " (convergence included)",
+                    title=profile.get_title("with Convergence"),
                     timeseries=profile.time_series_unfiltered,
                     summary_statistics=profile.convergence_statistics,
                 )
@@ -77,11 +88,13 @@ class TestTimeseriesChart(TestCase):
 
             chart = TimeSeriesChartComparison(
                 profiles,
-                [f"#{index+1}: {profile.start_time.replace(second=0, microsecond=0)}" for index, profile in enumerate(profiles)]
+                [f"#{index+1}: {profile.start_time.replace(second=0, microsecond=0)}" for index, profile in enumerate(profiles)],
+                x_label="Profile Date",
             )
             if y_log:
-                chart.axes.set_yscale('log')
-            chart.axes.set_title(f"Profile History: {benchmark.name} using {vendor}")
+                chart.axes[0].set_yscale('log')
+                chart.axes[1].set_yscale('log')
+            chart.axes[0].set_title(f"Profile History: {benchmark.name} using {vendor}")
             chart.save(constants.CHARTS_DIR.joinpath("history").joinpath(f"{benchmark.id}-history-{vendor}.png"),
                        make_parent=True)
 

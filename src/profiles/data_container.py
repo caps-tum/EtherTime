@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Iterable, Any, Optional, Dict
+from typing import Iterable, Any, Optional, Dict, Self
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker
@@ -15,6 +15,8 @@ import pandas.api.types
 from matplotlib import patheffects
 
 from utilities import units
+
+ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
 
 
 @dataclass
@@ -32,9 +34,10 @@ class SummaryStatistics:
         ax.annotate(
             f"Median: {formatter.format_data(self.clock_diff_median)} ± {formatter.format_data(self.clock_diff_std)}\n"
             f"$P_{{99}}$: {formatter.format_data(self.clock_diff_p99)}\n"
-            f"Path Delay: {formatter.format_data(self.path_delay_median)} ± {formatter.format_data(self.path_delay_std)}\n",
+            f"Path Delay: {formatter.format_data(self.path_delay_median)} ± {formatter.format_data(self.path_delay_std)}",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
+            bbox=ANNOTATION_BBOX_PROPS,
         )
 
     def export(self, unit_multiplier: int = 1) -> Dict:
@@ -63,9 +66,10 @@ class ConvergenceStatistics:
         ax.annotate(
             f"Convergence Time: {display_convergence_time}\n"
             f"Initial Step Error: {formatter.format_data(self.convergence_max_offset)}\n"
-            f"Convergence Rate: {rate_formatter.format_data(self.convergence_rate)}\n",
+            f"Convergence Rate: {rate_formatter.format_data(self.convergence_rate)}",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
+            bbox=ANNOTATION_BBOX_PROPS,
         )
 
     def export(self, unit_multiplier: int = 1) -> Dict:
@@ -154,7 +158,7 @@ class Timeseries:
 class MergedTimeSeries(Timeseries):
 
     @staticmethod
-    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any]):
+    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any]) -> "MergedTimeSeries":
         frames = []
         for series, label in zip(original_series, labels):
             frame = series.data_frame.copy()
