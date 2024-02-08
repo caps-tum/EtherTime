@@ -106,8 +106,12 @@ class ChartContainer:
                 color=base_color
             )
 
+        if abs:
+            ax.set_ylim(bottom=0)
+
     def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
-                                     hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0):
+                                     hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0,
+                                     annotate_medians: bool = False):
         import seaborn
 
         if abs:
@@ -126,8 +130,25 @@ class ChartContainer:
             density_norm='count',
         )
 
+        if hue_discriminator and annotate_medians:
+            raise NotImplementedError("Cannot annotate medians with a hue discriminator.")
+
+        if x_discriminator is not None:
+            formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
+            for displacement, discriminator_value in enumerate(x_discriminator.unique()):
+                discriminated_data = data[x_discriminator == discriminator_value]
+                ax.annotate(
+                    text=f"{formatter.format_data(discriminated_data.median())} ±{formatter.format_data(discriminated_data.std())}",
+                    xy=(displacement, discriminated_data.max()),
+                    verticalalignment='bottom', horizontalalignment='center',
+                )
+                ax.margins(y=0.2)
+
         if ax.get_legend():
             ax.get_legend().remove()
 
         if invert_axis:
             ax.invert_xaxis()
+
+        if abs:
+            ax.set_ylim(bottom=0)

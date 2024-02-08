@@ -31,6 +31,7 @@ class TimeSeriesChartComparison(ChartContainer):
         self.plot_decorate_yaxis(
             self.axes[0], ylabel=YAxisLabelType.CLOCK_DIFF_ABS,
         )
+        self.axes[1].xaxis.set_label_text(None)
 
         self.plot_timeseries_distribution(
             merged_series.path_delay,
