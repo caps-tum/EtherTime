@@ -77,7 +77,7 @@ class TestTimeseriesChart(TestCase):
 
             chart = TimeSeriesChartComparison(
                 profiles,
-                [profile.start_time.replace(second=0, microsecond=0) for profile in profiles]
+                [f"#{index+1}: {profile.start_time.replace(second=0, microsecond=0)}" for index, profile in enumerate(profiles)]
             )
             if y_log:
                 chart.axes.set_yscale('log')
