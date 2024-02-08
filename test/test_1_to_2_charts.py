@@ -2,6 +2,7 @@ from unittest import TestCase
 
 import config
 import constants
+from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from machine import Machine
 from profiles.base_profile import BaseProfile
 from profiles.benchmark import Benchmark
@@ -64,6 +65,12 @@ class Test1To2Charts(TestCase):
                     x_label="Profile")
                 chart.save(CHART_DIRECTORY.joinpath(f"software_fault_clients_comparison_{vendor_id}.png"), make_parent=True)
 
+                chart = TimeSeriesChartVersus(
+                    profiles_1_to_2_clients[0], profiles_software_fault_clients[0]
+                )
+                chart.set_titles("No Faults", "Software Faults (Non-Faulty Client)")
+                chart.save(CHART_DIRECTORY.joinpath(f"software_fault_clients_versus_{vendor_id}.png"), make_parent=True)
+
             # Hardware Fault
             if None not in profiles_hardware_fault_clients:
                 chart = TimeSeriesChartComparison(
@@ -74,3 +81,9 @@ class Test1To2Charts(TestCase):
                             "Hardware Fault\nFaulty Client"],
                     x_label="Profile")
                 chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_comparison_{vendor_id}.png"), make_parent=True)
+
+                chart = TimeSeriesChartVersus(
+                    profiles_1_to_2_clients[0], profiles_hardware_fault_clients[0]
+                )
+                chart.set_titles("No Faults", "Switch Hardware Fault")
+                chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_versus_{vendor_id}.png"), make_parent=True)

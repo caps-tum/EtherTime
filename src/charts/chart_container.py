@@ -130,7 +130,7 @@ class ChartContainer:
             density_norm='count',
         )
 
-        if hue_discriminator and annotate_medians:
+        if hue_discriminator is not None and annotate_medians:
             raise NotImplementedError("Cannot annotate medians with a hue discriminator.")
 
         if x_discriminator is not None:
