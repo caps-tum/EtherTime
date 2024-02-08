@@ -135,14 +135,35 @@ class ChartContainer:
 
         if x_discriminator is not None:
             formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
+            annotations = []
             for displacement, discriminator_value in enumerate(x_discriminator.unique()):
                 discriminated_data = data[x_discriminator == discriminator_value]
-                ax.annotate(
-                    text=f"{formatter.format_data(discriminated_data.median())} ±{formatter.format_data(discriminated_data.std())}",
-                    xy=(displacement, discriminated_data.max()),
-                    verticalalignment='bottom', horizontalalignment='center',
+                annotations.append(
+                    ax.annotate(
+                        text=f"{formatter.format_data(discriminated_data.median())} ±{formatter.format_data(discriminated_data.std())}",
+                        xy=(displacement, discriminated_data.max()),
+                        verticalalignment='bottom', horizontalalignment='center',
+                    )
                 )
-                ax.margins(y=0.2)
+                # ax.margins(y=0.2)
+
+            # Redraw the figure to make annotations fit
+            # print(f"Limits: {formatter.format_data(ax.get_ylim()[1])} Margins: {ax.margins()}")
+            self.figure.draw_without_rendering()
+
+            bboxes = []
+            for index, annotation in enumerate(annotations):
+                bbox = annotation.get_window_extent()
+                # print(f"Annotation view {index}: {formatter.format_data(min(y for _, y in bbox.corners())), formatter.format_data(max(y for _, y in bbox.corners()))}")
+                bbox_data = bbox.transformed(ax.transData.inverted())
+                bboxes.append(bbox_data)
+                # print(f"Annotation {index}: {formatter.format_data(min(y for _, y in bbox_data.corners())), formatter.format_data(max(y for _, y in bbox_data.corners()))}")
+
+            for box in bboxes:
+                ax.update_datalim(box.corners())
+            ax.margins(0.1)
+            ax.autoscale_view()
+            # print(f"Limits after: {formatter.format_data(ax.get_ylim()[1])} Margins: {ax.margins()}")
 
         if ax.get_legend():
             ax.get_legend().remove()
