@@ -54,3 +54,6 @@ def BY_TAGS(*tags: str):
 
 def BY_MACHINE(machine: Machine):
     return lambda profile: profile.machine_id == machine.id
+
+def BY_VALID_BENCHMARK_AND_VENDOR(benchmark: Benchmark, vendor: Vendor):
+    return lambda profile: VALID_PROCESSED_PROFILE()(profile) and BY_BENCHMARK(benchmark)(profile) and BY_VENDOR(vendor)(profile)

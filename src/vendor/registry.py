@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from registry.base_registry import BaseRegistry
 from vendor.linuxptp import LinuxPTPVendor
@@ -13,6 +13,8 @@ class VendorDB(BaseRegistry):
     SYSTEMD_NTP = SystemDNTPVendor()
     PTPD = PTPDVendor()
     LINUXPTP = LinuxPTPVendor()
+
+    ANALYZED_VENDORS: List[Vendor] = [PTPD, LINUXPTP]
 
 
 VendorDB.register_all(
