@@ -121,3 +121,19 @@ class TestLoadCharts(TestCase):
             ], labels=["Baseline", "Unprioritized (100% load)", "Prioritized (100% load)"], x_label="Profile")
 
             chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_network_versus_base_{vendor_id}.png"))
+
+        # Compare baseline to 1% additional load
+        for vendor_id in vendors:
+            chart = TimeSeriesChartVersus(
+                profile_db.resolve_most_recent(
+                    resolve.VALID_PROCESSED_PROFILE(), resolve.BY_BENCHMARK(BenchmarkDB.BASE),
+                    resolve.BY_VENDOR(VendorDB.get(vendor_id))
+                ),
+                profile_db.resolve_most_recent(
+                    resolve.VALID_PROCESSED_PROFILE(),
+                    resolve.BY_BENCHMARK(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 1)),
+                    resolve.BY_VENDOR(VendorDB.get(vendor_id)),
+                ),
+            )
+
+            chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_base_vs_1_percent_{vendor_id}.png"))

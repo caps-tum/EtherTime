@@ -99,8 +99,73 @@ Besides the four times increase in magnitude of the clock offset, the uncertaint
 ![load_network_unisolated_versus_ptpd.png](res%2Fload_network_unisolated_versus_ptpd.png)
 _Similar picture for PTPd: while the median clock deviation is also around four times the baseline, key other metrics like the standard deviation, the 99th-percentile, and the path delay are completely different._
 
+However, problems start arising when we test a range of different loads. From the following graphic, we can observe that the behavior is not stable at all:
+
+![load_network_unisolated.png](res%2Fload_network_unisolated.png)
+_Clock synchronization trend for different loading levels of the network (top) and the accompanying measured path delay (bottom). Surprisingly, additional network load can improve performance if it is light. For higher network loads, the signal starts becoming very noisy._
+
+The first surprising finding is that performance can be increased by increasing system load. This is seen in the figure above where the clock offset is actually lower for 1% additional load than the baseline in the case of LinuxPTP. This effect can be viewed more closely in a direct comparison:
+
+![load_base_vs_1_percent_linuxptp.png](res%2Fload_base_vs_1_percent_linuxptp.png)
+_LinuxPTP clock synchronization appears to be more accurate when some amount of network load is present._
+
+However, the same does not appear to be true for PTPd:
+
+![load_base_vs_1_percent_ptpd.png](res%2Fload_base_vs_1_percent_ptpd.png)
+_PTPd has more difficulty coping with even a small amount of load._
+
+
+The general trend looks like this:
+
+
+![load_network_unisolated.png](..%2F..%2Fdata%2Fcharts%2Fload%2Fload_network_unisolated.png)
+
+The discrepancy between 80% load and 90% load for LinuxPTP:
+#### 80% Load
+![net_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series.png)
+
+#### 90% Load
+![net_unprioritized_load_90-2024-02-07-08-28-02-LinuxPTP-processed-rpi08-series.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_90-2024-02-07-08-28-02-LinuxPTP-processed-rpi08-series.png)
+
+The big difference is the path delay, the same comparison again:
+
+### 80% Load
+
+![net_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series-path-delay.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series-path-delay.png)
+
+### 90% Load
+![net_unprioritized_load_90-2024-02-07-07-27-56-PTPd-processed-rpi08-series-path-delay.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_90-2024-02-07-07-27-56-PTPd-processed-rpi08-series-path-delay.png)
+
 ### Fault Tolerance
 
+To test fault tolerance, we first have to extend to two clients, e.g. LinuxPTP:
+
+![1_to_2_clients_versus_base_linuxptp.png](..%2F..%2Fdata%2Fcharts%2F1_to_2%2F1_to_2_clients_versus_base_linuxptp.png)
+
+While the effective synchronization is roughly identical, there is a noticeably higher path delay for the second client. The same effect is visible for PTPd:
+
+![1_to_2_clients_versus_base_ptpd.png](..%2F..%2Fdata%2Fcharts%2F1_to_2%2F1_to_2_clients_versus_base_ptpd.png)
+
+#### Software Fault
+
+Second client stuck in a boot-loop, "crashing" every 30 seconds.
+
+LinuxPTP:
+![software_fault_clients_comparison_linuxptp.png](..%2F..%2Fdata%2Fcharts%2F1_to_2%2Fsoftware_fault_clients_comparison_linuxptp.png)
+![software_fault_clients_versus_linuxptp.png](..%2F..%2Fdata%2Fcharts%2F1_to_2%2Fsoftware_fault_clients_versus_linuxptp.png)
+
+### Hardware Fault
+
+The network switch fails approximately every 30 seconds for 5 seconds.
+![hardware_fault_clients_comparison_linuxptp.png](..%2F..%2Fdata%2Fcharts%2F1_to_2%2Fhardware_fault_clients_comparison_linuxptp.png)
 
 ### Scalability
 
+
+### Measurements TODO
+Measurements: Optimal polling frequency?
+Which parameters generally affect the clock synchronization precision.
+--> Ethernet switch: Are there switches that support priorities?
+--> Try this: Perhaps using a virtual interface for priorities?
+--> Do we need to establish a different baseline?
+LAN Controlled Power Switch
