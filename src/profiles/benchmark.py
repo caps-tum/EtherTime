@@ -7,7 +7,7 @@ from typing import List, Optional, Literal
 @dataclass
 class PTPConfig:
     delay_mechanism: Literal["E2E", "P2P"] = "E2E"
-    log_announce_interval: int = 0
+    log_announce_interval: int = 1
     log_sync_interval: int = 0
     log_delayreq_interval: int = 0
 

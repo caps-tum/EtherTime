@@ -98,11 +98,16 @@ async def benchmark(profile: BaseProfile):
         await profile.vendor.start()
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
         await asyncio.sleep(profile.benchmark.duration.total_seconds())
+    except Exception as e:
+        # On error, note down that the benchmark failed, but still save it.
+        profile.success = False
+        logging.error(f"Benchmark {profile} failed: {e}")
     finally:
         await profile.vendor.stop()
         logging.info(f"Stopped {profile.vendor}...")
 
         await background_tasks.aclose()
 
-    profile.vendor.collect_data(profile)
+        profile.vendor.collect_data(profile)
+
     return profile

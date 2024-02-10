@@ -23,6 +23,7 @@ class ProfileType:
 
 class ProfileTags:
     # Load
+    CATEGORY_CONFIGURATION = "category_configuration"
     CATEGORY_FAULT = "category_fault"
     CATEGORY_LOAD = "category_load"
 

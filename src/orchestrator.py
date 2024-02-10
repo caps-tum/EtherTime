@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from argparse import ArgumentParser
 from datetime import datetime
 from typing import List
@@ -13,7 +14,7 @@ from profiles.benchmark import Benchmark
 from registry.benchmark_db import BenchmarkDB
 from rpc.server import RPCServer
 from rpc.server_service import RPCServerService
-from util import StackTraceGuard
+from util import StackTraceGuard, str_join
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
@@ -54,6 +55,8 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str]):
     configuration = config.current_configuration
     cluster = configuration.cluster
 
+    logging.info(f"Running {len(benchmarks)} benchmarks ({str_join(benchmarks)}) on {len(vendors)} vendors ({str_join(vendors)})")
+
     RPCServer.service_type = RPCServerService
     rpc_server = RPCServer()
     try:
@@ -85,11 +88,19 @@ if __name__ == '__main__':
         help="Specify which benchmark configuration to run, can be specified multiple times."
     )
     parser.add_argument(
+        "--benchmark-regex", type=str, default=None,
+        help="Select benchmarks based off of a regex applied to their ids."
+    )
+    parser.add_argument(
         "--vendor", choices=[vendor.id for vendor in VendorDB.all()], action='append', default=[], required=True,
         help="Specify which vendor to benchmark, can be specified multiple times."
     )
 
     result = parser.parse_args()
 
+    benchmarks = result.benchmark
+    if result.benchmark_regex:
+        benchmarks += [benchmark for benchmark in BenchmarkDB.all() if re.match(result.benchmark_regex, benchmark.id)]
+
     with StackTraceGuard():
-        asyncio.run(run_orchestration(benchmarks=result.benchmark, vendors=result.vendor))
+        asyncio.run(run_orchestration(benchmarks=benchmarks, vendors=result.vendor))

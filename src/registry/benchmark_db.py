@@ -1,9 +1,10 @@
+import re
 from datetime import timedelta
 from enum import Enum
 
 import config
 from profiles.base_profile import ProfileTags
-from profiles.benchmark import Benchmark
+from profiles.benchmark import Benchmark, PTPConfig
 from registry.base_registry import BaseRegistry
 
 
@@ -67,6 +68,15 @@ class BenchmarkDB(BaseRegistry):
         else:
             raise RuntimeError(f"Unknown network contention type: {type}")
 
+    @staticmethod
+    def config_test(configuration: PTPConfig):
+        return Benchmark(
+            f"config_test_" + re.sub("[.=, ]+", "_", str(configuration)),
+            f"Config Test ({configuration})",
+            tags=[ProfileTags.CATEGORY_CONFIGURATION],
+            duration=timedelta(hours=1)
+        )
+
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
@@ -79,3 +89,15 @@ for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
 
 # Just one prioritized benchmark for now at 100%
 BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, load_level=100))
+
+
+# Different configurations
+for interval in [0, -1, -2, -3, -4, -5, -6, -7]:
+    BenchmarkDB.register_all(
+        BenchmarkDB.config_test(
+            PTPConfig(
+                log_sync_interval=interval,
+                log_delayreq_interval=interval,
+            )
+        )
+    )
