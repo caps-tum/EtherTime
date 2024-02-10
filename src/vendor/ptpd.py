@@ -62,6 +62,7 @@ class PTPDVendor(Vendor):
             '--masteronly' if current_configuration.machine.ptp_master else '--slaveonly',
             '--log-file', str(self.log_file_path),
             "--statistics-file", str(self.statistics_file_path),
+            "--config-file", str(self.config_file_path),
         ).as_privileged().start_async()
         self._process.communicate_in_background()
 

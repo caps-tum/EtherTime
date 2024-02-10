@@ -1,8 +1,15 @@
 import datetime
 from dataclasses import field, dataclass
 from datetime import timedelta
-from typing import List, Optional
+from typing import List, Optional, Literal
 
+
+@dataclass
+class PTPConfig:
+    delay_mechanism: Literal["E2E", "P2P"] = "E2E"
+    log_announce_interval: int = 0
+    log_sync_interval: int = 0
+    log_delayreq_interval: int = 0
 
 @dataclass
 class Benchmark:
@@ -12,6 +19,8 @@ class Benchmark:
     tags: List[str] = field(default_factory=list)
     version: int = 1
     duration: datetime.timedelta = None
+
+    ptp_config: Optional[PTPConfig] = None
 
     artificial_load_network: Optional[int] = 0
     artificial_load_network_dscp_priority: Optional[str] = None

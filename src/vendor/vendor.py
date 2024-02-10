@@ -1,7 +1,9 @@
 import shutil
 import typing
 from dataclasses import dataclass
+from pathlib import Path
 
+from constants import LOCAL_DIR, CONFIG_DIR
 from invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
@@ -65,3 +67,17 @@ class Vendor:
 
     def convert_profile(self, profile: "BaseProfile") -> "TimeseriesProfile":
         raise NotImplementedError(f"Cannot convert the profile for vendor {self.name}")
+
+
+    @property
+    def config_file_path(self) -> Path:
+        return LOCAL_DIR.joinpath("ptp-config.txt")
+
+
+    def create_configuration_file(self, profile: "BaseProfile") -> Path:
+        # Render the configuration template file to a temporary file and return it
+        template = CONFIG_DIR.joinpath(f"{self.id}_template.conf").read_text()
+        output = template.format(ptp_config=profile.benchmark.ptp_config)
+        output_file = self.config_file_path
+        output_file.write_text(output)
+        return output_file

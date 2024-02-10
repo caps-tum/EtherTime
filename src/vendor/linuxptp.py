@@ -32,7 +32,8 @@ class LinuxPTPVendor(Vendor):
         machine = current_configuration.machine
 
         self._process_ptp4l = await Invocation.of_command(
-            "ptp4l", "-i", machine.ptp_interface, "-m"
+            "ptp4l", "-i", machine.ptp_interface, "-m",
+            "-f", str(self.config_file_path), # Config file
         ).append_arg_if_present(
             "-s", condition=not machine.ptp_master,
         ).append_arg_if_present(

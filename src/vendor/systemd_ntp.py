@@ -1,10 +1,13 @@
 import logging
 import subprocess
+import typing
 from dataclasses import dataclass
 
 from invoke.invocation import Invocation
 from vendor.vendor import Vendor
 
+if typing.TYPE_CHECKING:
+    from profiles.base_profile import BaseProfile
 
 @dataclass
 class SystemDNTPVendor(Vendor):

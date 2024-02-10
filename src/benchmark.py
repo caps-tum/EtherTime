@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from config import current_configuration
-from constants import PTPPERF_REPOSITORY_ROOT
+from constants import PTPPERF_REPOSITORY_ROOT, CONFIG_DIR, LOCAL_DIR
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition
@@ -67,6 +67,8 @@ async def benchmark(profile: BaseProfile):
     profile.machine_id = current_configuration.machine.id
 
     background_tasks = AsyncExitStack()
+
+    profile.vendor.create_configuration_file(profile)
 
     try:
         if profile.benchmark.artificial_load_network > 0:
