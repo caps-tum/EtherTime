@@ -51,11 +51,9 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
         profile.save(output_location)
 
 
-async def run_orchestration(benchmarks: List[str], vendors: List[str]):
+async def run_orchestration(benchmarks: List[str], vendors: List[str], num_iterations: int = 1):
     configuration = config.current_configuration
     cluster = configuration.cluster
-
-    logging.info(f"Running {len(benchmarks)} benchmarks ({str_join(benchmarks)}) on {len(vendors)} vendors ({str_join(vendors)})")
 
     RPCServer.service_type = RPCServerService
     rpc_server = RPCServer()
@@ -64,16 +62,20 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str]):
         await rpc_server.start_remote_clients(cluster.machines)
         await rpc_server.wait_for_clients_connected()
 
-        for benchmark in benchmarks:
-            for vendor in vendors:
-                logging.info(f"Now running benchmark: {benchmark} for vendor {vendor}")
-                try:
-                    await do_benchmark(
-                        rpc_server, cluster,
-                        benchmark=BenchmarkDB.get(benchmark), vendor=VendorDB.get(vendor)
-                    )
-                except Exception as e:
-                    util.log_exception(e)
+        for iteration in range(num_iterations):
+            logging.info(f"Iteration {iteration+1}/{num_iterations}.")
+            logging.info(f"Running {len(benchmarks)} benchmarks ({str_join(benchmarks)}) on {len(vendors)} vendors ({str_join(vendors)})")
+
+            for benchmark in benchmarks:
+                for vendor in vendors:
+                    logging.info(f"Now running benchmark: {benchmark} for vendor {vendor}")
+                    try:
+                        await do_benchmark(
+                            rpc_server, cluster,
+                            benchmark=BenchmarkDB.get(benchmark), vendor=VendorDB.get(vendor)
+                        )
+                    except Exception as e:
+                        util.log_exception(e)
 
     finally:
         rpc_server.stop_rpc_server()
@@ -94,6 +96,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--vendor", choices=[vendor.id for vendor in VendorDB.all()], action='append', default=[], required=True,
         help="Specify which vendor to benchmark, can be specified multiple times."
+    )
+    parser.add_argument(
+        "--iterations,-i", type=int, help="Number of times to run the benchmark."
     )
 
     result = parser.parse_args()
