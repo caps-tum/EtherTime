@@ -49,8 +49,9 @@ def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a'
 
     formatter = ColoredFormatter()
     formatter.use_colors = sys.stdout.isatty()
-    for handler in handlers:
-        handler.setFormatter(formatter)
+
+    # Only color the stream handler
+    handlers[0].setFormatter(formatter)
 
     # https://youtrack.jetbrains.com/issue/PY-39762
     # noinspection PyArgumentList

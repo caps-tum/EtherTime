@@ -61,6 +61,8 @@ class BaseProfile:
     time_series_unfiltered: Optional[Timeseries] = None
     raw_data: Optional[Dict[str, Optional[str]]] = None
 
+    log: Optional[str] = None
+
     _file_path: Optional[str] = None
 
     def dump(self) -> str:
