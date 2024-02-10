@@ -69,9 +69,9 @@ class BenchmarkDB(BaseRegistry):
             raise RuntimeError(f"Unknown network contention type: {type}")
 
     @staticmethod
-    def config_test(configuration: PTPConfig):
+    def config_test(configuration: PTPConfig, label: str):
         return Benchmark(
-            f"config_test_" + re.sub("[.=, ]+", "_", str(configuration)),
+            f"config_test_{label}",
             f"Config Test ({configuration})",
             tags=[ProfileTags.CATEGORY_CONFIGURATION],
             duration=timedelta(hours=1)
@@ -92,12 +92,13 @@ BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.PR
 
 
 # Different configurations
-for interval in [0, -1, -2, -3, -4, -5, -6, -7]:
+for interval in [3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7]:
     BenchmarkDB.register_all(
         BenchmarkDB.config_test(
             PTPConfig(
                 log_sync_interval=interval,
                 log_delayreq_interval=interval,
-            )
+            ),
+            label=f"interval_{interval}"
         )
     )
