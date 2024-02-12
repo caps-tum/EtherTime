@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     parser = ArgumentParser(description="Program to run PTP-Perf benchmarks")
     parser.add_argument(
-        "--benchmark", choices=BenchmarkDB.all_by_id().keys(), action='append', default=[], required=True,
+        "--benchmark", choices=BenchmarkDB.all_by_id().keys(), action='append', default=[],
         help="Specify which benchmark configuration to run, can be specified multiple times."
     )
     parser.add_argument(
@@ -103,9 +103,9 @@ if __name__ == '__main__':
 
     result = parser.parse_args()
 
-    benchmarks = result.benchmark
+    benchmarks: List[str] = result.benchmark
     if result.benchmark_regex:
-        benchmarks += [benchmark for benchmark in BenchmarkDB.all() if re.match(result.benchmark_regex, benchmark.id)]
+        benchmarks += [benchmark.id for benchmark in BenchmarkDB.all() if re.match(result.benchmark_regex, benchmark.id)]
 
     with StackTraceGuard():
         asyncio.run(run_orchestration(benchmarks=benchmarks, vendors=result.vendor))

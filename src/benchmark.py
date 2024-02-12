@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import util
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from config import current_configuration
-from constants import PTPPERF_REPOSITORY_ROOT, CONFIG_DIR, LOCAL_DIR
+from constants import PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition, setup_logging
@@ -49,7 +49,8 @@ async def benchmark(profile: BaseProfile):
     profile.machine_id = current_configuration.machine.id
     background_tasks = AsyncExitStack()
 
-    profile_log = CONFIG_DIR.joinpath(f"profile_{profile.id}.log")
+    profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
+    profile_log.parent.mkdir(exist_ok=True)
 
     setup_logging(log_file=str(profile_log))
 
@@ -110,7 +111,7 @@ async def benchmark(profile: BaseProfile):
         # On error, note down that the benchmark failed, but still save it.
         profile.success = False
         logging.error(f"Benchmark {profile} failed: {e}")
-        util.log_exception(e)
+        util.log_exception(e, force_traceback=True)
 
     await profile.vendor.stop()
     logging.info(f"Stopped {profile.vendor}...")

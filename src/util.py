@@ -320,10 +320,10 @@ async def async_process_communicate(process: AsyncSafeSubprocess, label: str = N
 def async_to_sync(coroutine: Coroutine):
     return asyncio.run(coroutine)
 
-def log_exception(exc_val):
+def log_exception(exc_val, force_traceback: bool = False):
     if isinstance(exc_val, Exception):
         logging.error(f"Error: {exc_val}")
-        if os.getenv("LOG_EXCEPTIONS") == "1":
+        if os.getenv("LOG_EXCEPTIONS") == "1" or force_traceback:
             traceback.print_exception(exc_val)
     elif isinstance(exc_val, BaseException):
         logging.warning(f"Exiting due to request.")

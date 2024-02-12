@@ -72,9 +72,10 @@ class BenchmarkDB(BaseRegistry):
     def config_test(configuration: PTPConfig, label: str):
         return Benchmark(
             f"config_test_{label}",
-            f"Config Test ({configuration})",
+            f"Config Test ({label})",
             tags=[ProfileTags.CATEGORY_CONFIGURATION],
-            duration=timedelta(hours=1)
+            duration=timedelta(hours=1),
+            ptp_config=configuration,
         )
 
 

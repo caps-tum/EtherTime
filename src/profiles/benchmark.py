@@ -20,7 +20,7 @@ class Benchmark:
     version: int = 1
     duration: datetime.timedelta = None
 
-    ptp_config: Optional[PTPConfig] = None
+    ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
 
     artificial_load_network: Optional[int] = 0
     artificial_load_network_dscp_priority: Optional[str] = None
