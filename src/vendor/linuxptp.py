@@ -1,8 +1,10 @@
+import asyncio
 import re
 import typing
 from dataclasses import dataclass
 from datetime import timedelta, datetime
 
+from benchmark import BenchmarkTaskController
 from config import current_configuration
 from invoke.invocation import Invocation
 from utilities import units
@@ -28,8 +30,10 @@ class LinuxPTPVendor(Vendor):
     # def running(self):
     #     pass
 
-    async def start(self):
+    async def run(self):
         machine = current_configuration.machine
+
+        background_tasks = BenchmarkTaskController()
 
         self._process_ptp4l = await Invocation.of_command(
             "ptp4l", "-i", machine.ptp_interface, "-m",
@@ -38,8 +42,8 @@ class LinuxPTPVendor(Vendor):
             "-s", condition=not machine.ptp_master,
         ).append_arg_if_present(
             "-S", condition=machine.ptp_software_timestamping
-        ).as_privileged().start_async()
-        self._process_ptp4l.communicate_in_background()
+        ).as_privileged().run_as_task()
+        background_tasks.add_task(self._process_ptp4l._monitor_task)
 
         if machine.ptp_use_phc2sys:
             self._process_phc2sys = await Invocation.of_command(
@@ -48,15 +52,12 @@ class LinuxPTPVendor(Vendor):
                 # We append -r a *second* time on master.
                 # This allows not only phc --> sys but also sys --> phc, which we want on the master.
                 "-r", condition=machine.ptp_master,
-            ).as_privileged().start_async()
-            self._process_phc2sys.communicate_in_background()
-
-
-    async def stop(self):
-        if self._process_ptp4l is not None:
-            await self._process_ptp4l.terminate()
-        if self._process_phc2sys is not None:
-            await self._process_phc2sys.terminate()
+            ).as_privileged().run_as_task()
+            background_tasks.add_task(self._process_phc2sys._monitor_task)
+        try:
+            await background_tasks.run_for()
+        finally:
+            await background_tasks.cancel_pending_tasks()
 
     async def restart(self, kill: bool = True):
         await self._process_ptp4l.restart(kill, ignore_return_code=True)

@@ -20,7 +20,6 @@ class RPCTarget:
     deploy_root: bool = True
 
     _rpc_ssh_connection: Optional[Invocation] = None
-    _rpc_ssh_connection_communication_task: Optional[Task] = None
     _rpc_server_service: Optional[RPCServerService] = None
 
     async def rpc_start(self):
@@ -35,12 +34,12 @@ class RPCTarget:
             f"cd '{self.remote_root}/src' && "
             f"python3 rpc_client.py --host '127.0.0.1' --port {settings.RPC_PORT} --id '{self.id}'"
         )
-        await self._rpc_ssh_connection.start_async()
+        self._rpc_ssh_connection.run_as_task()
 
-        self._rpc_ssh_connection_communication_task = asyncio.create_task(
-            self._rpc_ssh_connection.communicate(),
-            name=f"RPC Process Communication ({self.id})"
-        )
+    async def rpc_stop(self):
+        await self._rpc_ssh_connection.stop()
+        self._rpc_ssh_connection = None
+
 
     async def synchronize_repository(self):
         return await self.synchronize_rsync(rpc_get_local_root(), upload=True)

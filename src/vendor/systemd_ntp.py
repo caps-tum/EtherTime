@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import subprocess
 import typing
@@ -18,11 +19,13 @@ class SystemDNTPVendor(Vendor):
     def running(self):
         return 'NTP service: active' in subprocess.check_output("timedatectl").decode()
 
-    async def start(self):
+    async def run(self):
         await self.toggle_ntp_service(active=True)
-
-    async def stop(self):
-        await self.toggle_ntp_service(active=False)
+        try:
+            while True:
+                await asyncio.sleep(1)
+        finally:
+            await self.toggle_ntp_service(active=False)
 
     async def toggle_ntp_service(self, active: bool):
         logging.debug(("Activating" if active else "Deactivating") + " SystemD NTP service...")

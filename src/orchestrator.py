@@ -30,13 +30,6 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
         start_time=profile_timestamp,
     )
 
-    logging.info("Preparing machines...")
-    await util.async_gather_with_progress(*[
-        rpc_server.remote_function_run_as_async(
-            rpc_server.get_remote_service(machine.id).prepare
-        ) for machine in cluster.machines
-    ], label="Preparing system...")
-
     profiles: List[str] = await util.async_gather_with_progress(*[
         rpc_server.remote_function_run_as_async(
             rpc_server.get_remote_service(machine.id).benchmark,
@@ -78,7 +71,7 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str], num_itera
                         util.log_exception(e)
 
     finally:
-        rpc_server.stop_rpc_server()
+        await rpc_server.stop_rpc_server()
 
 
 if __name__ == '__main__':

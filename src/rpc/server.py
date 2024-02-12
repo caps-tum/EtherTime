@@ -34,7 +34,11 @@ class RPCServer(Generic[SERVER_SERVICE_TYPE, CLIENT_SERVICE_TYPE]):
         RPCServer.server_thread.start()
 
     @staticmethod
-    def stop_rpc_server():
+    async def stop_rpc_server():
+        # Shutdown clients
+        for client in RPCServer.targets.values():
+            await client.rpc_stop()
+
         if RPCServer.server is not None:
             logging.info("Shutting RPC server down...")
             RPCServer.server.close()

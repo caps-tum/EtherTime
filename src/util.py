@@ -58,6 +58,7 @@ def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a'
     logging.basicConfig(
         level=logging.INFO,
         handlers=handlers,
+        force=True,
     )
     if log_invocation_command or os.getenv("DDS_PERF_LOG_INVOCATION_COMMAND"):
         if hasattr(shlex, 'join'):

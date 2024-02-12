@@ -33,7 +33,7 @@ class Invocation:
     dump_output_on_failure: bool = False
 
     _process: Optional[subprocess.Process] = None
-    _process_communication_task: Optional[asyncio.Task] = None
+    _monitor_task: Optional[Task] = None
 
     return_code: Optional[int] = None
     output: Optional[str] = None
@@ -56,9 +56,6 @@ class Invocation:
 
 
     def get_shell_invocation(self):
-        # return (f"{self.environment.as_shell_exports()} && " if self.environment else '') \
-        #     + (f"cd '{self.working_directory}' && " if self.working_directory else '') \
-        #     + util.shlex_join_polyfill(self.command)
         return util.shlex_join_polyfill(self.command)
 
     def as_privileged(self):
@@ -93,7 +90,8 @@ class Invocation:
         return self.get_shell_invocation()
 
 
-    async def start_async(self) -> Self:
+    async def _start(self) -> Self:
+        """Actually launches the process. This should not be invoked directly."""
         # The actually launched command can differ (e.g. sudo)
         actual_command = self.command.copy()
 
@@ -131,10 +129,8 @@ class Invocation:
 
         return self
 
-    def start_sync(self):
-        asyncio.run(self.start_async())
-
     async def read_output_lines(self):
+        """Iterate through the process output, logging and capturing output as necessary."""
         while True:
             line = (await self._process.stdout.readline()).decode()
             if line == '':
@@ -152,39 +148,48 @@ class Invocation:
                     self.output += line
                 yield line
 
-    async def communicate(self):
+    async def _communicate(self):
         async for _ in self.read_output_lines():
             pass
 
-    def communicate_in_background(self) -> Self:
-        self._process_communication_task = asyncio.create_task(
-            self.communicate(), name=f"Process communication {self.command[0]}"
-        )
-        return self
+    async def _terminate(self, timeout: float = None, skip_verify_return_code: bool = False):
+        """Send the program a SIGTERM to politely shut it down and then finalize the process.
+        Should not be invoked directly."""
 
-    async def terminate(self, timeout: float = None):
-        """Send the program a SIGTERM to politely shut it down and then finalize the process."""
-        if self._process is not None:
-            # Send a termination signal
+        # Send a termination/kill signal if process still running
+        try:
             if self._process.returncode is None:
-                logging.info(f"Terminating {self.command[0]}...")
-                self._process.terminate()
 
-            # Wait for process to exit while handling IO
-            logging.info(f"Finalizing process {self.command[0]}...")
-            if self._process_communication_task:
+                # Wait for process to exit while handling IO
                 try:
-                    await asyncio.wait_for(self._process_communication_task, timeout=timeout)
+                    logging.info(f"Terminating {self.command[0]}...")
+                    self._process.terminate()
+
+                    await asyncio.wait_for(self._process.wait(), timeout=timeout)
                 except TimeoutError:
-                    logging.info("Process did not terminate within timeout.")
+                    pass
+                finally:
+                    # If process still has not exited, kill
+                    if self._process.returncode is None:
+                        logging.info(f"Killing {self.command[0]} (shutdown timeout {timeout}s exceeded)")
+                        self._process.kill()
 
-            # If process still has not exited, kill
-            if self._process.returncode is None:
-                logging.info(f"Killing {self.command[0]} (shutdown timeout {timeout}s exceeded)")
-                self._process.kill()
+                # Waits until exit code is available
+                await self._monitor_task
+                await self._process.wait()
 
-            await self._process.communicate()
-            await self.finalize_async()
+        finally:
+            # Verify the exit code, raise error if necessary
+            self.return_code = self._process.returncode
+
+            if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
+                if self.dump_output_on_failure:
+                    for line in self.output.splitlines():
+                        logging.info(f"| {line}")
+
+                raise InvocationFailedException(
+                    f"The process {self} returned with unexpected return code {self.return_code}"
+                )
 
     async def restart(self, kill: bool = False, ignore_return_code: bool = False):
         if not kill or not ignore_return_code:
@@ -199,37 +204,40 @@ class Invocation:
                     pass # The process has already exited.
 
             # We don't want to verify exit code.
-            # await self.finalize_async(skip_verify_return_code=ignore_return_code)
+            # await self._finalize_async(skip_verify_return_code=ignore_return_code)
 
-        await self.start_async()
+        await self._start()
 
-
-
-
-    async def finalize_async(self, skip_verify_return_code: bool = False):
-        """Waits until exit code is available and verifies the exit code if necessary."""
-        while self._process.returncode is None:
-            await asyncio.sleep(0.1)
-        self.return_code = self._process.returncode
-
-        if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
-            if self.dump_output_on_failure:
-                for line in self.output.splitlines():
-                    logging.info(f"| {line}")
-
-            raise InvocationFailedException(f"The process {self} returned with unexpected return code {self.return_code}")
 
     async def run(self) -> Self:
-        await self.start_async()
+        """User facing API to actually run the task."""
+        await self._start()
         try:
-            await self.communicate()
+            await self._communicate()
         finally:
-            await self.finalize_async()
+            await self._terminate(timeout=5)
+        return self
+    
+    def run_as_task(self) -> Self:
+        self._monitor_task = asyncio.create_task(self.run(), name=f"Run invocation {self.command[0]}")
         return self
 
+    async def wait(self):
+        try:
+            await self._monitor_task
+        finally:
+            self._monitor_task.cancel()
+            await self._monitor_task
+
+    async def stop(self):
+        """This will finalize the process."""
+        self._monitor_task.cancel()
+        await self.wait()
+
+
     def run_sync(self) -> Self:
-        coroutine = asyncio.create_task(self.run(), name="Invocation")
-        return asyncio.wait_for(coroutine, timeout=None)
+        self.run_as_task()
+        return asyncio.wait_for(self.wait(), timeout=None)
 
     def hide_unless_failure(self) -> Self:
         self.log_invocation = False

@@ -18,10 +18,6 @@ class PTPPerfRPCClient(RPCClientService):
         config.set_machine(client_id)
 
     @rpyc.exposed
-    def prepare(self):
-        return asyncio.run(benchmark.prepare())
-
-    @rpyc.exposed
     def benchmark(self, profile: str) -> str:
         profile_obj = BaseProfile.load_str(profile)
         return asyncio.run(benchmark.benchmark(profile_obj)).dump()

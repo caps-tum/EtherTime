@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from asyncio import CancelledError
+from asyncio import CancelledError, Task
 from contextlib import AsyncExitStack
 from datetime import datetime, timedelta
+from typing import List, Coroutine
 
 import util
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
@@ -15,9 +16,45 @@ from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
 
-async def prepare():
-    """Ensures all vendors are stopped, synchronizes the time over NTP and then steps the clock to get reproducible starting conditions."""
-    pass
+class BenchmarkTaskController:
+    background_tasks: List[Task]
+    exit_stack: AsyncExitStack
+
+    async def run_for(self, duration: timedelta = None):
+        if duration is not None:
+            timeout = duration.total_seconds()
+        else:
+            timeout = None
+
+        try:
+            await asyncio.wait(
+                *self.background_tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED,
+            )
+        except TimeoutError:
+            pass
+
+    async def cancel_pending_tasks(self):
+        await self.exit_stack.aclose()
+        self.background_tasks.clear()
+
+
+    @staticmethod
+    async def _stop_task(task: Task):
+        try:
+            if not task.done():
+                task.cancel()
+                await task
+        finally:
+            task.result()
+
+    def add_coroutine(self, coroutine: Coroutine, label: str = None):
+        task = asyncio.create_task(coroutine, name=label)
+        self.add_task(task)
+
+    def add_task(self, task: Task):
+        self.background_tasks.append(task)
+        self.exit_stack.push_async_callback(self._stop_task, task)
+
 
 async def restart_vendor_repeatedly(vendor: Vendor, interval: timedelta):
     # We do this until we are cancelled
@@ -47,7 +84,7 @@ async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_to
 async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
-    background_tasks = AsyncExitStack()
+    background_tasks = BenchmarkTaskController()
 
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
     profile_log.parent.mkdir(exist_ok=True)
@@ -64,9 +101,9 @@ async def benchmark(profile: BaseProfile):
         # Synchronize the time to NTP
         logging.info(f"Starting initial time synchronization via SystemD-NTP.")
         systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
-        await systemd_ntp_vendor.start()
+        background_tasks.add_coroutine(systemd_ntp_vendor.run())
         await async_wait_for_condition(systemd_ntp_vendor.check_clock_synchronized, target=True)
-        await systemd_ntp_vendor.stop()
+        await background_tasks.cancel_pending_tasks()
 
         # Step the clock using PPSi tool
         target_clock_offset = current_configuration.machine.initial_clock_offset
@@ -83,43 +120,55 @@ async def benchmark(profile: BaseProfile):
         if profile.benchmark.artificial_load_network > 0:
             # Start iPerf
             artificial_network_load = NetworkPerformanceDegrader()
-            await artificial_network_load.start(profile.benchmark.artificial_load_network, profile.benchmark.artificial_load_network_dscp_priority)
-            background_tasks.push_async_callback(artificial_network_load.stop)
+            background_tasks.add_coroutine(
+                artificial_network_load.run(
+                    profile.benchmark.artificial_load_network, profile.benchmark.artificial_load_network_dscp_priority
+                )
+            )
         if profile.benchmark.artificial_load_cpu > 0:
             # Start Stress_ng
             artificial_cpu_load = CPUPerformanceDegrader()
-            await artificial_cpu_load.start(profile.benchmark.artificial_load_cpu)
-            background_tasks.push_async_callback(artificial_cpu_load.stop)
+            background_tasks.add_coroutine(
+                artificial_cpu_load.run(profile.benchmark.artificial_load_cpu)
+            )
+
 
         # Launch background hardware prompts if necessary. We only do this on the ptp_master
         if profile.benchmark.fault_tolerance_prompt_interval is not None and current_configuration.machine.ptp_master:
             logging.warning(f"Will prompt repeatedly every {profile.benchmark.fault_tolerance_prompt_interval} so that you can manually power cycle the hardware.")
-            prompt_task = asyncio.create_task(prompt_repeatedly(profile.benchmark.fault_tolerance_prompt_interval, profile.benchmark.fault_tolerance_prompt_downtime))
-            background_tasks.callback(lambda: prompt_task.cancel())
+            background_tasks.add_coroutine(
+                prompt_repeatedly(profile.benchmark.fault_tolerance_prompt_interval, profile.benchmark.fault_tolerance_prompt_downtime)
+            )
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == current_configuration.machine.id:
             logging.info(f"Scheduling software faults every {profile.benchmark.fault_tolerance_software_fault_interval} on {current_configuration.machine.id}")
-            restart_task = asyncio.create_task(restart_vendor_repeatedly(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval))
-            background_tasks.callback(lambda: restart_task.cancel())
+            background_tasks.add_coroutine(
+                restart_vendor_repeatedly(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval)
+            )
 
         logging.info(f"Starting {profile.vendor}...")
-        await profile.vendor.start()
+        background_tasks.add_coroutine(
+            profile.vendor.run(), label=f"{profile.vendor.name}"
+        )
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
-        await asyncio.sleep(profile.benchmark.duration.total_seconds())
+        await background_tasks.run_for(profile.benchmark.duration)
     except Exception as e:
         # On error, note down that the benchmark failed, but still save it.
         profile.success = False
         logging.error(f"Benchmark {profile} failed: {e}")
         util.log_exception(e, force_traceback=True)
 
-    await profile.vendor.stop()
-    logging.info(f"Stopped {profile.vendor}...")
-
-    await background_tasks.aclose()
-
-    profile.vendor.collect_data(profile)
-
-    profile.log = profile_log.read_text()
+    try:
+        logging.info(f"Stopping background tasks {profile.vendor}...")
+        await background_tasks.cancel_pending_tasks()
+    except Exception as e:
+        # On error, note down that the benchmark failed, but still save it.
+        profile.success = False
+        logging.error(f"Benchmark {profile} failed: {e}")
+        util.log_exception(e, force_traceback=True)
+    finally:
+        profile.vendor.collect_data(profile)
+        profile.log = profile_log.read_text()
 
     return profile

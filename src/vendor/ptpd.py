@@ -46,10 +46,7 @@ class PTPDVendor(Vendor):
     def uninstall(self):
         self.invoke_package_manager("ptpd", action="purge")
 
-    async def start(self):
-        # await util.async_wait_for_condition(
-        #     lambda: not self.running(), target=False, label="Checking PTPd not running...",
-        # )
+    async def run(self):
 
         # Create output path
         Path(constants.MEASUREMENTS_DIR).mkdir(exist_ok=True)
@@ -63,12 +60,10 @@ class PTPDVendor(Vendor):
             '--log-file', str(self.log_file_path),
             "--statistics-file", str(self.statistics_file_path),
             "--config-file", str(self.config_file_path),
-        ).as_privileged().start_async()
-        self._process.communicate_in_background()
+        ).as_privileged()
 
-        # await util.async_wait_for_condition(
-        #     self.running, True, "Starting PTPd..."
-        # )
+        await self._process.run()
+
 
     @property
     def statistics_file_path(self):
@@ -80,7 +75,7 @@ class PTPDVendor(Vendor):
 
     async def stop(self):
         if self._process is not None:
-            await self._process.terminate()
+            await self._process.stop()
 
     async def restart(self, kill: bool = True):
         await self._process.restart(kill, ignore_return_code=True)
