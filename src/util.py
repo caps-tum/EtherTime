@@ -11,6 +11,7 @@ import sys
 import time
 import traceback
 from dataclasses import dataclass, field
+from datetime import timedelta, datetime
 from pathlib import Path
 from typing import List, Iterable, Optional, Dict, Coroutine, Callable, Union, TypeVar
 
@@ -385,7 +386,7 @@ def shlex_join_polyfill(split_command):
 
 
 async def async_gather_with_progress(*coroutines: Coroutine[None, None, T], label: str = "Tasks running") -> List[T]:
-    tasks = [asyncio.create_task(coroutine) for coroutine in coroutines]
+    tasks = [asyncio.create_task(coroutine, name=f"Label (Task {index})") for index, coroutine in enumerate(coroutines)]
 
     pending = tasks
     done = []
@@ -401,7 +402,8 @@ async def async_gather_with_progress(*coroutines: Coroutine[None, None, T], labe
     # Now re-raise them if there were errors, else return all results.
     return [task.result() for task in tasks]
 
-async def async_wait_for_condition(get_progress: Callable, target: int = 1, label: str = "Tasks running"):
+async def async_wait_for_condition(get_progress: Callable, target: int = 1, timeout: timedelta = None, label: str = "Tasks running", quiet: bool = False):
+    start_time = datetime.now()
     while True:
         if inspect.iscoroutinefunction(get_progress):
             progress = await get_progress()
@@ -410,9 +412,13 @@ async def async_wait_for_condition(get_progress: Callable, target: int = 1, labe
 
         if progress == target:
             break
-        logging.info(f"{label} ({progress}/{target} completed)\033[A")
+        if timeout is not None and datetime.now() > start_time + timeout:
+            raise TimeoutError("Condition not reached within timeout.")
+        if not quiet:
+            logging.info(f"{label} ({progress}/{target} completed)\033[A")
         await asyncio.sleep(0.5)
-    logging.info(f"{label} ({progress}/{target} completed)")
+    if not quiet:
+        logging.info(f"{label} ({progress}/{target} completed)")
 
 
 def time_since_epoch_seconds():
@@ -503,3 +509,10 @@ def wait_for(condition: Callable[[], bool],
         return False
 
 PathOrStr = Union[Path, str]
+
+
+def read_file_if_exists(path: PathOrStr) -> Optional[str]:
+    try:
+        return Path(path).read_text()
+    except FileNotFoundError:
+        return None

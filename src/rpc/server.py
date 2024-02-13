@@ -37,7 +37,10 @@ class RPCServer(Generic[SERVER_SERVICE_TYPE, CLIENT_SERVICE_TYPE]):
     async def stop_rpc_server():
         # Shutdown clients
         for client in RPCServer.targets.values():
-            await client.rpc_stop()
+            try:
+                await client.rpc_stop()
+            except Exception as e:
+                logging.warning(f"Failed to shutdown RPC client: {e}")
 
         if RPCServer.server is not None:
             logging.info("Shutting RPC server down...")
@@ -98,6 +101,6 @@ class RPCServer(Generic[SERVER_SERVICE_TYPE, CLIENT_SERVICE_TYPE]):
     @staticmethod
     def check_client_identification_progress():
         # Fail if any client processes exited
-        if any([target._rpc_ssh_connection._process.returncode is not None for target in RPCServer.targets.values()]):
+        if any([target.rpc_connection_closed for target in RPCServer.targets.values()]):
             raise util.ImmediateException("Failed to launch RPC clients.")
         return RPCServer.num_identified_clients()

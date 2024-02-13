@@ -1,7 +1,4 @@
-import copy
 import io
-import logging
-import shutil
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -13,8 +10,7 @@ import constants
 from config import current_configuration
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile, ProfileType
-from profiles.data_container import Timeseries
-from utilities import units
+from util import read_file_if_exists
 from vendor.vendor import Vendor
 
 
@@ -67,11 +63,11 @@ class PTPDVendor(Vendor):
 
     @property
     def statistics_file_path(self):
-        return constants.MEASUREMENTS_DIR.joinpath("ptpd-statistics.txt")
+        return constants.LOCAL_DIR.joinpath("ptpd-statistics.txt")
 
     @property
     def log_file_path(self):
-        return constants.MEASUREMENTS_DIR.joinpath("ptpd-log.txt")
+        return constants.LOCAL_DIR.joinpath("ptpd-log.txt")
 
     async def stop(self):
         if self._process is not None:
@@ -82,8 +78,8 @@ class PTPDVendor(Vendor):
 
     def collect_data(self, profile: "BaseProfile"):
         profile.raw_data = {
-            'log': Path(self.log_file_path).read_text(),
-            'statistics': Path(self.statistics_file_path).read_text()
+            'log': read_file_if_exists(self.log_file_path),
+            'statistics': read_file_if_exists(self.statistics_file_path)
         }
 
     @property

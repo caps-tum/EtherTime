@@ -217,7 +217,12 @@ class Invocation:
         finally:
             await self._terminate(timeout=5)
         return self
-    
+
+
+    @property
+    def running(self) -> bool:
+        return not self._monitor_task.done()
+
     def run_as_task(self) -> Self:
         self._monitor_task = asyncio.create_task(self.run(), name=f"Run invocation {self.command[0]}")
         return self

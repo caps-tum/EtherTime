@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 from datetime import timedelta, datetime
 
-from benchmark import BenchmarkTaskController
+from utilities.multi_task_controller import MultiTaskController
 from config import current_configuration
 from invoke.invocation import Invocation
 from utilities import units
@@ -33,7 +33,7 @@ class LinuxPTPVendor(Vendor):
     async def run(self):
         machine = current_configuration.machine
 
-        background_tasks = BenchmarkTaskController()
+        background_tasks = MultiTaskController()
 
         self._process_ptp4l = await Invocation.of_command(
             "ptp4l", "-i", machine.ptp_interface, "-m",

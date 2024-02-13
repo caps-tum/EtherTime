@@ -69,7 +69,8 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str], num_itera
                         )
                     except Exception as e:
                         util.log_exception(e)
-
+    except Exception as e:
+        util.log_exception(e)
     finally:
         await rpc_server.stop_rpc_server()
 

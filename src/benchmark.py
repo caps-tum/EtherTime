@@ -1,9 +1,7 @@
 import asyncio
 import logging
-from asyncio import CancelledError, Task
-from contextlib import AsyncExitStack
+from asyncio import CancelledError
 from datetime import datetime, timedelta
-from typing import List, Coroutine
 
 import util
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
@@ -12,48 +10,9 @@ from constants import PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition, setup_logging
+from utilities.multi_task_controller import MultiTaskController
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
-
-
-class BenchmarkTaskController:
-    background_tasks: List[Task]
-    exit_stack: AsyncExitStack
-
-    async def run_for(self, duration: timedelta = None):
-        if duration is not None:
-            timeout = duration.total_seconds()
-        else:
-            timeout = None
-
-        try:
-            await asyncio.wait(
-                *self.background_tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED,
-            )
-        except TimeoutError:
-            pass
-
-    async def cancel_pending_tasks(self):
-        await self.exit_stack.aclose()
-        self.background_tasks.clear()
-
-
-    @staticmethod
-    async def _stop_task(task: Task):
-        try:
-            if not task.done():
-                task.cancel()
-                await task
-        finally:
-            task.result()
-
-    def add_coroutine(self, coroutine: Coroutine, label: str = None):
-        task = asyncio.create_task(coroutine, name=label)
-        self.add_task(task)
-
-    def add_task(self, task: Task):
-        self.background_tasks.append(task)
-        self.exit_stack.push_async_callback(self._stop_task, task)
 
 
 async def restart_vendor_repeatedly(vendor: Vendor, interval: timedelta):
@@ -84,7 +43,7 @@ async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_to
 async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
-    background_tasks = BenchmarkTaskController()
+    background_tasks = MultiTaskController()
 
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
     profile_log.parent.mkdir(exist_ok=True)
@@ -94,15 +53,11 @@ async def benchmark(profile: BaseProfile):
     try:
         profile.vendor.create_configuration_file(profile)
 
-        # Stop everything
-        for vendor in VendorDB.all():
-            await vendor.stop()
-
         # Synchronize the time to NTP
         logging.info(f"Starting initial time synchronization via SystemD-NTP.")
         systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
-        background_tasks.add_coroutine(systemd_ntp_vendor.run())
-        await async_wait_for_condition(systemd_ntp_vendor.check_clock_synchronized, target=True)
+        background_tasks.add_coroutine(systemd_ntp_vendor.run(), "Monitor SystemD-NTP")
+        await async_wait_for_condition(systemd_ntp_vendor.check_clock_synchronized, target=True, timeout=timedelta(seconds=10), quiet=True)
         await background_tasks.cancel_pending_tasks()
 
         # Step the clock using PPSi tool
@@ -156,11 +111,11 @@ async def benchmark(profile: BaseProfile):
     except Exception as e:
         # On error, note down that the benchmark failed, but still save it.
         profile.success = False
-        logging.error(f"Benchmark {profile} failed: {e}")
+        logging.error(f"Benchmark {profile.id} failed: {e}")
         util.log_exception(e, force_traceback=True)
 
     try:
-        logging.info(f"Stopping background tasks {profile.vendor}...")
+        logging.info(f"Stopping background tasks...")
         await background_tasks.cancel_pending_tasks()
     except Exception as e:
         # On error, note down that the benchmark failed, but still save it.

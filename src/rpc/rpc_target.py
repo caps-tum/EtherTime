@@ -87,3 +87,7 @@ class RPCTarget:
     @property
     def rpc_connected(self):
         return self._rpc_server_service is not None
+
+    @property
+    def rpc_connection_closed(self):
+        return not self._rpc_ssh_connection.running

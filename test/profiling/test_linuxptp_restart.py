@@ -5,6 +5,7 @@ import config
 from config import current_configuration
 from machine import Machine
 from util import setup_logging
+from utilities.multi_task_controller import MultiTaskController
 from vendor.linuxptp import LinuxPTPVendor
 from vendor.vendor import Vendor
 
@@ -18,11 +19,12 @@ class TestLinuxPTPRest(TestCase):
         setup_logging()
 
     async def restart_vendor(self, vendor: Vendor):
-        await vendor.start()
+        tasks = MultiTaskController()
+        tasks.add_coroutine(vendor.run())
         await asyncio.sleep(10)
         await vendor.restart(kill=True)
         await asyncio.sleep(10)
-        await vendor.stop()
+        await tasks.cancel_pending_tasks()
 
     def test_create(self):
         local_machine = Machine(
