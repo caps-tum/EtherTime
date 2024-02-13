@@ -43,6 +43,9 @@ class ProfileTags:
     # Fault locations
     FAULT_LOCATION_SWITCH = "fault_location_switch"
 
+    # Configuration Settings
+    CONFIGURATION_INTERVAL = "configuration_interval"
+
 
 
 @dataclass(kw_only=True)

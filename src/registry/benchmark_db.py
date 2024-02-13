@@ -1,6 +1,7 @@
 import re
 from datetime import timedelta
 from enum import Enum
+from typing import List
 
 import config
 from profiles.base_profile import ProfileTags
@@ -69,11 +70,11 @@ class BenchmarkDB(BaseRegistry):
             raise RuntimeError(f"Unknown network contention type: {type}")
 
     @staticmethod
-    def config_test(configuration: PTPConfig, label: str):
+    def config_test(configuration: PTPConfig, label: str, extra_tags: List[str]):
         return Benchmark(
             f"config_test_{label}",
             f"Config Test ({label})",
-            tags=[ProfileTags.CATEGORY_CONFIGURATION],
+            tags=[ProfileTags.CATEGORY_CONFIGURATION, *extra_tags],
             duration=timedelta(hours=1),
             ptp_config=configuration,
         )
@@ -100,6 +101,7 @@ for interval in [3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7]:
                 log_sync_interval=interval,
                 log_delayreq_interval=interval,
             ),
-            label=f"interval_{interval}"
+            label=f"interval_{interval}",
+            extra_tags=[ProfileTags.CONFIGURATION_INTERVAL],
         )
     )
