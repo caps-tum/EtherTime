@@ -1,8 +1,9 @@
 import asyncio
+import copy
 import logging
 import re
 from argparse import ArgumentParser
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 import config
@@ -44,7 +45,8 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
         profile.save(output_location)
 
 
-async def run_orchestration(benchmarks: List[str], vendors: List[str], num_iterations: int = 1):
+async def run_orchestration(benchmarks: List[str], vendors: List[str],
+                            num_iterations: int = 1, duration_override: timedelta = None):
     configuration = config.current_configuration
     cluster = configuration.cluster
 
@@ -59,13 +61,19 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str], num_itera
             logging.info(f"Iteration {iteration+1}/{num_iterations}.")
             logging.info(f"Running {len(benchmarks)} benchmarks ({str_join(benchmarks)}) on {len(vendors)} vendors ({str_join(vendors)})")
 
-            for benchmark in benchmarks:
+            for benchmark_id in benchmarks:
                 for vendor in vendors:
-                    logging.info(f"Now running benchmark: {benchmark} for vendor {vendor}")
+                    benchmark = BenchmarkDB.get(benchmark_id)
+                    if duration_override:
+                        benchmark = copy.deepcopy(benchmark)
+                        benchmark.duration = duration_override
+                        logging.info(f"Applied benchmark duration override: {benchmark.duration}")
+
+                    logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor}")
                     try:
                         await do_benchmark(
                             rpc_server, cluster,
-                            benchmark=BenchmarkDB.get(benchmark), vendor=VendorDB.get(vendor)
+                            benchmark=benchmark, vendor=VendorDB.get(vendor)
                         )
                     except Exception as e:
                         util.log_exception(e)
@@ -92,7 +100,10 @@ if __name__ == '__main__':
         help="Specify which vendor to benchmark, can be specified multiple times."
     )
     parser.add_argument(
-        "--iterations,-i", type=int, help="Number of times to run the benchmark."
+        "--iterations", "-i", type=int, default=1, help="Number of times to run the benchmark."
+    )
+    parser.add_argument(
+        "--duration", type=int, default=None, help="Duration override (in minutes)",
     )
 
     result = parser.parse_args()
@@ -100,6 +111,12 @@ if __name__ == '__main__':
     benchmarks: List[str] = result.benchmark
     if result.benchmark_regex:
         benchmarks += [benchmark.id for benchmark in BenchmarkDB.all() if re.match(result.benchmark_regex, benchmark.id)]
+    duration_override = None
+    if result.duration is not None:
+        duration_override = timedelta(minutes=result.duration)
 
     with StackTraceGuard():
-        asyncio.run(run_orchestration(benchmarks=benchmarks, vendors=result.vendor))
+        asyncio.run(run_orchestration(
+            benchmarks=benchmarks, vendors=result.vendor,
+            num_iterations=result.iterations, duration_override=duration_override,
+        ))
