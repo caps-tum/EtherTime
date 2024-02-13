@@ -33,43 +33,19 @@ class TestLoadCharts(TestCase):
 
         profiles.sort(key=lambda profile: profile.benchmark.artificial_load_network)
 
-        chart = ComparisonChart(
-            "Unisolated Network Load",
-            profiles,
-            nrows=2,
+        chart = ComparisonChart("Unisolated Network Load", profiles, nrows=2)
+        chart.plot_median_clock_diff_and_path_delay(
+            lambda profile: profile.benchmark.artificial_load_network / 10,  # GBit/s to %
+            x_axis_label="Network Utilization"
         )
-
-        chart.plot_statistic(lambda profile: ComparisonDataPoint(
-            x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-            y=profile.summary_statistics.clock_diff_median,
-            hue=profile.vendor.name,
-        ), x_axis_label="Network Utilization", hue_name="Vendor")
-        # chart.current_axes.set_yscale('log')
-        chart.current_axes.xaxis.set_major_formatter(PercentFormatter())
-
-        chart.set_current_axes(1, 0)
-        chart.plot_statistic(lambda profile: ComparisonDataPoint(
-            x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-            y=profile.summary_statistics.path_delay_median,
-            hue=profile.vendor.name,
-        ), x_axis_label="Network Utilization", hue_name="Vendor")
-        chart.current_axes.xaxis.set_major_formatter(PercentFormatter())
-        chart.current_axes.set_ylabel('Path Delay')
-
         chart.save(LOAD_CHART_DIRECTORY.joinpath("load_network_unisolated.png"), make_parent=True)
 
-        chart.set_current_axes(0, 0)
-        chart.plot_statistic(
-            lambda profile: ComparisonDataPoint(
-                x=profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-                y=profile.summary_statistics.clock_diff_p99,
-                hue=f"{profile.vendor.name} P_{{99}}",
-            ),
+        chart = ComparisonChart("Unisolated Network Load", profiles, nrows=2)
+        chart.plot_median_clock_diff_and_path_delay(
+            lambda profile: profile.benchmark.artificial_load_network / 10,  # GBit/s to %
             x_axis_label="Network Utilization",
-            hue_name="Vendor",
-            linestyle='dotted',
+            include_p99=True,
         )
-
         chart.save(LOAD_CHART_DIRECTORY.joinpath("load_network_unisolated_p99.png"), make_parent=True)
 
         # Show some distribution trends for each vendor
