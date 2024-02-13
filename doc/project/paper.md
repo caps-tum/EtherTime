@@ -169,3 +169,7 @@ Which parameters generally affect the clock synchronization precision.
 --> Try this: Perhaps using a virtual interface for priorities?
 --> Do we need to establish a different baseline?
 LAN Controlled Power Switch
+
+### Requirements for a Switch/PDU
+Switch: PTP Peer 2 Peer, Network Priorities
+PDU: Triggered by LAN
