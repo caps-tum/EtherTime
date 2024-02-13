@@ -140,7 +140,6 @@ class Timeseries:
 
     def summarize(self) -> SummaryStatistics:
         data = self.get_clock_diff(abs=True)
-        path_delay_data = self.path_delay
         return SummaryStatistics(
             clock_diff_median=data.median(),
             clock_diff_p99=data.quantile(0.99),
