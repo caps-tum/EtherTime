@@ -50,7 +50,7 @@ class PTPDVendor(Vendor):
         Path(self.log_file_path).unlink(missing_ok=True)
         Path(self.statistics_file_path).unlink(missing_ok=True)
 
-        self._process = await Invocation.of_command(
+        self._process = Invocation.of_command(
             "ptpd", *self.ptpd_interface_options, "--foreground",
             '--masteronly' if current_configuration.machine.ptp_master else '--slaveonly',
             '--log-file', str(self.log_file_path),
@@ -68,10 +68,6 @@ class PTPDVendor(Vendor):
     @property
     def log_file_path(self):
         return constants.LOCAL_DIR.joinpath("ptpd-log.txt")
-
-    async def stop(self):
-        if self._process is not None:
-            await self._process.stop()
 
     async def restart(self, kill: bool = True):
         await self._process.restart(kill, ignore_return_code=True)

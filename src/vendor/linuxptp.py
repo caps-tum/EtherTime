@@ -35,25 +35,25 @@ class LinuxPTPVendor(Vendor):
 
         background_tasks = MultiTaskController()
 
-        self._process_ptp4l = await Invocation.of_command(
+        self._process_ptp4l = Invocation.of_command(
             "ptp4l", "-i", machine.ptp_interface, "-m",
             "-f", str(self.config_file_path), # Config file
         ).append_arg_if_present(
             "-s", condition=not machine.ptp_master,
         ).append_arg_if_present(
             "-S", condition=machine.ptp_software_timestamping
-        ).as_privileged().run_as_task()
-        background_tasks.add_task(self._process_ptp4l._monitor_task)
+        ).as_privileged()
+        background_tasks.add_task(self._process_ptp4l.run_as_task())
 
         if machine.ptp_use_phc2sys:
-            self._process_phc2sys = await Invocation.of_command(
+            self._process_phc2sys = Invocation.of_command(
                 "phc2sys", "-m", "-a", "-r",
             ).append_arg_if_present(
                 # We append -r a *second* time on master.
                 # This allows not only phc --> sys but also sys --> phc, which we want on the master.
                 "-r", condition=machine.ptp_master,
-            ).as_privileged().run_as_task()
-            background_tasks.add_task(self._process_phc2sys._monitor_task)
+            ).as_privileged()
+            background_tasks.add_task(self._process_phc2sys.run_as_task())
         try:
             await background_tasks.run_for()
         finally:

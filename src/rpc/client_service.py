@@ -21,7 +21,6 @@ class RPCClientService(rpyc.Service):
         self.connection.root.connection_id(self.client_id)
 
         try:
-            print(self.exposed_get_service_aliases)
             while self.running:
                 served_requests = self.connection.poll(timeout=1)
 

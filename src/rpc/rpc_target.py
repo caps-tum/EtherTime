@@ -37,7 +37,8 @@ class RPCTarget:
         self._rpc_ssh_connection.run_as_task()
 
     async def rpc_stop(self):
-        await self._rpc_ssh_connection.stop()
+        self._rpc_server_service.remote_service().shutdown()
+        await self._rpc_ssh_connection.wait(terminate_after=3)
         self._rpc_ssh_connection = None
 
 

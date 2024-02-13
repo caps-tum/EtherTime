@@ -20,9 +20,11 @@ class MultiTaskController:
             timeout = None
 
         try:
-            await asyncio.wait(
+            done, pending = await asyncio.wait(
                 self.background_tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED,
             )
+            for task in done:
+                task.result()
         except TimeoutError:
             pass
 

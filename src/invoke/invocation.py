@@ -175,7 +175,6 @@ class Invocation:
                         self._process.kill()
 
                 # Waits until exit code is available
-                await self._monitor_task
                 await self._process.wait()
 
         finally:
@@ -209,8 +208,8 @@ class Invocation:
         await self._start()
 
 
-    async def run(self) -> Self:
-        """User facing API to actually run the task."""
+    async def _run(self) -> Self:
+        """Internal API to actually run the task."""
         await self._start()
         try:
             await self._communicate()
@@ -219,17 +218,24 @@ class Invocation:
         return self
 
 
+    async def run(self) -> Self:
+        self.run_as_task()
+        await self._monitor_task
+        return self
+
     @property
     def running(self) -> bool:
         return not self._monitor_task.done()
 
-    def run_as_task(self) -> Self:
-        self._monitor_task = asyncio.create_task(self.run(), name=f"Run invocation {self.command[0]}")
-        return self
+    def run_as_task(self) -> Task:
+        self._monitor_task = asyncio.create_task(self._run(), name=f"Run invocation {self.command[0]}")
+        return self._monitor_task
 
-    async def wait(self):
+    async def wait(self, terminate_after = None):
         try:
-            await self._monitor_task
+            await asyncio.wait_for(self._monitor_task, timeout=terminate_after)
+        except TimeoutError:
+            pass
         finally:
             self._monitor_task.cancel()
             await self._monitor_task

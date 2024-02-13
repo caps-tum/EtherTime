@@ -33,6 +33,10 @@ MACHINE_RPI07 = Machine(
     **RASPBERRY_PI_PTP_SETTINGS,
     plugin_settings=PluginSettings(iperf_server=False, iperf_address="10.0.0.7", stress_ng_cpus=4, )
 )
+MACHINE_RPISERV = Machine(
+    id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
+    ptp_interface="",
+)
 
 
 clusters = {
@@ -41,9 +45,9 @@ clusters = {
             MACHINE_RPI06, MACHINE_RPI08
         ]
     ),
-    "Pi Manager": Cluster(
+    "rpi-serv": Cluster(
         machines=[
-            MACHINE_RPI07
+            MACHINE_RPISERV
         ]
     ),
     "3-Pi": Cluster(

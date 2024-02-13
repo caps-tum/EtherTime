@@ -56,9 +56,9 @@ async def benchmark(profile: BaseProfile):
         # Synchronize the time to NTP
         logging.info(f"Starting initial time synchronization via SystemD-NTP.")
         systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
-        background_tasks.add_coroutine(systemd_ntp_vendor.run(), "Monitor SystemD-NTP")
+        await systemd_ntp_vendor.toggle_ntp_service(active=True)
         await async_wait_for_condition(systemd_ntp_vendor.check_clock_synchronized, target=True, timeout=timedelta(seconds=10), quiet=True)
-        await background_tasks.cancel_pending_tasks()
+        await systemd_ntp_vendor.toggle_ntp_service(active=False)
 
         # Step the clock using PPSi tool
         target_clock_offset = current_configuration.machine.initial_clock_offset
