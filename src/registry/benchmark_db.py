@@ -15,7 +15,7 @@ class NetworkContentionType(str, Enum):
     ISOLATED = "isolated"
 
 
-class BenchmarkDB(BaseRegistry):
+class BenchmarkDB(BaseRegistry[Benchmark]):
 
     BASE = Benchmark("base", "Baseline", tags=[], duration=timedelta(minutes=60))
     TEST = Benchmark("test", "Test", tags=[], duration=timedelta(minutes=1))
