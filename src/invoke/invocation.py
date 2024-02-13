@@ -175,7 +175,11 @@ class Invocation:
                         self._process.kill()
 
                 # Waits until exit code is available
-                await self._process.wait()
+                try:
+                    await asyncio.wait_for(self._process.wait(), timeout=timeout)
+                except TimeoutError:
+                    logging.warning(f"Process exit code still not valid {timeout}s after process kill.")
+                    pass
 
         finally:
             # Verify the exit code, raise error if necessary
