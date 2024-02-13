@@ -96,7 +96,10 @@ class Invocation:
         actual_command = self.command.copy()
 
         if self.privileged:
-            if settings.PRIVILEGED_USING_SUDO:
+            if os.getuid() == 0:
+                # We are already root, no action necessary
+                pass
+            elif settings.PRIVILEGED_USING_SUDO:
                 actual_command.insert(0, "sudo")
             else:
                 raise InvocationFailedException("Invocation requested privileges but no privilege escalation configured.")
