@@ -20,6 +20,7 @@ from vendor.vendor import Vendor
 class ProfileType:
     RAW = "raw"
     PROCESSED = "processed"
+    PROCESSED_CORRUPT = "processed-corrupt"
 
 class ProfileTags:
     # Load
@@ -53,7 +54,7 @@ class BaseProfile:
     id: str
     benchmark: Benchmark
     vendor_id: str
-    profile_type: Literal["raw", "processed"]
+    profile_type: Literal["raw", "processed", "processed-corrupt"]
     machine_id: Optional[str]
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
@@ -199,52 +200,60 @@ class BaseProfile:
         # Once we converge, we should stay converged.
         minimum_convergence_time = timedelta(seconds=1)
         if not converged.any():
-            logging.warning(f"Clock never converged for profile {self.id}. Assuming convergence at t=1s.")
-            convergence_time = minimum_convergence_time
+            logging.warning(f"Clock never converged for profile {self.id}.")
+            convergence_time = None
         if converged.isna().all():
-            logging.warning(f"Profile too short, convergence test resulted in only N/A values. Assuming convergence at t=1s")
-            convergence_time = minimum_convergence_time
-        if convergence_time < minimum_convergence_time:
-            logging.warning(f"Convergence too fast: {convergence_time}. Assuming 1 second.")
-            convergence_time = minimum_convergence_time
+            logging.warning(f"Profile too short, convergence test resulted in only N/A values.")
+            convergence_time = None
 
-        remaining_benchmark_time = result_frame.index.max() - convergence_time
-        if remaining_benchmark_time < self.benchmark.duration * 0.75:
-            logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+        if convergence_time is not None:
 
-        if not converged.is_monotonic_increasing:
-            # The first zero value is the initial setting, thus subtract 1.
-            num_diverges = len(convergence_changes[convergence_changes == 0]) - 1
-            convergence_after_convergence_time = converged[converged.index > convergence_time]
-            if len(convergence_after_convergence_time) == 0:
-                logging.warning(f"No convergence data after convergence time of {convergence_after_convergence_time}")
-            else:
-                clock_diverged_ratio = len(convergence_after_convergence_time[convergence_after_convergence_time == 0]) / len(convergence_after_convergence_time)
-                logging.warning(f"Clock diverged {num_diverges}x after converging ({clock_diverged_ratio * 100:.0f}% of samples in diverged state).")
+            if convergence_time < minimum_convergence_time:
+                logging.warning(f"Convergence too fast: {convergence_time}. Assuming 1 second.")
+                convergence_time = minimum_convergence_time
+
+            remaining_benchmark_time = result_frame.index.max() - convergence_time
+            if remaining_benchmark_time < self.benchmark.duration * 0.75:
+                logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+
+            if not converged.is_monotonic_increasing:
+                # The first zero value is the initial setting, thus subtract 1.
+                num_diverges = len(convergence_changes[convergence_changes == 0]) - 1
+                convergence_after_convergence_time = converged[converged.index > convergence_time]
+                if len(convergence_after_convergence_time) == 0:
+                    logging.warning(f"No convergence data after convergence time of {convergence_after_convergence_time}")
+                else:
+                    clock_diverged_ratio = len(convergence_after_convergence_time[convergence_after_convergence_time == 0]) / len(convergence_after_convergence_time)
+                    logging.warning(f"Clock diverged {num_diverges}x after converging ({clock_diverged_ratio * 100:.0f}% of samples in diverged state).")
 
 
 
-        # Create some convergence statistics
-        convergence_series = result_frame[result_frame.index <= convergence_time]
+            # Create some convergence statistics
+            convergence_series = result_frame[result_frame.index <= convergence_time]
 
-        convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
-        if math.isnan(convergence_max_offset):
-            logging.warning("No convergence data on profile, convergence was instant.")
-            convergence_max_offset = 0
+            convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
+            if math.isnan(convergence_max_offset):
+                logging.warning("No convergence data on profile, convergence was instant.")
+                convergence_max_offset = 0
 
-        if convergence_time.total_seconds() == 0:
-            raise RuntimeError("Converged in 0 seconds?")
+            if convergence_time.total_seconds() == 0:
+                raise RuntimeError("Converged in 0 seconds?")
 
-        self.convergence_statistics = ConvergenceStatistics(
-            convergence_time=convergence_time,
-            convergence_max_offset=convergence_max_offset,
-            convergence_rate=convergence_max_offset / convergence_time.total_seconds()
-        )
+            self.convergence_statistics = ConvergenceStatistics(
+                convergence_time=convergence_time,
+                convergence_max_offset=convergence_max_offset,
+                convergence_rate=convergence_max_offset / convergence_time.total_seconds()
+            )
 
-        # Now create the actual data
-        result_frame = result_frame[result_frame.index > convergence_time]
-        series_without_convergence = Timeseries.from_series(result_frame)
-        self.time_series = series_without_convergence
-        self.summary_statistics = self.time_series.summarize()
+            # Now create the actual data
+            result_frame = result_frame[result_frame.index > convergence_time]
+            series_without_convergence = Timeseries.from_series(result_frame)
+            self.time_series = series_without_convergence
+            self.summary_statistics = self.time_series.summarize()
+
+        else:
+            # This profile is probably corrupt.
+            self.profile_type = ProfileType.PROCESSED_CORRUPT
+            logging.warning("Profile marked as corrupt.")
 
         return self

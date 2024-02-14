@@ -20,28 +20,30 @@ class TestTimeseriesChart(TestCase):
 
     def test_individual_charts(self):
         profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
+        profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
 
         for profile in profiles:
             profile_path = Path(profile._file_path)
 
             # We create multiple charts:
             # one only showing the filtered data, one showing the convergence, and one including the path delay
-            chart =  TimeseriesChart(
-                title=profile.get_title(),
-                timeseries=profile.time_series,
-                summary_statistics=profile.summary_statistics,
-            )
-            chart.add_clock_difference(profile.time_series)
-            chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
+            if profile.time_series is not None:
+                chart =  TimeseriesChart(
+                    title=profile.get_title(),
+                    timeseries=profile.time_series,
+                    summary_statistics=profile.summary_statistics,
+                )
+                chart.add_clock_difference(profile.time_series)
+                chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
 
-            chart =  TimeseriesChart(
-                title=profile.get_title("with Path Delay"),
-                timeseries=profile.time_series,
-                summary_statistics=profile.summary_statistics,
-            )
-            chart.add_path_delay(profile.time_series)
-            chart.add_clock_difference(profile.time_series)
-            chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-path-delay.png"))
+                chart =  TimeseriesChart(
+                    title=profile.get_title("with Path Delay"),
+                    timeseries=profile.time_series,
+                    summary_statistics=profile.summary_statistics,
+                )
+                chart.add_path_delay(profile.time_series)
+                chart.add_clock_difference(profile.time_series)
+                chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-path-delay.png"))
 
             if profile.time_series_unfiltered is not None:
                 chart_convergence = TimeseriesChart(
@@ -51,7 +53,8 @@ class TestTimeseriesChart(TestCase):
                 )
                 chart_convergence.add_clock_difference(profile.time_series_unfiltered)
                 chart_convergence.add_path_delay(profile.time_series_unfiltered)
-                chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
+                if profile.convergence_statistics is not None:
+                    chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
                 chart_convergence.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-unfiltered.png"))
 
     def test_comparison(self):

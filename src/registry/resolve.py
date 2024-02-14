@@ -40,6 +40,9 @@ class ProfileDB:
 def VALID_PROCESSED_PROFILE():
     return lambda profile: profile.profile_type == ProfileType.PROCESSED and not profile.time_series.empty
 
+def CORRUPT_PROCESSED_PROFILE():
+    return lambda profile: profile.profile_type == ProfileType.PROCESSED_CORRUPT
+
 def BY_BENCHMARK(benchmark: Benchmark):
     return lambda profile: profile.benchmark.id == benchmark.id
 
