@@ -49,6 +49,8 @@ class TestTimeseriesChart(TestCase):
                     timeseries=profile.time_series_unfiltered,
                     summary_statistics=profile.convergence_statistics,
                 )
+                chart_convergence.add_clock_difference(profile.time_series_unfiltered)
+                chart_convergence.add_path_delay(profile.time_series_unfiltered)
                 chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
                 chart_convergence.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-unfiltered.png"))
 
