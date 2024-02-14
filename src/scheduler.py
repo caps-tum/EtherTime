@@ -177,7 +177,7 @@ def queue_benchmarks(result):
             )
 
 def pause_queue(result):
-    should_pause = result.paused
+    should_pause = not result.unpause
 
     queue = ScheduleQueue.load()
     queue.paused = should_pause
@@ -209,7 +209,7 @@ if __name__ == '__main__':
 
     pause_command = subparsers.add_parser("pause", help="Pause or unpause the processing of the queue.")
     pause_command.set_defaults(action=pause_queue)
-    pause_command.add_argument("paused", type=bool, default=True, help="Whether to pause the queue")
+    pause_command.add_argument("--unpause", action='store_true', default=False, help="Unpause the queue rather than pausing it.")
 
     result = parser.parse_args()
 
