@@ -21,7 +21,22 @@ class ChartContainer:
     figure: plt.Figure
 
 
-    def save(self, path: PathOrStr, make_parent: bool = False):
+    def save(self, path: PathOrStr, make_parent: bool = False, include_yzero: bool = True):
+        if include_yzero:
+            for axis in self.figure.axes:
+                # Ensure that the zero point is always in the view.
+                ylim_current = axis.get_ylim()
+
+                new_ylim = min(ylim_current[0], 0), max(ylim_current[1], 0)
+
+                # Re-add an additional margin
+                new_margin = 1.05
+
+                # ylim[0] is always <= 0 and always ylim[1] >= 0, which means this will always increase the margins magnitude.
+                new_ylim_with_margin = new_margin * new_ylim[0], new_margin * new_ylim[1]
+
+                axis.set_ybound(new_ylim_with_margin)
+
         if make_parent:
             Path(path).parent.mkdir(exist_ok=True)
         self.figure.savefig(str(path))
@@ -79,10 +94,6 @@ class ChartContainer:
         if abs:
             data = data.abs()
 
-        self.plot_decorate_yaxis(ax=ax, ylabel=YAxisLabelType.CLOCK_DIFF_ABS if abs else YAxisLabelType.CLOCK_DIFF)
-        self.plot_decorate_xaxis_timeseries(ax)
-        self.plot_decorate_title(ax, title)
-
         base_color = seaborn.color_palette()[palette_index]
 
         if points:
@@ -106,8 +117,9 @@ class ChartContainer:
                 color=base_color
             )
 
-        if abs:
-            ax.set_ylim(bottom=0)
+        self.plot_decorate_yaxis(ax=ax, ylabel=YAxisLabelType.CLOCK_DIFF_ABS if abs else YAxisLabelType.CLOCK_DIFF)
+        self.plot_decorate_xaxis_timeseries(ax)
+        self.plot_decorate_title(ax, title)
 
     def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
                                      hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0,
@@ -172,4 +184,5 @@ class ChartContainer:
             ax.invert_xaxis()
 
         if abs:
-            ax.set_ylim(bottom=0)
+            pass
+            # ax.update_datalim(((0, 0),), updatex=False)

@@ -24,16 +24,12 @@ class ComparisonChart(ChartContainer):
         self.figure, self.axes = plt.subplots(
             nrows=nrows, ncols=ncols, figsize=(10, 7),
             squeeze=False,
-            sharex="col", sharey="row",
+            # sharex="col", sharey="row",
         )
         self.current_axes = self.axes[0][0]
 
         self.profiles = profiles
         self.plot_decorate_title(self.current_axes, title)
-
-        if y_axis_decorate:
-            for axes_row in self.axes:
-                self.plot_decorate_yaxis(axes_row[0], ylabel=YAxisLabelType.OFFSET_GENERIC)
 
     def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str,
                        hue_name: str = None, linestyle=None):
@@ -51,6 +47,7 @@ class ComparisonChart(ChartContainer):
             marker='o',
             linestyle=linestyle,
         )
+        self.plot_decorate_yaxis(self.current_axes, ylabel=YAxisLabelType.OFFSET_GENERIC)
 
         self.current_axes.set_xlabel(x_axis_label)
 

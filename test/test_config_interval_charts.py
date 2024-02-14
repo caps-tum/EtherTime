@@ -31,7 +31,7 @@ class TestConfigurationCharts(TestCase):
         )
         chart.save(CONFIG_CHART_DIRECTORY.joinpath("config_interval.png"), make_parent=True)
 
-        chart = ComparisonChart("Unisolated Network Load", profiles, nrows=2)
+        chart = ComparisonChart("Time Sample Interval (with 99-th Percentile)", profiles, nrows=2)
         chart.plot_median_clock_diff_and_path_delay(
             lambda profile: self.sync_interval_to_syncs_per_second(profile.benchmark.ptp_config.log_sync_interval),
             x_axis_label="PTP Sync & Delay Request Frequency (1/s)",
