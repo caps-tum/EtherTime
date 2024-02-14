@@ -91,3 +91,9 @@ class ComparisonChart(ChartContainer):
         for row in self.axes:
             for axis in row:
                 axis.xaxis.set_major_formatter(formatter)
+
+    def plot_logx(self, base: int = 10):
+        for row in self.axes:
+            for axis in row:
+                axis.set_xscale('log', base=base)
+
