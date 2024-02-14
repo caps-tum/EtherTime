@@ -169,7 +169,8 @@ class Invocation:
                     logging.info(f"Terminating {self.command[0]}...")
                     self._process.terminate()
 
-                    await asyncio.wait_for(self._process.wait(), timeout=timeout)
+                    await asyncio.wait_for(self._communicate(), timeout=timeout)
+                    await asyncio.wait_for(self._process.wait(), timeout=1)
                 except TimeoutError:
                     pass
                 finally:
@@ -180,7 +181,8 @@ class Invocation:
 
                 # Waits until exit code is available
                 try:
-                    await asyncio.wait_for(self._process.wait(), timeout=timeout)
+                    await asyncio.wait_for(self._communicate(), timeout=timeout)
+                    await asyncio.wait_for(self._process.wait(), timeout=1)
                 except TimeoutError:
                     logging.warning(f"Process exit code still not valid {timeout}s after process kill.")
                     pass
