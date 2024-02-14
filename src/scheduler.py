@@ -37,6 +37,7 @@ class ScheduleTask:
 
     def run(self):
         self.start_time = datetime.now()
+        self.save(self.get_file_path(self.id, pending=True))
         try:
             invocation = Invocation.of_shell(command=self.command)
             asyncio.run(invocation.run(timeout=self.timeout.total_seconds()))
@@ -132,7 +133,12 @@ def info(result):
     for task_path in ScheduleQueue.load().pending_task_paths():
         task = ScheduleTask.load(task_path)
 
-        eta = eta + (task.timeout if task.timeout else 0)
+        remaining_time = task.timeout if task.timeout else 0
+        if task.start_time is not None:
+            # If task is started then shorten remaining time.
+            remaining_time -= now - task.start_time
+
+        eta = eta + remaining_time
         print(alignment_str.format(task.id, task.command, str(task.timeout), str(eta.strftime("%H:%M"))))
 
     print(f"Estimated queue duration: {eta - now}")
