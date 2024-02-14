@@ -141,6 +141,7 @@ def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
+    duration_override = timedelta(minutes=result.duration)
     if len(vendors) == 0:
         vendors = VendorDB.ANALYZED_VENDORS
     else:
@@ -153,9 +154,18 @@ def queue_benchmarks(result):
                 timeout=60,
             )
 
+            command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
+
+            if duration_override is None:
+                duration = benchmark.duration
+            else:
+                duration = duration_override
+                command += f" --duration {int(duration.total_seconds() // 60)}"
+
+
             ScheduleQueue.queue_task(
-                f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}",
-                timeout=(benchmark.duration + timedelta(minutes=5)).total_seconds(),
+                command,
+                timeout=(duration + timedelta(minutes=5)).total_seconds(),
             )
 
 
@@ -176,6 +186,7 @@ if __name__ == '__main__':
     queue_benchmarks_command.set_defaults(action=queue_benchmarks)
     queue_benchmarks_command.add_argument("--benchmark-regex", type=str, required=True, help="RegEx for filtering benchmark ids.")
     queue_benchmarks_command.add_argument("--vendor", action='append', default=[], help="Vendors to benchmark (default all). Can be specified multiple times.")
+    queue_benchmarks_command.add_argument("--duration", type=int, default=None, help="Duration override (in minutes)")
 
     info_command = subparsers.add_parser("info", help="Retrieve queue status.")
     info_command.set_defaults(action=info)
