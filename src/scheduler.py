@@ -79,7 +79,9 @@ class ScheduleQueue:
         try:
             return pydantic_load_model(ScheduleQueue, QUEUE_FILE)
         except FileNotFoundError:
-            return ScheduleQueue()
+            new_queue = ScheduleQueue()
+            new_queue.save()
+            return new_queue
 
     def save(self):
         pydantic_save_model(ScheduleQueue, self, QUEUE_FILE)
@@ -174,6 +176,14 @@ def queue_benchmarks(result):
                 timeout=(duration + timedelta(minutes=5)).total_seconds(),
             )
 
+def pause_queue(result):
+    should_pause = result.paused
+
+    queue = ScheduleQueue.load()
+    queue.paused = should_pause
+    queue.save()
+    print((f"Paused" if queue.paused else "Unpaused") + f" the queue ({len(queue.pending_task_paths())} tasks pending).")
+
 
 if __name__ == '__main__':
     setup_logging()
@@ -196,6 +206,10 @@ if __name__ == '__main__':
 
     info_command = subparsers.add_parser("info", help="Retrieve queue status.")
     info_command.set_defaults(action=info)
+
+    pause_command = subparsers.add_parser("pause", help="Pause or unpause the processing of the queue.")
+    pause_command.set_defaults(action=pause_queue)
+    pause_command.add_argument("paused", type=bool, default=True, help="Whether to pause the queue")
 
     result = parser.parse_args()
 
