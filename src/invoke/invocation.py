@@ -3,6 +3,7 @@ import logging
 import os
 from asyncio import subprocess, Task
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Union, Optional, Self
 
@@ -225,9 +226,10 @@ class Invocation:
         return self
 
 
-    async def run(self) -> Self:
+    async def run(self, timeout: float = None) -> Self:
         self.run_as_task()
-        await self._monitor_task
+        # Task is automatically cancelled if timeout
+        await asyncio.wait_for(self._monitor_task, timeout)
         return self
 
     @property
