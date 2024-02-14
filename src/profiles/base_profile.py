@@ -147,16 +147,21 @@ class BaseProfile:
         # First, detect the clock step (difference >= 1 second).
         first_difference = result_frame[COLUMN_CLOCK_DIFF].diff().abs()
         clock_steps = first_difference[first_difference >= 1]
-        if len(clock_steps) != 1:
+        if len(clock_steps) > 1:
             raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
-        clock_step_time = clock_steps.index[0]
-        clock_step_magnitude = clock_steps.values[0]
-        # The clock step should occur in the first minute and has a magnitude of 1 minute,
-        # thus should occur before timestamp 2 minutes.
-        if not (50 <= clock_step_magnitude <= 70):
-            logging.warning(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
-        if clock_step_time >= timedelta(minutes=2):
-            logging.warning(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
+        elif len(clock_steps) == 0:
+            logging.warning(f"No clock step found in profile of length {len(result_frame)}.")
+            clock_step_time = timedelta()
+            clock_step_magnitude = 0
+        else:
+            clock_step_time = clock_steps.index[0]
+            clock_step_magnitude = clock_steps.values[0]
+            # The clock step should occur in the first minute and has a magnitude of 1 minute,
+            # thus should occur before timestamp 2 minutes.
+            if not (50 <= clock_step_magnitude <= 70):
+                logging.warning(f"The clock step was not of a magnitude close to 1 minute: {clock_step_magnitude}")
+            if clock_step_time >= timedelta(minutes=2):
+                logging.warning(f"The clock step was not within the first 2 minutes of runtime: {clock_steps}")
 
         # Now crop after clock step
         logging.debug(f"Clock step at {clock_step_time}: {clock_step_magnitude}")
@@ -192,12 +197,16 @@ class BaseProfile:
         convergence_time = converged[converged == 1].index.min()
 
         # Once we converge, we should stay converged.
+        minimum_convergence_time = timedelta(seconds=1)
         if not converged.any():
             logging.warning(f"Clock never converged for profile {self.id}. Assuming convergence at t=1s.")
-            convergence_time = timedelta(seconds=1)
+            convergence_time = minimum_convergence_time
         if converged.isna().all():
             logging.warning(f"Profile too short, convergence test resulted in only N/A values. Assuming convergence at t=1s")
-            convergence_time = timedelta(seconds=1)
+            convergence_time = minimum_convergence_time
+        if convergence_time < minimum_convergence_time:
+            logging.warning(f"Convergence too fast: {convergence_time}. Assuming 1 second.")
+            convergence_time = minimum_convergence_time
 
         remaining_benchmark_time = result_frame.index.max() - convergence_time
         if remaining_benchmark_time < self.benchmark.duration * 0.75:
@@ -207,8 +216,11 @@ class BaseProfile:
             # The first zero value is the initial setting, thus subtract 1.
             num_diverges = len(convergence_changes[convergence_changes == 0]) - 1
             convergence_after_convergence_time = converged[converged.index > convergence_time]
-            clock_diverged_ratio = len(convergence_after_convergence_time[convergence_after_convergence_time == 0]) / len(convergence_after_convergence_time)
-            logging.warning(f"Clock diverged {num_diverges}x after converging ({clock_diverged_ratio * 100:.0f}% of samples in diverged state).")
+            if len(convergence_after_convergence_time) == 0:
+                logging.warning(f"No convergence data after convergence time of {convergence_after_convergence_time}")
+            else:
+                clock_diverged_ratio = len(convergence_after_convergence_time[convergence_after_convergence_time == 0]) / len(convergence_after_convergence_time)
+                logging.warning(f"Clock diverged {num_diverges}x after converging ({clock_diverged_ratio * 100:.0f}% of samples in diverged state).")
 
 
 
@@ -220,6 +232,8 @@ class BaseProfile:
             logging.warning("No convergence data on profile, convergence was instant.")
             convergence_max_offset = 0
 
+        if convergence_time.total_seconds() == 0:
+            raise RuntimeError("Converged in 0 seconds?")
 
         self.convergence_statistics = ConvergenceStatistics(
             convergence_time=convergence_time,

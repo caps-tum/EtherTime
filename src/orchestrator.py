@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     benchmarks: List[str] = result.benchmark
     if result.benchmark_regex:
-        benchmarks += [benchmark.id for benchmark in BenchmarkDB.all() if re.match(result.benchmark_regex, benchmark.id)]
+        benchmarks += [benchmark.id for benchmark in BenchmarkDB.get_by_regex(regex=result.benchmark_regex)]
     duration_override = None
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)

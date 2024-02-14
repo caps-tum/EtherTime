@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic, Dict
+import re
+from typing import TypeVar, Generic, Dict, List
 
 T = TypeVar("T")
 
@@ -28,3 +29,7 @@ class BaseRegistry(Generic[T]):
     def register_all(cls, *values: T):
         for value in values:
             cls.register(value)
+
+    @classmethod
+    def get_by_regex(cls, regex: str) -> List[T]:
+        return [value for key, value in cls.all_by_id().items() if re.match(regex, key)]

@@ -11,7 +11,9 @@ from pydantic import RootModel
 
 from constants import LOCAL_DIR, ensure_directory_exists
 from invoke.invocation import Invocation, InvocationFailedException
-from util import PathOrStr, setup_logging
+from registry.benchmark_db import BenchmarkDB
+from util import PathOrStr, setup_logging, StackTraceGuard
+from vendor.registry import VendorDB
 
 QUEUE = ensure_directory_exists(LOCAL_DIR.joinpath("task_queue"))
 QUEUE_FILE = QUEUE.joinpath("task_queue.json")
@@ -53,7 +55,7 @@ class ScheduleTask:
 
     @staticmethod
     def get_file_path(task_id: int, pending: bool) -> Path:
-        return QUEUE.joinpath(f"task_{task_id}_{'pending' if pending else 'complete'}.json")
+        return QUEUE.joinpath(f"task_{task_id:04d}_{'pending' if pending else 'complete'}.json")
 
     @staticmethod
     def load(path: PathOrStr) -> "ScheduleTask":
@@ -90,6 +92,16 @@ class ScheduleQueue:
     def pending_task_paths(self):
         return sorted(QUEUE.glob("task_*_pending.json"))
 
+    @staticmethod
+    def queue_task(command: str, timeout: float):
+        task = ScheduleTask(
+            id=len(list(QUEUE.iterdir())),
+            command=command,
+            timeout=timedelta(seconds=timeout),
+        )
+        task.save(ScheduleTask.get_file_path(task.id, pending=True))
+        logging.info(f"Scheduled task {task.id} with command '{command}'")
+
 
 def run_scheduler(result):
     while True:
@@ -108,19 +120,14 @@ def run_scheduler(result):
 def queue_task(result):
     command = result.command
     timeout = result.timeout
-    task = ScheduleTask(
-        id=len(list(QUEUE.iterdir())),
-        command=command,
-        timeout=timedelta(seconds=timeout),
-    )
-    task.save(ScheduleTask.get_file_path(task.id, pending=True))
-    logging.info(f"Scheduled task {task.id} with command '{command}'")
+    ScheduleQueue.queue_task(command, timeout)
 
 
 def info(result):
     alignment_str = "{0: >4}  {1: <50}  {2: >12}  {3: >20}"
 
-    eta = datetime.now().replace(microsecond=0)
+    now = datetime.now().replace(microsecond=0)
+    eta = now
     print(alignment_str.format("Id", "Command", "Timeout", "ETA"))
     for task_path in ScheduleQueue.load().pending_task_paths():
         task = ScheduleTask.load(task_path)
@@ -128,7 +135,28 @@ def info(result):
         eta = eta + (task.timeout if task.timeout else 0)
         print(alignment_str.format(task.id, task.command, str(task.timeout), str(eta.strftime("%H:%M"))))
 
+    print(f"Estimated queue duration: {eta - now}")
 
+def queue_benchmarks(result):
+    regex = result.benchmark_regex
+    benchmarks = BenchmarkDB.get_by_regex(regex)
+    vendors = result.vendor
+    if len(vendors) == 0:
+        vendors = VendorDB.ANALYZED_VENDORS
+    else:
+        vendors = [VendorDB.get(vendor_id) for vendor_id in vendors]
+
+    for benchmark in benchmarks:
+        for vendor in vendors:
+            ScheduleQueue.queue_task(
+                'for host in rpi06 rpi08; do ssh "$host" sudo killall ptpd ptp4l phc2sys iperf stress-ng python3; done;',
+                timeout=60,
+            )
+
+            ScheduleQueue.queue_task(
+                f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}",
+                timeout=(benchmark.duration + timedelta(minutes=5)).total_seconds(),
+            )
 
 
 if __name__ == '__main__':
@@ -144,8 +172,15 @@ if __name__ == '__main__':
     queue_command.add_argument("--command", type=str, required=True, help="The command to run.")
     queue_command.add_argument("--timeout", type=int, default=None, help="The maximum task duration in seconds.")
 
+    queue_benchmarks_command = subparsers.add_parser("queue-benchmarks", help="Queue benchmarks by filtering with regex")
+    queue_benchmarks_command.set_defaults(action=queue_benchmarks)
+    queue_benchmarks_command.add_argument("--benchmark-regex", type=str, required=True, help="RegEx for filtering benchmark ids.")
+    queue_benchmarks_command.add_argument("--vendor", action='append', default=[], help="Vendors to benchmark (default all). Can be specified multiple times.")
+
     info_command = subparsers.add_parser("info", help="Retrieve queue status.")
     info_command.set_defaults(action=info)
 
     result = parser.parse_args()
-    result.action(result)
+
+    with StackTraceGuard():
+        result.action(result)
