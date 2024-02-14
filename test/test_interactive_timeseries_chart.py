@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from unittest import TestCase
 
+import bokeh.util.serialization
 from bokeh import plotting
 
 from charts.interactive_timeseries_chart import InteractiveTimeseriesChart
@@ -15,6 +16,8 @@ class TestInteractiveTimeseriesChart(TestCase):
         profile_db = ProfileDB()
         profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
         for profile in profiles:
+            # Reset bokeh's id count
+            bokeh.util.serialization._simple_id = 999
             figure = chart.create(profile)
             output_file = Path(profile._file_path).parent.joinpath(profile.filename.replace(".json", "-chart.html"))
             plotting.save(
