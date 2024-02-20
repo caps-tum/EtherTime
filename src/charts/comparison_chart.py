@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 
 from charts.chart_container import ChartContainer, YAxisLabelType
 from profiles.base_profile import BaseProfile
+from profiles.data_container import MergedTimeSeries
 
 
 @dataclass
@@ -51,6 +52,28 @@ class ComparisonChart(ChartContainer):
 
         self.current_axes.set_xlabel(x_axis_label)
 
+    def plot_statistic_timeseries_bootstrap(self, profile_get_discriminator: Callable[[BaseProfile], Any], x_axis_label: str,
+                       hue_name: str = None, linestyle=None):
+        merged = MergedTimeSeries.merge_series(
+            [profile.time_series for profile in self.profiles],
+            [profile_get_discriminator(profile) for profile in self.profiles]
+        )
+
+        if merged.empty:
+            raise RuntimeError("No data provided to plot script.")
+
+        seaborn.lineplot(
+            ax=self.current_axes,
+            x=merged.data_frame["merge_source"],
+            y=merged.get_clock_diff(abs=True),
+            # hue=data['hue'].rename(hue_name),
+            marker='o',
+            linestyle=linestyle,
+        )
+        self.plot_decorate_yaxis(self.current_axes, ylabel=YAxisLabelType.OFFSET_GENERIC)
+        self.current_axes.set_xlabel(x_axis_label)
+
+
     def set_current_axes(self, row: int, col: int):
         self.current_axes = self.axes[row][col]
 
@@ -64,6 +87,8 @@ class ComparisonChart(ChartContainer):
             y=profile.summary_statistics.clock_diff_median,
             hue=profile.vendor.name,
         ), x_axis_label=x_axis_label, hue_name="Vendor")
+        # self.plot_statistic_timeseries_bootstrap(lambda profile: x_axis_values(profile),
+        #                                          x_axis_label=x_axis_label, hue_name="Vendor")
         # chart.current_axes.set_yscale('log')
 
         if include_p99:
