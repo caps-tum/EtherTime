@@ -158,8 +158,8 @@ def queue_benchmarks(result):
     for benchmark in benchmarks:
         for vendor in vendors:
             ScheduleQueue.queue_task(
-                'for host in rpi06 rpi08; do ssh "$host" sudo killall ptpd ptp4l phc2sys iperf stress-ng python3; done;',
-                timeout=60,
+                'LOG_EXCEPTIONS=1 python3 cluster_restart.py',
+                timeout=timedelta(minutes=5).total_seconds(),
             )
 
             command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
