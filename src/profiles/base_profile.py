@@ -87,7 +87,9 @@ class BaseProfile:
     def save(self, filename: PathOrStr = None):
         if filename is None:
             filename = self.file_path
-        Path(filename).write_text(self.dump())
+        output_path = Path(filename)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(self.dump())
 
     @staticmethod
     def template_from_existing(raw_profile: "BaseProfile", new_type: str) -> "BaseProfile":
@@ -122,7 +124,7 @@ class BaseProfile:
 
     @staticmethod
     def format_id_timestamp(timestamp: datetime):
-        return timestamp.strftime('%Y-%m-%d-%H-%M-%S')
+        return timestamp.strftime('%Y-%m-%d--%H-%M')
 
     def get_title(self, extra_info: str = None):
         return f"{self.benchmark.name} ({self.vendor.name}" + (f", {extra_info})" if extra_info is not None else ")")

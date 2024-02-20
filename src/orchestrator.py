@@ -23,7 +23,7 @@ from vendor.vendor import Vendor
 async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Benchmark, vendor: Vendor):
     profile_timestamp = datetime.now()
     profile_template = BaseProfile(
-        id=f"{benchmark.id}-{BaseProfile.format_id_timestamp(timestamp=profile_timestamp)}",
+        id=f"{BaseProfile.format_id_timestamp(timestamp=profile_timestamp)}",
         benchmark=benchmark,
         machine_id=None,
         profile_type=ProfileType.RAW,
