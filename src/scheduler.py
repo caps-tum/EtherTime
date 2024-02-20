@@ -134,7 +134,7 @@ def info(result):
 
     now = datetime.now().replace(microsecond=0)
     eta = now
-    print(alignment_str.format("Id", "Command", "Timeout", "ETA"))
+    print(alignment_str.format("Id", "Name", "Timeout", "ETA"))
     for task_path in ScheduleQueue.load().pending_task_paths():
         task = ScheduleTask.load(task_path)
 
@@ -144,7 +144,7 @@ def info(result):
             remaining_time -= now - task.start_time
 
         eta = eta + remaining_time
-        print(alignment_str.format(task.id, task.command, str(task.timeout), str(eta.strftime("%H:%M"))))
+        print(alignment_str.format(task.id, task.name, str(task.timeout), str(eta.strftime("%H:%M"))))
 
     print(f"Estimated queue duration: {eta - now}")
 
