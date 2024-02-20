@@ -22,6 +22,7 @@ QUEUE_FILE = QUEUE.joinpath("task_queue.json")
 def pydantic_save_model(model, instance, path: PathOrStr):
     Path(path).write_text(RootModel[model](instance).model_dump_json(indent=4))
 
+
 def pydantic_load_model(model, path: PathOrStr):
     return RootModel[model].model_validate_json(Path(path).read_text()).root
 
@@ -29,6 +30,7 @@ def pydantic_load_model(model, path: PathOrStr):
 @dataclass
 class ScheduleTask:
     id: int
+    name: str
     command: str
     timeout: Optional[timedelta] = None
     success: Optional[bool] = None
@@ -65,7 +67,6 @@ class ScheduleTask:
     def save(self, path: PathOrStr):
         pydantic_save_model(ScheduleTask, self, path)
 
-
     def __str__(self):
         return f"Task {self.id} ({self.command})"
 
@@ -96,11 +97,12 @@ class ScheduleQueue:
         return sorted(QUEUE.glob("task_*_pending.json"))
 
     @staticmethod
-    def queue_task(command: str, timeout: float):
+    def queue_task(name: str, command: str, timeout: timedelta):
         task = ScheduleTask(
             id=len(list(QUEUE.iterdir())),
+            name=name,
             command=command,
-            timeout=timedelta(seconds=timeout),
+            timeout=timeout,
         )
         task.save(ScheduleTask.get_file_path(task.id, pending=True))
         logging.info(f"Scheduled task {task.id} with command '{command}'")
@@ -121,9 +123,10 @@ def run_scheduler(result):
 
 
 def queue_task(result):
+    name = result.name
     command = result.command
     timeout = result.timeout
-    ScheduleQueue.queue_task(command, timeout)
+    ScheduleQueue.queue_task(name, command, timeout=timedelta(seconds=timeout))
 
 
 def info(result):
@@ -145,6 +148,7 @@ def info(result):
 
     print(f"Estimated queue duration: {eta - now}")
 
+
 def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
@@ -158,8 +162,9 @@ def queue_benchmarks(result):
     for benchmark in benchmarks:
         for vendor in vendors:
             ScheduleQueue.queue_task(
-                'LOG_EXCEPTIONS=1 python3 cluster_restart.py',
-                timeout=timedelta(minutes=5).total_seconds(),
+                name="Restart cluster",
+                command='LOG_EXCEPTIONS=1 python3 cluster_restart.py',
+                timeout=timedelta(minutes=5)
             )
 
             command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
@@ -170,11 +175,12 @@ def queue_benchmarks(result):
                 duration = duration_override
                 command += f" --duration {int(duration.total_seconds() // 60)}"
 
-
             ScheduleQueue.queue_task(
-                command,
-                timeout=(duration + timedelta(minutes=5)).total_seconds(),
+                name=f"{benchmark.name}",
+                command=command,
+                timeout=duration + timedelta(minutes=5)
             )
+
 
 def pause_queue(result):
     should_pause = not result.unpause
@@ -182,7 +188,8 @@ def pause_queue(result):
     queue = ScheduleQueue.load()
     queue.paused = should_pause
     queue.save()
-    print((f"Paused" if queue.paused else "Unpaused") + f" the queue ({len(queue.pending_task_paths())} tasks pending).")
+    print(
+        (f"Paused" if queue.paused else "Unpaused") + f" the queue ({len(queue.pending_task_paths())} tasks pending).")
 
 
 if __name__ == '__main__':
@@ -195,13 +202,17 @@ if __name__ == '__main__':
 
     queue_command = subparsers.add_parser("queue", help="Add a task to the task queue.")
     queue_command.set_defaults(action=queue_task)
+    queue_command.add_argument("--name", type=str, required=True, help="A name for the task.")
     queue_command.add_argument("--command", type=str, required=True, help="The command to run.")
     queue_command.add_argument("--timeout", type=int, default=None, help="The maximum task duration in seconds.")
 
-    queue_benchmarks_command = subparsers.add_parser("queue-benchmarks", help="Queue benchmarks by filtering with regex")
+    queue_benchmarks_command = subparsers.add_parser("queue-benchmarks",
+                                                     help="Queue benchmarks by filtering with regex")
     queue_benchmarks_command.set_defaults(action=queue_benchmarks)
-    queue_benchmarks_command.add_argument("--benchmark-regex", type=str, required=True, help="RegEx for filtering benchmark ids.")
-    queue_benchmarks_command.add_argument("--vendor", action='append', default=[], help="Vendors to benchmark (default all). Can be specified multiple times.")
+    queue_benchmarks_command.add_argument("--benchmark-regex", type=str, required=True,
+                                          help="RegEx for filtering benchmark ids.")
+    queue_benchmarks_command.add_argument("--vendor", action='append', default=[],
+                                          help="Vendors to benchmark (default all). Can be specified multiple times.")
     queue_benchmarks_command.add_argument("--duration", type=int, default=None, help="Duration override (in minutes)")
 
     info_command = subparsers.add_parser("info", help="Retrieve queue status.")
@@ -209,7 +220,8 @@ if __name__ == '__main__':
 
     pause_command = subparsers.add_parser("pause", help="Pause or unpause the processing of the queue.")
     pause_command.set_defaults(action=pause_queue)
-    pause_command.add_argument("--unpause", action='store_true', default=False, help="Unpause the queue rather than pausing it.")
+    pause_command.add_argument("--unpause", action='store_true', default=False,
+                               help="Unpause the queue rather than pausing it.")
 
     result = parser.parse_args()
 
