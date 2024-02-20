@@ -18,22 +18,22 @@ class NetworkContentionType(str, Enum):
 class BenchmarkDB(BaseRegistry[Benchmark]):
 
     BASE = Benchmark("base", "Baseline", tags=[], duration=timedelta(minutes=60))
-    TEST = Benchmark("test", "Test", tags=[], duration=timedelta(minutes=1))
+    TEST = Benchmark("test/test", "Test", tags=[], duration=timedelta(minutes=1))
 
-    DEMO = Benchmark("demo", "Demo", tags=[], duration=timedelta(minutes=5))
+    DEMO = Benchmark("test/demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
-    NO_SWITCH = Benchmark("no_switch", "No Switch", tags=[], duration=timedelta(minutes=60))
-    BASE_TWO_CLIENTS = Benchmark("1_to_2", "1 Master 2 Clients", tags=[], duration=timedelta(minutes=60))
+    NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[], duration=timedelta(minutes=60))
+    BASE_TWO_CLIENTS = Benchmark("scalability/1_to_2", "1 Master 2 Clients", tags=[], duration=timedelta(minutes=60))
 
     # Software crash, once every 30 seconds
     SOFTWARE_FAULT = Benchmark(
-        "software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE], duration=timedelta(minutes=60),
+        "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE], duration=timedelta(minutes=60),
         fault_tolerance_software_fault_interval=timedelta(seconds=30),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
     )
 
     HARDWARE_FAULT_SWITCH = Benchmark(
-        "hardware_fault_switch", "Hardware Fault (Switch)",
+        "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         duration=timedelta(minutes=5),
         fault_tolerance_prompt_interval=timedelta(seconds=30),
@@ -53,14 +53,14 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
         if type == NetworkContentionType.UNPRIORITIZED:
             return Benchmark(
-                id=f"net_{type.value}_load_{load_level}",
+                id=f"load/net_{type.value}/load_{load_level}",
                 name=f"Unprioritized Network {load_level}% Load",
                 tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED],
                 **common_options,
             )
         if type == NetworkContentionType.PRIORITIZED:
             return Benchmark(
-                id=f"net_{type.value}_load_{load_level}",
+                id=f"load/net_{type.value}/load_{load_level}",
                 name=f"Prioritized Network {load_level}% Load",
                 tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_PRIORITIZED],
                 artificial_load_network_dscp_priority='cs1', # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
