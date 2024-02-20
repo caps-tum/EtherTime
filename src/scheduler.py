@@ -153,7 +153,11 @@ def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
-    duration_override = timedelta(minutes=result.duration)
+    if result.duration is not None:
+        duration_override = timedelta(minutes=result.duration)
+    else:
+        duration_override = None
+
     if len(vendors) == 0:
         vendors = VendorDB.ANALYZED_VENDORS
     else:
