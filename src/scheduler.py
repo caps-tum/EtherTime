@@ -146,7 +146,8 @@ def info(result):
         eta = eta + remaining_time
         print(alignment_str.format(task.id, task.name, str(task.timeout), str(eta.strftime("%H:%M"))))
 
-    print(f"Estimated queue duration: {eta - now}")
+    remaining_duration = eta.replace(microsecond=0) - now.replace(microsecond=0)
+    print(f"Estimated queue duration: {remaining_duration}")
 
 
 def queue_benchmarks(result):
