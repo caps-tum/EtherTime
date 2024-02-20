@@ -40,9 +40,8 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
 
     for json in profiles:
         profile = BaseProfile.load_str(json)
-        output_location = MEASUREMENTS_DIR.joinpath(profile.filename)
-        print(f"Saving profile to {output_location}")
-        profile.save(output_location)
+        print(f"Saving profile to {profile.file_path_relative}")
+        profile.save()
 
 
 async def run_orchestration(benchmarks: List[str], vendors: List[str],

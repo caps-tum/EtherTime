@@ -2,13 +2,13 @@ import shutil
 import typing
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
-from constants import LOCAL_DIR, CONFIG_DIR, PTPPERF_REPOSITORY_ROOT
+from constants import LOCAL_DIR, PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
     from profiles.base_profile import BaseProfile
-    from profiles.timeseries_profile import TimeseriesProfile
 
 
 @dataclass
@@ -61,7 +61,7 @@ class Vendor:
     def check_executable_present(executable) -> bool:
         return shutil.which(executable) is not None
 
-    def convert_profile(self, profile: "BaseProfile") -> "TimeseriesProfile":
+    def convert_profile(self, profile: "BaseProfile") -> Optional["BaseProfile"]:
         raise NotImplementedError(f"Cannot convert the profile for vendor {self.name}")
 
 

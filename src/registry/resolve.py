@@ -34,8 +34,6 @@ class ProfileDB:
         except IndexError:
             return None
 
-    def default_save_location(self, profile: BaseProfile):
-        return self.base_directory.joinpath(profile.filename)
 
 def VALID_PROCESSED_PROFILE():
     return lambda profile: profile.profile_type == ProfileType.PROCESSED and not profile.time_series.empty

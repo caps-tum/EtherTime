@@ -12,10 +12,10 @@ def analyze():
     profile_db = ProfileDB()
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
 
-        logging.info(f"Converting {profile.filename}")
+        logging.info(f"Converting {profile.file_path_relative}")
         processed = profile.vendor.convert_profile(profile)
         if processed is not None:
-            processed.save(Path(profile._file_path).parent.joinpath(processed.filename))
+            processed.save()
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ class TestTimeseriesChart(TestCase):
         profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
 
         for profile in profiles:
-            profile_path = Path(profile._file_path)
+            output_path = profile.storage_base_path.joinpath("timeseries")
 
             # We create multiple charts:
             # one only showing the filtered data, one showing the convergence, and one including the path delay
@@ -34,7 +34,7 @@ class TestTimeseriesChart(TestCase):
                     summary_statistics=profile.summary_statistics,
                 )
                 chart.add_clock_difference(profile.time_series)
-                chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series.png"))
+                chart.save(output_path.joinpath(profile.filename).with_suffix(".png"))
 
                 chart =  TimeseriesChart(
                     title=profile.get_title("with Path Delay"),
@@ -43,7 +43,7 @@ class TestTimeseriesChart(TestCase):
                 )
                 chart.add_path_delay(profile.time_series)
                 chart.add_clock_difference(profile.time_series)
-                chart.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-path-delay.png"))
+                chart.save(output_path.joinpath(profile.filename).with_suffix("-path-delay.png"))
 
             if profile.time_series_unfiltered is not None:
                 chart_convergence = TimeseriesChart(
@@ -55,7 +55,7 @@ class TestTimeseriesChart(TestCase):
                 chart_convergence.add_path_delay(profile.time_series_unfiltered)
                 if profile.convergence_statistics is not None:
                     chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
-                chart_convergence.save(profile_path.parent.joinpath(f"{profile_path.stem}-series-unfiltered.png"))
+                chart_convergence.save(output_path.joinpath(profile.filename).with_suffix(f"-convergence.png"))
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(

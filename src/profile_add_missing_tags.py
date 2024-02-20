@@ -11,7 +11,7 @@ def add_missing_tags_all_profiles():
             if tag not in profile.benchmark.tags:
                 profile.benchmark.tags.append(tag)
                 print(f"Added tag {tag} to {profile.id}")
-        profile.save(profile._file_path)
+        profile.save()
 
 
 if __name__ == '__main__':

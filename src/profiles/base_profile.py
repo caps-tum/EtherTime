@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import RootModel
 
+import constants
 from profiles.benchmark import Benchmark
 from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
     COLUMN_PATH_DELAY
@@ -85,7 +86,7 @@ class BaseProfile:
 
     def save(self, filename: PathOrStr = None):
         if filename is None:
-            filename = self.filename
+            filename = self.file_path
         Path(filename).write_text(self.dump())
 
     @staticmethod
@@ -100,11 +101,19 @@ class BaseProfile:
 
     @property
     def filename(self):
-        return (f"{self.id}"
-                f"-{self.vendor}"
-                f"-{self.profile_type}"
-                f"-{self.machine_id}"
-                f".json")
+        return f"{self.machine_id}.json"
+
+    @property
+    def file_path(self):
+        return self.storage_base_path.joinpath(self.profile_type).joinpath(self.filename)
+
+    @property
+    def file_path_relative(self):
+        return self.file_path.relative_to(constants.MEASUREMENTS_DIR)
+
+    @property
+    def storage_base_path(self) -> Path:
+        return constants.MEASUREMENTS_DIR.joinpath(self.benchmark.id).joinpath(self.vendor.id).joinpath(self.id)
 
     @property
     def vendor(self) -> Vendor:
