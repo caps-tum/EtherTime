@@ -82,19 +82,12 @@ class ConvergenceStatistics:
 
 COLUMN_CLOCK_DIFF = "clock_diff"
 COLUMN_PATH_DELAY = "path_delay"
+COLUMN_SOURCE = "source"
 
 
 @dataclass
 class Timeseries:
     data: str
-
-    # @field_serializer('_data')
-    # def serialize_data(self):
-    #     return self._data.to_json(orient="records")
-
-    # @classmethod
-    # def parse_obj(cls, obj):
-    #     return Timeseries(_data=pd.DataFrame(obj))
 
     @cached_property
     def data_frame(self):
@@ -161,7 +154,7 @@ class MergedTimeSeries(Timeseries):
         frames = []
         for series, label in zip(original_series, labels):
             frame = series.data_frame.copy()
-            frame["merge_source"] = label
+            frame[COLUMN_SOURCE] = label
             frames.append(frame)
 
         return MergedTimeSeries(
@@ -174,4 +167,4 @@ class MergedTimeSeries(Timeseries):
         pass
 
     def get_discriminator(self):
-        return self.data_frame["merge_source"]
+        return self.data_frame[COLUMN_SOURCE]

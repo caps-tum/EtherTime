@@ -64,7 +64,7 @@ class ComparisonChart(ChartContainer):
 
         seaborn.lineplot(
             ax=self.current_axes,
-            x=merged.data_frame["merge_source"],
+            x=merged.get_discriminator(),
             y=merged.get_clock_diff(abs=True),
             # hue=data['hue'].rename(hue_name),
             marker='o',
