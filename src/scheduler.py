@@ -70,9 +70,13 @@ class ScheduleTask:
         pydantic_save_model(ScheduleTask, self, path)
 
     @property
-    def estimated_time_remaining(self):
+    def estimated_time_remaining(self) -> timedelta:
         """Estimated task time remaining, based off of whether the task is started."""
-        return self.estimated_time if self.start_time is None else max(timedelta(minutes=0), self.estimated_time - (datetime.now() - self.start_time))
+        return self.estimated_time if not self.running else max(timedelta(minutes=0), self.estimated_time - (datetime.now() - self.start_time))
+
+    @property
+    def running(self) -> bool:
+        return self.start_time is not None
 
     @property
     def timeout(self):
@@ -156,10 +160,10 @@ def info(result):
         remaining_time = task.estimated_time_remaining
 
         eta = eta + remaining_time
-        print(alignment_str.format(task.id, task.name, str(task.timeout), str(eta.strftime("%H:%M"))))
+        print(alignment_str.format(task.id, task.name + (" (running)" if task.running else ''), str(task.timeout), str(eta.strftime("%H:%M"))))
 
     remaining_duration = eta.replace(microsecond=0) - now.replace(microsecond=0)
-    print(f"Estimated completion of {len(pending_task_paths)}: {remaining_duration}")
+    print(f"Estimated completion of {len(pending_task_paths)} tasks in {remaining_duration}")
 
 
 def queue_benchmarks(result):
