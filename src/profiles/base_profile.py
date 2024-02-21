@@ -175,6 +175,7 @@ class BaseProfile:
             result_frame = result_frame.resample(resample).mean()
 
         series_with_convergence = Timeseries.from_series(result_frame)
+        series_with_convergence.validate()
         self.time_series_unfiltered = series_with_convergence
 
         minimum_convergence_time = timedelta(seconds=1)
@@ -193,6 +194,7 @@ class BaseProfile:
             # Now create the actual data
             result_frame = result_frame[result_frame.index > detected_clock_convergence.time]
             self.time_series = Timeseries.from_series(result_frame)
+            self.time_series.validate()
             self.summary_statistics = self.time_series.summarize()
 
         else:

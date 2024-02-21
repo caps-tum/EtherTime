@@ -4,7 +4,6 @@ import math
 import typing
 from dataclasses import dataclass
 from datetime import timedelta
-from functools import cached_property
 from typing import Iterable, Any, Optional, Dict
 
 import matplotlib.pyplot as plt
@@ -119,13 +118,16 @@ COLUMN_SOURCE = "source"
 @dataclass
 class Timeseries:
     data: str
+    # This field doesn't have a type annotation so that pydantic will not pick it up.
+    _data_frame = None
 
-    @cached_property
+    @property
     def data_frame(self):
-        read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
-        read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
-        self.validate(read_frame)
-        return read_frame
+        if self._data_frame is None:
+            read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
+            read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
+            self._data_frame = read_frame
+        return self._data_frame
 
     @property
     def clock_diff(self) -> pd.Series:
