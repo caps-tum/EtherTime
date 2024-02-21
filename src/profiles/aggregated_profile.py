@@ -6,6 +6,7 @@ from util import unpack_one_value_or_error
 
 
 class AggregatedProfile(BaseProfile):
+    """A profile created by merging multiple profiles into a single one by stitching the timeseries together."""
 
     @staticmethod
     def from_profiles(profiles: List[BaseProfile]):
