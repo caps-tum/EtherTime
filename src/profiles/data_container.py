@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
-import scipy.stats
 
 ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
 
@@ -142,6 +141,8 @@ class Timeseries:
 
 
     def summarize(self) -> SummaryStatistics:
+        import scipy.stats
+
         clock_diff = self.get_clock_diff(abs=True)
         path_delay = self.path_delay
 

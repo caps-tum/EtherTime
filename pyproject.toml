@@ -20,6 +20,7 @@ dependencies = [
     "pydantic",
     "pandas",
     "matplotlib",
+    "scipy", # Only needed for analysis
 ]
 
 [project.urls]
