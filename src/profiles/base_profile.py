@@ -150,7 +150,8 @@ class BaseProfile:
             }
         )
         result_frame.set_index(timestamps, drop=True, inplace=True)
-        Timeseries.check_monotonic_index(result_frame)
+        entire_series = Timeseries.from_series(result_frame)
+        entire_series.validate()
 
         # Do some data post-processing to improve quality.
 

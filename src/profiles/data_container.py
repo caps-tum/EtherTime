@@ -122,7 +122,7 @@ class Timeseries:
     def data_frame(self):
         read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
         read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
-        self.check_monotonic_index(read_frame)
+        self.validate(read_frame)
         return read_frame
 
     @property
@@ -137,27 +137,35 @@ class Timeseries:
         return self.clock_diff.abs() if abs else self.clock_diff
 
     def get_discriminator(self):
-        return None
+        return self.data_frame[COLUMN_SOURCE]
+
+    @classmethod
+    def from_series(cls, frame: pd.DataFrame):
+        return cls(cls._serialize_frame(frame))
 
     @staticmethod
-    def from_series(frame: pd.DataFrame):
-
-        return Timeseries(
-            Timeseries.serialize_frame(frame)
-        )
-
-    @staticmethod
-    def serialize_frame(result_frame):
+    def _serialize_frame(result_frame):
         serialization_frame = result_frame.copy()
         serialization_frame.index = serialization_frame.index.astype("int64")
         return serialization_frame.to_json(
             orient="table", date_unit='ns',
         )
 
-    @staticmethod
-    def check_monotonic_index(result_frame):
-        if not result_frame.index.is_monotonic_increasing:
-            raise RuntimeError("Timeseries index is not monotonically increasing.")
+    def validate(self, data_frame: pd.DataFrame = None):
+        if data_frame is None:
+            data_frame = self.data_frame
+
+        index_time_deltas = data_frame.index.diff()
+
+        # Ensure that data is sorted chronologically.
+        min_time_jump = index_time_deltas.min()
+        if min_time_jump < 0:
+            raise RuntimeError(f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
+
+        # Make sure there are no gaps in the data
+        time_jumps = index_time_deltas[index_time_deltas >= timedelta(seconds=5)]
+        if not time_jumps.empty:
+            raise RuntimeError(f"Timeseries contains {len(time_jumps)} holes (largest hole: {time_jumps.max()}, total: {time_jumps.sum()})")
 
 
     def summarize(self) -> SummaryStatistics:
@@ -210,14 +218,4 @@ class MergedTimeSeries(Timeseries):
 
             frames.append(frame)
 
-        return MergedTimeSeries(
-            Timeseries.serialize_frame(pd.concat(frames))
-        )
-
-    @staticmethod
-    def check_monotonic_index(result_frame):
-        # Do nothing here. The index will probably not be monotonically increasing.
-        pass
-
-    def get_discriminator(self):
-        return self.data_frame[COLUMN_SOURCE]
+        return MergedTimeSeries.from_series(pd.concat(frames))
