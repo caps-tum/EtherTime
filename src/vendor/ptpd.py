@@ -99,5 +99,6 @@ class PTPDVendor(Vendor):
         path_delays = frame["One Way Delay"]
 
         return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).process_timeseries_data(
-            timestamps, clock_offsets, path_delays, resample=timedelta(seconds=1)
+            timestamps, clock_offsets, path_delays, #resample=timedelta(seconds=1)
+            # Resampling doesn't work well with bootstrapping, it produces intermittent NaN values when there is a gap.
         )

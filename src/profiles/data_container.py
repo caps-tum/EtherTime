@@ -1,40 +1,40 @@
-import datetime
 import io
-import logging
-import math
-import time
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Iterable, Any, Optional, Dict, Self
+from typing import Iterable, Any, Optional, Dict
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker
+import numpy as np
 import pandas as pd
-import pandas.api.types
-from matplotlib import patheffects
-
-from utilities import units
+import scipy.stats
 
 ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
+
+@dataclass
+class BootstrapMetric:
+    value: float
+    confidence_interval_lower: Optional[float] = None
+    confidence_interval_upper: Optional[float] = None
+
+    def format(self, formatter: matplotlib.ticker.Formatter):
+        return f"{formatter.format_data(self.value)} $\\genfrac{{}}{{}}{{0}}{{1}}{{-\\text{{{formatter.format_data(self.value - self.confidence_interval_lower)}}}}}{{+\\text{{{formatter.format_data(self.confidence_interval_upper - self.value)}}}}}$"
 
 
 @dataclass
 class SummaryStatistics:
-    clock_diff_median: Optional[float] = None
-    clock_diff_p99: Optional[float] = None
-    clock_diff_max: Optional[float] = None
-    clock_diff_std: Optional[float] = None
-    path_delay_median: Optional[float] = None
-    path_delay_std: Optional[float] = None
+    clock_diff_median: BootstrapMetric = None
+    clock_diff_p99: BootstrapMetric = None
+    path_delay_median: BootstrapMetric = None
 
     def plot_annotate(self, ax: plt.Axes):
         import matplotlib.ticker
-        formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
+        formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=False)
         ax.annotate(
-            f"Median: {formatter.format_data(self.clock_diff_median)} ± {formatter.format_data(self.clock_diff_std)}\n"
-            f"$P_{{99}}$: {formatter.format_data(self.clock_diff_p99)}\n"
-            f"Path Delay: {formatter.format_data(self.path_delay_median)} ± {formatter.format_data(self.path_delay_std)}",
+            f"Median: {self.clock_diff_median.format(formatter)}\n"
+            f"$P_{{99}}$: {self.clock_diff_p99.format(formatter)}\n"
+            f"Path Delay: {self.path_delay_median.format(formatter)}",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
             bbox=ANNOTATION_BBOX_PROPS,
@@ -42,10 +42,9 @@ class SummaryStatistics:
 
     def export(self, unit_multiplier: int = 1) -> Dict:
         return {
-            'Clock Difference (Median)': self.clock_diff_median * unit_multiplier,
-            'Clock Difference (99-th Percentile)': self.clock_diff_p99 * unit_multiplier,
-            'Clock Difference (Max)': self.clock_diff_max * unit_multiplier,
-            'Clock Difference (Std)': self.clock_diff_std * unit_multiplier,
+            'Clock Difference (Median)': self.clock_diff_median.value * unit_multiplier,
+            'Clock Difference (99-th Percentile)': self.clock_diff_p99.value * unit_multiplier,
+            'Path Delay (Median)': self.path_delay_median.value * unit_multiplier,
         }
 
 
@@ -132,14 +131,25 @@ class Timeseries:
 
 
     def summarize(self) -> SummaryStatistics:
-        data = self.get_clock_diff(abs=True)
+        clock_diff = self.get_clock_diff(abs=True)
+        path_delay = self.path_delay
+
+        # Samples must be in a sequence, this isn't clear from the documentation
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html
+        bootstrap_clock_diff_median = scipy.stats.bootstrap(
+            (clock_diff,), np.median, random_state=0,
+        )
+        bootstrap_clock_diff_p99 = scipy.stats.bootstrap(
+            (clock_diff,), lambda sample: np.quantile(sample, 0.99), random_state=0,
+        )
+        bootstrap_path_delay_median = scipy.stats.bootstrap(
+            (path_delay,), np.median, random_state=0,
+        )
+
         return SummaryStatistics(
-            clock_diff_median=data.median(),
-            clock_diff_p99=data.quantile(0.99),
-            clock_diff_max=data.max(),
-            clock_diff_std=data.std(),
-            path_delay_median=self.path_delay.median(),
-            path_delay_std=self.path_delay.std(),
+            clock_diff_median=BootstrapMetric(clock_diff.median(), bootstrap_clock_diff_median.confidence_interval[0], bootstrap_clock_diff_median.confidence_interval[1]),
+            clock_diff_p99=BootstrapMetric(clock_diff.quantile(0.99), bootstrap_clock_diff_p99.confidence_interval[0], bootstrap_clock_diff_p99.confidence_interval[1]),
+            path_delay_median=BootstrapMetric(path_delay.median(), bootstrap_path_delay_median.confidence_interval[0], bootstrap_path_delay_median.confidence_interval[1]),
         )
 
     @property
@@ -150,11 +160,22 @@ class Timeseries:
 class MergedTimeSeries(Timeseries):
 
     @staticmethod
-    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any]) -> "MergedTimeSeries":
+    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any], timestamp_align: bool = False) -> "MergedTimeSeries":
+        """Timestamp align: We modify all timestamps so that profiles are immediately adjacent to each other (stitched)."""
         frames = []
+
+        start_timestamp = timedelta(seconds=0)
+
         for series, label in zip(original_series, labels):
-            frame = series.data_frame.copy()
+            frame: pd.DataFrame = series.data_frame.copy()
             frame[COLUMN_SOURCE] = label
+
+            if timestamp_align:
+                minimum_timestamp = frame.index.min()
+                frame.index += start_timestamp - minimum_timestamp
+
+                start_timestamp = frame.index.max() + timedelta(seconds=1)
+
             frames.append(frame)
 
         return MergedTimeSeries(
