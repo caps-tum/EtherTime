@@ -64,7 +64,7 @@ class BaseProfile:
 
     convergence_statistics: Optional[ConvergenceStatistics] = None
     time_series_unfiltered: Optional[Timeseries] = None
-    raw_data: Dict[str, Optional[str]] = field(default_factory=dict)
+    raw_data: Optional[Dict[str, Optional[str]]] = field(default_factory=dict)
 
     success: Optional[bool] = None
     log: Optional[str] = None
@@ -165,7 +165,7 @@ class BaseProfile:
         detected_clock_step = detect_clock_step(result_frame)
         # Now crop after clock step
         logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
-        result_frame = result_frame[result_frame.index > detected_clock_step.magnitude]
+        result_frame = result_frame[result_frame.index > detected_clock_step.time]
 
         # If we need to resample, do it now
         # This needs to happen after determining the clock step as the "missing values" that occur because of the clock
