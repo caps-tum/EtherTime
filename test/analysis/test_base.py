@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from profiles.base_profile import ProfileType, AggregatedProfile
+from profiles.base_profile import ProfileType
+from profiles.aggregated_profile import AggregatedProfile
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB

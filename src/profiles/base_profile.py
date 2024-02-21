@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Self, Optional, Literal, Dict, List
+from typing import Self, Optional, Literal, Dict
 
 import pandas as pd
 from pydantic import RootModel
@@ -12,8 +12,8 @@ import constants
 from profiles.analysis import detect_clock_step, detect_clock_convergence
 from profiles.benchmark import Benchmark
 from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
-    COLUMN_PATH_DELAY, MergedTimeSeries
-from util import PathOrStr, unpack_one_value_or_error
+    COLUMN_PATH_DELAY
+from util import PathOrStr
 from vendor.vendor import Vendor
 
 
@@ -207,31 +207,3 @@ class BaseProfile:
         return self.id
 
 
-class AggregatedProfile(BaseProfile):
-
-    @staticmethod
-    def from_profiles(profiles: List[BaseProfile]):
-        from registry.benchmark_db import BenchmarkDB
-        from vendor.registry import VendorDB
-
-        benchmark_id = unpack_one_value_or_error(set([profile.benchmark.id for profile in profiles]), "Cannot merge profiles with multiple benchmarks.")
-        vendor_id = unpack_one_value_or_error(set([profile.vendor.id for profile in profiles]), "Cannot merge profiles with multiple vendors.")
-        machine_id = unpack_one_value_or_error(set([profile.machine_id for profile in profiles]), "Cannot merge profiles with multiple machines.")
-
-        aggregated_profile = AggregatedProfile(
-            id=f"aggregated",
-            benchmark=BenchmarkDB.get(benchmark_id),
-            vendor_id=VendorDB.get(vendor_id),
-            profile_type=ProfileType.AGGREGATED,
-            machine_id=machine_id,
-            start_time=max([profile.start_time for profile in profiles])
-        )
-
-        aggregated_profile.time_series = MergedTimeSeries.merge_series(
-            [profile.time_series for profile in profiles],
-            labels=[profile.id for profile in profiles],
-            timestamp_align=True,
-        )
-        aggregated_profile.summary_statistics = aggregated_profile.time_series.summarize()
-
-        return aggregated_profile

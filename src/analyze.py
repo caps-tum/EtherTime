@@ -5,7 +5,8 @@ from pathlib import Path
 import constants
 import util
 from config import current_configuration
-from profiles.base_profile import ProfileType, BaseProfile, AggregatedProfile
+from profiles.base_profile import ProfileType, BaseProfile
+from profiles.aggregated_profile import AggregatedProfile
 from profiles.data_container import MergedTimeSeries
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
