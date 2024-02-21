@@ -5,26 +5,17 @@ from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional
-
-from pydantic import RootModel
+from typing import Optional
 
 from constants import LOCAL_DIR, ensure_directory_exists
 from invoke.invocation import Invocation, InvocationFailedException
 from registry.benchmark_db import BenchmarkDB
 from util import PathOrStr, setup_logging, StackTraceGuard
+from utilities.pydantic import pydantic_save_model, pydantic_load_model
 from vendor.registry import VendorDB
 
 QUEUE = ensure_directory_exists(LOCAL_DIR.joinpath("task_queue"))
 QUEUE_FILE = QUEUE.joinpath("task_queue.json")
-
-
-def pydantic_save_model(model, instance, path: PathOrStr):
-    Path(path).write_text(RootModel[model](instance).model_dump_json(indent=4))
-
-
-def pydantic_load_model(model, path: PathOrStr):
-    return RootModel[model].model_validate_json(Path(path).read_text()).root
 
 
 @dataclass

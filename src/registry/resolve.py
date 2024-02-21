@@ -6,6 +6,7 @@ import constants
 from machine import Machine
 from profiles.base_profile import BaseProfile, ProfileType
 from profiles.benchmark import Benchmark
+from profiles.cached_profile import ProfileCache
 from vendor.vendor import Vendor
 
 PROFILE_FILTER = Callable[[BaseProfile], bool]
@@ -13,17 +14,26 @@ PROFILE_FILTER = Callable[[BaseProfile], bool]
 @dataclass
 class ProfileDB:
     base_directory: Path = constants.MEASUREMENTS_DIR
+    _profile_cache = None
 
     def find_profile_paths(self) -> List[Path]:
         return list(self.base_directory.rglob("*.json"))
 
-    def load_profiles(self) -> List[BaseProfile]:
-        return [BaseProfile.load(profile_path) for profile_path in self.find_profile_paths()]
+    def load_profiles(self) -> ProfileCache:
+        if ProfileDB._profile_cache is None:
+            try:
+                ProfileDB._profile_cache = ProfileCache.load()
+            except FileNotFoundError:
+                ProfileDB._profile_cache = ProfileCache.build(
+                    [BaseProfile.load(profile_path) for profile_path in self.find_profile_paths()]
+                )
+                ProfileDB._profile_cache.save()
+        return ProfileDB._profile_cache
 
     def resolve_all(self, *filters: PROFILE_FILTER) -> List[BaseProfile]:
         if filters is None:
             filters = []
-        return [profile for profile in self.load_profiles() if all(filter_function(profile) for filter_function in filters)]
+        return [profile.load_profile() for profile in self.load_profiles().cached_profiles if all(filter_function(profile) for filter_function in filters)]
 
     def resolve_most_recent(self, *filters: PROFILE_FILTER) -> Optional[BaseProfile]:
         try:
@@ -36,7 +46,7 @@ class ProfileDB:
 
 
 def VALID_PROCESSED_PROFILE():
-    return lambda profile: profile.profile_type == ProfileType.PROCESSED and not profile.time_series.empty
+    return lambda profile: profile.profile_type == ProfileType.PROCESSED
 
 def CORRUPT_PROCESSED_PROFILE():
     return lambda profile: profile.profile_type == ProfileType.PROCESSED_CORRUPT
