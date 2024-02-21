@@ -5,7 +5,7 @@ from pathlib import Path
 import constants
 import util
 from config import current_configuration
-from profiles.base_profile import ProfileType, BaseProfile
+from profiles.base_profile import ProfileType, BaseProfile, AggregatedProfile
 from profiles.data_container import MergedTimeSeries
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
@@ -45,22 +45,7 @@ def merge():
 
                 if len(profiles) > 0:
                     logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(profiles)}")
-                    aggregated_profile = BaseProfile(
-                        id=f"aggregated",
-                        benchmark=benchmark,
-                        vendor_id=vendor.id,
-                        profile_type=ProfileType.AGGREGATED,
-                        machine_id=machine.id,
-                        start_time=max([profile.start_time for profile in profiles])
-                    )
-
-                    aggregated_profile.time_series = MergedTimeSeries.merge_series(
-                        [profile.time_series for profile in profiles],
-                        labels=[profile.id for profile in profiles],
-                        timestamp_align=True,
-                    )
-                    aggregated_profile.summary_statistics = aggregated_profile.time_series.summarize()
-
+                    aggregated_profile = AggregatedProfile.from_profiles(profiles)
                     aggregated_profile.save()
 
 
