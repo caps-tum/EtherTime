@@ -185,28 +185,13 @@ class BaseProfile:
             if remaining_benchmark_time < self.benchmark.duration * 0.75:
                 logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
 
-
             # Create some convergence statistics
             convergence_series = result_frame[result_frame.index <= detected_clock_convergence.time]
-
-            convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
-            if math.isnan(convergence_max_offset):
-                logging.warning("No convergence data on profile, convergence was instant.")
-                convergence_max_offset = 0
-
-            if detected_clock_convergence.time.total_seconds() == 0:
-                raise RuntimeError("Converged in 0 seconds?")
-
-            self.convergence_statistics = ConvergenceStatistics(
-                convergence_time=detected_clock_convergence.time,
-                convergence_max_offset=convergence_max_offset,
-                convergence_rate=convergence_max_offset / detected_clock_convergence.time.total_seconds()
-            )
+            self.convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence, convergence_series)
 
             # Now create the actual data
             result_frame = result_frame[result_frame.index > detected_clock_convergence.time]
-            series_without_convergence = Timeseries.from_series(result_frame)
-            self.time_series = series_without_convergence
+            self.time_series = Timeseries.from_series(result_frame)
             self.summary_statistics = self.time_series.summarize()
 
         else:

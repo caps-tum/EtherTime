@@ -1,4 +1,6 @@
 import io
+import logging
+import math
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
@@ -8,6 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
+
+from profiles.analysis import DetectedClockConvergence
 
 ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
 
@@ -79,6 +83,22 @@ class ConvergenceStatistics:
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
             bbox=ANNOTATION_BBOX_PROPS,
+        )
+
+    @staticmethod
+    def from_convergence_series(detected_clock_convergence: DetectedClockConvergence, convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
+        convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
+        if math.isnan(convergence_max_offset):
+            logging.warning("No convergence data on profile, cannot calculate convergence statistics.")
+            return None
+
+        if detected_clock_convergence.time.total_seconds() == 0:
+            raise RuntimeError("Invalid detected clock convergence of 0 seconds.")
+
+        return ConvergenceStatistics(
+            convergence_time=detected_clock_convergence.time,
+            convergence_max_offset=convergence_max_offset,
+            convergence_rate=convergence_max_offset / detected_clock_convergence.time.total_seconds()
         )
 
     def export(self, unit_multiplier: int = 1) -> Dict:
