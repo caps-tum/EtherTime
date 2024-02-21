@@ -34,7 +34,7 @@ class TestTimeseriesChart(TestCase):
                     summary_statistics=profile.summary_statistics,
                 )
                 chart.add_clock_difference(profile.time_series)
-                chart.save(output_path.joinpath(profile.filename).with_suffix(".png"))
+                chart.save(output_path.joinpath(f"{profile.filename_base}.png"), make_parent=True)
 
                 chart =  TimeseriesChart(
                     title=profile.get_title("with Path Delay"),
@@ -43,7 +43,7 @@ class TestTimeseriesChart(TestCase):
                 )
                 chart.add_path_delay(profile.time_series)
                 chart.add_clock_difference(profile.time_series)
-                chart.save(output_path.joinpath(profile.filename).with_suffix("-path-delay.png"))
+                chart.save(output_path.joinpath(f"{profile.filename_base}-path-delay.png"), make_parent=True)
 
             if profile.time_series_unfiltered is not None:
                 chart_convergence = TimeseriesChart(
@@ -55,7 +55,7 @@ class TestTimeseriesChart(TestCase):
                 chart_convergence.add_path_delay(profile.time_series_unfiltered)
                 if profile.convergence_statistics is not None:
                     chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
-                chart_convergence.save(output_path.joinpath(profile.filename).with_suffix(f"-convergence.png"))
+                chart_convergence.save(output_path.joinpath(f"{profile.filename_base}-convergence.png"), make_parent=True)
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(

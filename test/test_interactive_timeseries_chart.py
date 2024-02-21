@@ -19,7 +19,7 @@ class TestInteractiveTimeseriesChart(TestCase):
             # Reset bokeh's id count
             bokeh.util.serialization._simple_id = 999
             figure = chart.create(profile)
-            output_file = profile.storage_base_path.joinpath("interactive").joinpath(profile.filename).with_suffix(".html")
+            output_file = profile.storage_base_path.joinpath("interactive").joinpath(f"{profile.filename_base}.html")
             plotting.save(
                 figure,
                 filename=output_file,

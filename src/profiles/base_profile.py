@@ -22,6 +22,7 @@ class ProfileType:
     RAW = "raw"
     PROCESSED = "processed"
     PROCESSED_CORRUPT = "processed-corrupt"
+    AGGREGATED = "aggregated"
 
 class ProfileTags:
     # Load
@@ -102,8 +103,12 @@ class BaseProfile:
 
 
     @property
-    def filename(self):
-        return f"{self.machine_id}.json"
+    def filename(self) -> str:
+        return f"{self.filename_base}.json"
+
+    @property
+    def filename_base(self) -> str:
+        return f"{self.machine_id}"
 
     @property
     def file_path(self):
