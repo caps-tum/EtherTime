@@ -23,6 +23,9 @@ class BootstrapMetric:
         for places in range(6):
             formatter = matplotlib.ticker.EngFormatter(unit="s", places=places, usetex=False)
 
+            if self.confidence_interval_lower is None or self.confidence_interval_upper is None:
+                return f"{formatter.format_data(self.value)}?"
+
             lower_bound = formatter.format_data(self.confidence_interval_lower)
             upper_bound = formatter.format_data(self.confidence_interval_upper)
 
