@@ -29,10 +29,12 @@ def pydantic_load_model(model, path: PathOrStr):
 
 @dataclass
 class ScheduleTask:
-    id: int
     name: str
     command: str
-    timeout: Optional[timedelta] = None
+    estimated_time: timedelta
+
+    id: Optional[int] = None
+    slack_time: Optional[timedelta] = field(default_factory=lambda: timedelta(minutes=5))
     success: Optional[bool] = None
     start_time: Optional[datetime] = None
     completion_time: Optional[datetime] = None
@@ -67,8 +69,19 @@ class ScheduleTask:
     def save(self, path: PathOrStr):
         pydantic_save_model(ScheduleTask, self, path)
 
+    @property
+    def estimated_time_remaining(self):
+        """Estimated task time remaining, based off of whether the task is started."""
+        return self.estimated_time if self.start_time is None else max(timedelta(minutes=0), self.estimated_time - (datetime.now() - self.start_time))
+
+    @property
+    def timeout(self):
+        if self.estimated_time is None or self.slack_time is None:
+            return None
+        return self.estimated_time + self.slack_time
+
     def __str__(self):
-        return f"Task {self.id} ({self.command})"
+        return f"{self.name} ({self.id})"
 
 
 @dataclass
@@ -97,15 +110,10 @@ class ScheduleQueue:
         return sorted(QUEUE.glob("task_*_pending.json"))
 
     @staticmethod
-    def queue_task(name: str, command: str, timeout: timedelta):
-        task = ScheduleTask(
-            id=len(list(QUEUE.iterdir())),
-            name=name,
-            command=command,
-            timeout=timeout,
-        )
+    def queue_task(task: ScheduleTask):
+        task.id = len(list(QUEUE.iterdir()))
         task.save(ScheduleTask.get_file_path(task.id, pending=True))
-        logging.info(f"Scheduled task {task.id} with command '{command}'")
+        logging.info(f"Scheduled task {task.id}: {task} ")
 
 
 def run_scheduler(result):
@@ -125,8 +133,14 @@ def run_scheduler(result):
 def queue_task(result):
     name = result.name
     command = result.command
-    timeout = result.timeout
-    ScheduleQueue.queue_task(name, command, timeout=timedelta(seconds=timeout))
+    estimated_time = result.time
+    ScheduleQueue.queue_task(
+        ScheduleTask(
+            name=name,
+            command=command,
+            estimated_time=timedelta(minutes=estimated_time),
+        )
+    )
 
 
 def info(result):
@@ -134,20 +148,18 @@ def info(result):
 
     now = datetime.now().replace(microsecond=0)
     eta = now
-    print(alignment_str.format("Id", "Name", "Timeout", "ETA"))
-    for task_path in ScheduleQueue.load().pending_task_paths():
+    print(alignment_str.format("Id", "Name", "Duration (estimated)", "ETA"))
+    pending_task_paths = ScheduleQueue.load().pending_task_paths()
+    for task_path in pending_task_paths:
         task = ScheduleTask.load(task_path)
 
-        remaining_time = task.timeout if task.timeout else 0
-        if task.start_time is not None:
-            # If task is started then shorten remaining time.
-            remaining_time -= now - task.start_time
+        remaining_time = task.estimated_time_remaining
 
         eta = eta + remaining_time
         print(alignment_str.format(task.id, task.name, str(task.timeout), str(eta.strftime("%H:%M"))))
 
     remaining_duration = eta.replace(microsecond=0) - now.replace(microsecond=0)
-    print(f"Estimated queue duration: {remaining_duration}")
+    print(f"Estimated completion of {len(pending_task_paths)}: {remaining_duration}")
 
 
 def queue_benchmarks(result):
@@ -167,9 +179,11 @@ def queue_benchmarks(result):
     for benchmark in benchmarks:
         for vendor in vendors:
             ScheduleQueue.queue_task(
-                name="Restart cluster",
-                command='LOG_EXCEPTIONS=1 python3 cluster_restart.py',
-                timeout=timedelta(minutes=5)
+                ScheduleTask(
+                    name="Restart cluster",
+                    command='LOG_EXCEPTIONS=1 python3 cluster_restart.py',
+                    estimated_time=timedelta(minutes=1),
+                )
             )
 
             command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
@@ -181,9 +195,11 @@ def queue_benchmarks(result):
                 command += f" --duration {int(duration.total_seconds() // 60)}"
 
             ScheduleQueue.queue_task(
-                name=f"{benchmark.name}",
-                command=command,
-                timeout=duration + timedelta(minutes=5)
+                ScheduleTask(
+                    name=f"{benchmark.name} ({vendor.id})",
+                    command=command,
+                    estimated_time=duration,
+                )
             )
 
 
@@ -209,7 +225,7 @@ if __name__ == '__main__':
     queue_command.set_defaults(action=queue_task)
     queue_command.add_argument("--name", type=str, required=True, help="A name for the task.")
     queue_command.add_argument("--command", type=str, required=True, help="The command to run.")
-    queue_command.add_argument("--timeout", type=int, default=None, help="The maximum task duration in seconds.")
+    queue_command.add_argument("--time", type=int, default=None, help="The estimated task time in minutes. A slack time of 5 minutes is added as a timeout.")
 
     queue_benchmarks_command = subparsers.add_parser("queue-benchmarks",
                                                      help="Queue benchmarks by filtering with regex")
