@@ -262,7 +262,10 @@ class Invocation:
         return asyncio.wait_for(self.wait(), timeout=None)
 
     def hide_unless_failure(self) -> Self:
+        return self.hide(dump_on_failure=True)
+
+    def hide(self, dump_on_failure: bool = False) -> Self:
         self.log_invocation = False
         self.log_output = False
-        self.dump_output_on_failure = True
+        self.dump_output_on_failure = dump_on_failure
         return self

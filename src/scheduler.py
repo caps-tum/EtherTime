@@ -178,14 +178,6 @@ def queue_benchmarks(result):
 
     for benchmark in benchmarks:
         for vendor in vendors:
-            ScheduleQueue.queue_task(
-                ScheduleTask(
-                    name="Restart cluster",
-                    command='LOG_EXCEPTIONS=1 python3 cluster_restart.py',
-                    estimated_time=timedelta(minutes=1),
-                )
-            )
-
             command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
 
             if duration_override is None:

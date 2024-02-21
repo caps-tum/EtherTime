@@ -1,14 +1,13 @@
 import asyncio
 import copy
 import logging
-import re
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from typing import List
 
 import config
 import util
-from constants import MEASUREMENTS_DIR
+from cluster_restart import restart_cluster
 from machine import Cluster
 from profiles.base_profile import BaseProfile, ProfileType
 from profiles.benchmark import Benchmark
@@ -48,6 +47,8 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str],
                             num_iterations: int = 1, duration_override: timedelta = None):
     configuration = config.current_configuration
     cluster = configuration.cluster
+
+    await restart_cluster(cluster)
 
     RPCServer.service_type = RPCServerService
     rpc_server = RPCServer()
