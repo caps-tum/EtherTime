@@ -181,13 +181,13 @@ class Timeseries:
         # Samples must be in a sequence, this isn't clear from the documentation
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html
         bootstrap_clock_diff_median = scipy.stats.bootstrap(
-            (clock_diff,), np.median, random_state=0,
+            (clock_diff,), np.median, random_state=np.random.default_rng(0), vectorized=True,
         )
         bootstrap_clock_diff_p99 = scipy.stats.bootstrap(
-            (clock_diff,), lambda sample: np.quantile(sample, 0.99), random_state=0,
+            (clock_diff,), lambda sample, axis: np.quantile(sample, 0.99, axis=axis), random_state=np.random.default_rng(0), vectorized=True,
         )
         bootstrap_path_delay_median = scipy.stats.bootstrap(
-            (path_delay,), np.median, random_state=0,
+            (path_delay,), np.median, random_state=np.random.default_rng(0), vectorized=True,
         )
 
         return SummaryStatistics(
