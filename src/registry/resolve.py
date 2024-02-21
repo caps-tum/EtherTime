@@ -41,6 +41,9 @@ def VALID_PROCESSED_PROFILE():
 def CORRUPT_PROCESSED_PROFILE():
     return lambda profile: profile.profile_type == ProfileType.PROCESSED_CORRUPT
 
+def AGGREGATED_PROFILE():
+    return lambda profile: profile.profile_type == ProfileType.AGGREGATED
+
 def BY_BENCHMARK(benchmark: Benchmark):
     return lambda profile: profile.benchmark.id == benchmark.id
 

@@ -56,7 +56,7 @@ class BaseProfile:
     id: str
     benchmark: Benchmark
     vendor_id: str
-    profile_type: Literal["raw", "processed", "processed-corrupt"]
+    profile_type: Literal["raw", "processed", "processed-corrupt", "aggregated"]
     machine_id: Optional[str]
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
@@ -273,3 +273,7 @@ class BaseProfile:
             logging.warning("Profile marked as corrupt.")
 
         return self
+
+
+    def __str__(self):
+        return self.id

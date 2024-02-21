@@ -9,11 +9,22 @@ from profiles.data_container import MergedTimeSeries
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
+from util import str_join
 from vendor.registry import VendorDB
 
 
 def analyze():
     profile_db = ProfileDB()
+
+    # Remove all previously processed data to avoid out-of-date profiles
+    logging.info(f"Removing processed profiles.")
+    for processed_profile in profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE()):
+        processed_profile.file_path.unlink()
+    for processed_profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.PROCESSED_CORRUPT)):
+        processed_profile.file_path.unlink()
+    for processed_profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.AGGREGATED)):
+        processed_profile.file_path.unlink()
+
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
         logging.info(f"Converting {profile.file_path_relative}")
         processed = profile.vendor.convert_profile(profile)
@@ -33,9 +44,9 @@ def merge():
                 )
 
                 if len(profiles) > 0:
-
+                    logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(profiles)}")
                     aggregated_profile = BaseProfile(
-                        id=f"{machine.id}-aggregated",
+                        id=f"aggregated",
                         benchmark=benchmark,
                         vendor_id=vendor.id,
                         profile_type=ProfileType.AGGREGATED,
@@ -58,3 +69,6 @@ if __name__ == '__main__':
 
     with util.StackTraceGuard():
         analyze()
+        merge()
+
+    logging.info("Analysis complete")

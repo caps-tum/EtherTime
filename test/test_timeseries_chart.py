@@ -21,6 +21,7 @@ class TestTimeseriesChart(TestCase):
     def test_individual_charts(self):
         profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
         profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
+        profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
 
         for profile in profiles:
             output_path = profile.storage_base_path.joinpath("timeseries")
