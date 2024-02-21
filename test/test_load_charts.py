@@ -21,6 +21,7 @@ class TestLoadCharts(TestCase):
         profile_db = ProfileDB()
         profiles = profile_db.resolve_all(
             resolve.VALID_PROCESSED_PROFILE(),
+            # resolve.AGGREGATED_PROFILE(),
             resolve.BY_TAGS(
                 ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED,
             )
@@ -28,6 +29,7 @@ class TestLoadCharts(TestCase):
         # Also include the baseline
         profiles += profile_db.resolve_all(
             resolve.VALID_PROCESSED_PROFILE(),
+            # resolve.AGGREGATED_PROFILE(),
             resolve.BY_BENCHMARK(BenchmarkDB.BASE),
         )
 

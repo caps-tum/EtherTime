@@ -14,7 +14,9 @@ from profiles.data_container import MergedTimeSeries
 class ComparisonDataPoint:
     x: float
     y: float
-    hue: Optional[Any]
+    y_lower_bound: Optional[float] = None
+    y_upper_bound: Optional[float] = None
+    hue: Optional[Any] = None
 
 class ComparisonChart(ChartContainer):
     axes: List[List[plt.Axes]]
@@ -33,14 +35,14 @@ class ComparisonChart(ChartContainer):
         self.plot_decorate_title(self.current_axes, title)
 
     def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str,
-                       hue_name: str = None, linestyle=None):
+                       hue_name: str = None, linestyle=None, include_confidence_intervals: bool = False):
         data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
         data = pd.DataFrame(data_points)
 
         if data.empty:
             raise RuntimeError("No data provided to plot script.")
 
-        seaborn.lineplot(
+        ax = seaborn.lineplot(
             ax=self.current_axes,
             x=data['x'],
             y=data['y'],
@@ -48,6 +50,9 @@ class ComparisonChart(ChartContainer):
             marker='o',
             linestyle=linestyle,
         )
+        if include_confidence_intervals:
+            for name, group in data.groupby("hue"):
+                ax.fill_between(group['x'], group['y_lower_bound'], group['y_upper_bound'], alpha=0.2)
         self.plot_decorate_yaxis(self.current_axes, ylabel=YAxisLabelType.OFFSET_GENERIC)
 
         self.current_axes.set_xlabel(x_axis_label)
@@ -84,7 +89,9 @@ class ComparisonChart(ChartContainer):
 
         self.plot_statistic(lambda profile: ComparisonDataPoint(
             x=x_axis_values(profile),
-            y=profile.summary_statistics.clock_diff_median,
+            y=profile.summary_statistics.clock_diff_median.value,
+            y_lower_bound=profile.summary_statistics.clock_diff_median.confidence_interval_lower,
+            y_upper_bound=profile.summary_statistics.clock_diff_median.confidence_interval_upper,
             hue=profile.vendor.name,
         ), x_axis_label=x_axis_label, hue_name="Vendor")
         # self.plot_statistic_timeseries_bootstrap(lambda profile: x_axis_values(profile),
@@ -95,8 +102,10 @@ class ComparisonChart(ChartContainer):
             self.plot_statistic(
                 lambda profile: ComparisonDataPoint(
                     x=x_axis_values(profile),  # GBit/s to %
-                    y=profile.summary_statistics.clock_diff_p99,
-                    hue=f"{profile.vendor.name} P_{{99}}",
+                    y=profile.summary_statistics.clock_diff_p99.value,
+                    y_lower_bound=profile.summary_statistics.clock_diff_p99.confidence_interval_lower,
+                    y_upper_bound=profile.summary_statistics.clock_diff_p99.confidence_interval_upper,
+                    hue=f"{profile.vendor.name} $P_{{99}}$",
                 ),
                 x_axis_label=x_axis_label,
                 hue_name="Vendor",
@@ -106,7 +115,9 @@ class ComparisonChart(ChartContainer):
         self.set_current_axes(1, 0)
         self.plot_statistic(lambda profile: ComparisonDataPoint(
             x=x_axis_values(profile),
-            y=profile.summary_statistics.path_delay_median,
+            y=profile.summary_statistics.path_delay_median.value,
+            y_lower_bound=profile.summary_statistics.path_delay_median.confidence_interval_lower,
+            y_upper_bound=profile.summary_statistics.path_delay_median.confidence_interval_upper,
             hue=profile.vendor.name,
         ), x_axis_label=x_axis_label, hue_name="Vendor")
         self.current_axes.set_ylabel('Path Delay')
