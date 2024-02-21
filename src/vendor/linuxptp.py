@@ -66,10 +66,10 @@ class LinuxPTPVendor(Vendor):
 
 
     def collect_data(self, profile: "BaseProfile"):
-        profile.raw_data = {
-            'ptp4l_log': self._process_ptp4l.output if self._process_ptp4l is not None else None,
-            'phc2sys_log': self._process_phc2sys.output if self._process_phc2sys is not None else None,
-        }
+        profile.raw_data.update(
+            ptp4l_log=self._process_ptp4l.output if self._process_ptp4l is not None else None,
+            phc2sys_log=self._process_phc2sys.output if self._process_phc2sys is not None else None,
+        )
 
     @property
     def install_supported(self):

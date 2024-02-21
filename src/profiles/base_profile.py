@@ -65,7 +65,7 @@ class BaseProfile:
 
     convergence_statistics: Optional[ConvergenceStatistics] = None
     time_series_unfiltered: Optional[Timeseries] = None
-    raw_data: Optional[Dict[str, Optional[str]]] = None
+    raw_data: Dict[str, Optional[str]] = field(default_factory=dict)
 
     success: Optional[bool] = None
     log: Optional[str] = None
@@ -97,7 +97,7 @@ class BaseProfile:
     def template_from_existing(raw_profile: "BaseProfile", new_type: str) -> "BaseProfile":
         new_profile = copy.deepcopy(raw_profile)
         new_profile.profile_type = new_type
-        new_profile.raw_data = None
+        new_profile.raw_data.clear()
         new_profile.time_series = None
         new_profile.summary_statistics = None
         return new_profile

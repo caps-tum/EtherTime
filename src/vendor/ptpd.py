@@ -73,10 +73,10 @@ class PTPDVendor(Vendor):
         await self._process.restart(kill, ignore_return_code=True)
 
     def collect_data(self, profile: "BaseProfile"):
-        profile.raw_data = {
-            'log': read_file_if_exists(self.log_file_path),
-            'statistics': read_file_if_exists(self.statistics_file_path)
-        }
+        profile.raw_data.update(
+            log=read_file_if_exists(self.log_file_path),
+            statistics= read_file_if_exists(self.statistics_file_path),
+        )
 
     @property
     def ptpd_interface_options(self):

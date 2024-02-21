@@ -2,6 +2,7 @@ import asyncio
 import logging
 from asyncio import CancelledError
 from datetime import datetime, timedelta
+from typing import List
 
 import util
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
@@ -44,6 +45,7 @@ async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
     background_tasks = MultiTaskController()
+    background_data_collection: List[BackgroundDataCollector]
 
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
     profile_log.parent.mkdir(exist_ok=True)
@@ -74,18 +76,12 @@ async def benchmark(profile: BaseProfile):
 
         if profile.benchmark.artificial_load_network > 0:
             # Start iPerf
-            artificial_network_load = NetworkPerformanceDegrader()
-            background_tasks.add_coroutine(
-                artificial_network_load.run(
-                    profile.benchmark.artificial_load_network, profile.benchmark.artificial_load_network_dscp_priority
-                )
-            )
+            artificial_network_load = NetworkPerformanceDegrader(profile)
+            background_tasks.add_coroutine(artificial_network_load.run())
         if profile.benchmark.artificial_load_cpu > 0:
             # Start Stress_ng
-            artificial_cpu_load = CPUPerformanceDegrader()
-            background_tasks.add_coroutine(
-                artificial_cpu_load.run(profile.benchmark.artificial_load_cpu)
-            )
+            artificial_cpu_load = CPUPerformanceDegrader(profile)
+            background_tasks.add_coroutine(artificial_cpu_load.run())
 
 
         # Launch background hardware prompts if necessary. We only do this on the ptp_master
