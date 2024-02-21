@@ -60,12 +60,12 @@ class TestTimeseriesChart(TestCase):
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(
-            resolve.VALID_PROCESSED_PROFILE(),
+            resolve.AGGREGATED_PROFILE(),
             resolve.BY_BENCHMARK(BenchmarkDB.BASE),
             resolve.BY_VENDOR(VendorDB.PTPD),
         )
         linuxptp_profile = ProfileDB().resolve_most_recent(
-            resolve.VALID_PROCESSED_PROFILE(),
+            resolve.AGGREGATED_PROFILE(),
             resolve.BY_BENCHMARK(BenchmarkDB.BASE),
             resolve.BY_VENDOR(VendorDB.LINUXPTP),
         )
