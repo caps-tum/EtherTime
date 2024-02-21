@@ -193,7 +193,7 @@ def queue_benchmarks(result):
 
             ScheduleQueue.queue_task(
                 ScheduleTask(
-                    name=f"{benchmark.name} ({vendor.id})",
+                    name=f"{benchmark.name} ({vendor.name})",
                     command=command,
                     estimated_time=duration,
                 )
