@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from pathlib import Path
 
 import constants
@@ -17,12 +18,11 @@ def analyze():
     profile_db = ProfileDB()
 
     # Remove all previously processed data to avoid out-of-date profiles
-    logging.info(f"Removing processed profiles.")
-    for processed_profile in profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE()):
-        processed_profile.file_path.unlink()
-    for processed_profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.PROCESSED_CORRUPT)):
-        processed_profile.file_path.unlink()
-    for processed_profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.AGGREGATED)):
+    old_profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
+    old_profiles += profile_db.resolve_all(resolve.BY_TYPE(ProfileType.PROCESSED_CORRUPT))
+    old_profiles += profile_db.resolve_all(resolve.BY_TYPE(ProfileType.AGGREGATED))
+    logging.info(f"Removing {len(old_profiles)} processed profiles.")
+    for processed_profile in old_profiles:
         processed_profile.file_path.unlink()
 
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
@@ -68,7 +68,10 @@ if __name__ == '__main__':
     util.setup_logging(log_file=constants.CHARTS_DIR.joinpath("analysis_log.log"), log_file_mode="w")
 
     with util.StackTraceGuard():
+        start_time = datetime.now()
+
         analyze()
         merge()
 
-    logging.info("Analysis complete")
+        completion_time = datetime.now()
+        logging.info(f"Analysis completed in {completion_time - start_time}.")
