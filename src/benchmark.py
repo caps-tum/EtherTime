@@ -108,6 +108,8 @@ async def benchmark(profile: BaseProfile):
         )
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
         await background_tasks.run_for(profile.benchmark.duration)
+
+        profile.success = True
     except Exception as e:
         # On error, note down that the benchmark failed, but still save it.
         profile.success = False
