@@ -148,11 +148,11 @@ def queue_task(result):
 
 
 def info(result):
-    alignment_str = "{0: >4}  {1: <50}  {2: >12}  {3: >20}"
+    alignment_str = "{0: >4}  {1: <50}  {2: >20}  {3: >20}"
 
     now = datetime.now().replace(microsecond=0)
     eta = now
-    print(alignment_str.format("Id", "Name", "Duration (estimated)", "ETA"))
+    print(alignment_str.format("Id", "Name", "Est. Time Remaining", "ETA"))
     pending_task_paths = ScheduleQueue.load().pending_task_paths()
     for task_path in pending_task_paths:
         task = ScheduleTask.load(task_path)
@@ -160,7 +160,8 @@ def info(result):
         remaining_time = task.estimated_time_remaining
 
         eta = eta + remaining_time
-        print(alignment_str.format(task.id, task.name + (" (running)" if task.running else ''), str(task.timeout), str(eta.strftime("%H:%M"))))
+        timedelta()
+        print(alignment_str.format(task.id, task.name + (" (running)" if task.running else ''), str(remaining_time).split(".")[0], str(eta.strftime("%H:%M"))))
 
     remaining_duration = eta.replace(microsecond=0) - now.replace(microsecond=0)
     print(f"Estimated completion of {len(pending_task_paths)} tasks in {remaining_duration}")
