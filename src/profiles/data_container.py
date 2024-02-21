@@ -18,8 +18,18 @@ class BootstrapMetric:
     confidence_interval_lower: Optional[float] = None
     confidence_interval_upper: Optional[float] = None
 
-    def format(self, formatter: matplotlib.ticker.Formatter):
-        return f"{formatter.format_data(self.value)} $\\genfrac{{}}{{}}{{0}}{{1}}{{-\\text{{{formatter.format_data(self.value - self.confidence_interval_lower)}}}}}{{+\\text{{{formatter.format_data(self.confidence_interval_upper - self.value)}}}}}$"
+    def format(self):
+        formatter = None
+        for places in range(6):
+            formatter = matplotlib.ticker.EngFormatter(unit="s", places=places, usetex=False)
+
+            lower_bound = formatter.format_data(self.confidence_interval_lower)
+            upper_bound = formatter.format_data(self.confidence_interval_upper)
+
+            if lower_bound != upper_bound:
+                return f"[{lower_bound} - {upper_bound}]"
+
+        return formatter.format_data(self.value)
 
 
 @dataclass
@@ -29,12 +39,10 @@ class SummaryStatistics:
     path_delay_median: BootstrapMetric = None
 
     def plot_annotate(self, ax: plt.Axes):
-        import matplotlib.ticker
-        formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=False)
         ax.annotate(
-            f"Median: {self.clock_diff_median.format(formatter)}\n"
-            f"$P_{{99}}$: {self.clock_diff_p99.format(formatter)}\n"
-            f"Path Delay: {self.path_delay_median.format(formatter)}",
+            f"Median: {self.clock_diff_median.format()}\n"
+            f"$P_{{99}}$: {self.clock_diff_p99.format()}\n"
+            f"Path Delay: {self.path_delay_median.format()}",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
             bbox=ANNOTATION_BBOX_PROPS,
