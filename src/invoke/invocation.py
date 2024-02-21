@@ -230,7 +230,7 @@ class Invocation:
 
     async def run(self, timeout: float = None) -> Self:
         self.run_as_task()
-        # Task is automatically cancelled if timeout
+        # Task is automatically cancelled if timeout or interrupted
         await asyncio.wait_for(self._monitor_task, timeout)
         return self
 

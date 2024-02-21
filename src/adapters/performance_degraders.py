@@ -34,18 +34,21 @@ class NetworkPerformanceDegrader:
         try:
             if current_configuration.machine.plugin_settings.iperf_server:
                 logging.info("Launching iPerf server...")
-                self.iperf_invocation = await Invocation.of_command(*iperf_command, '-s').run()
+                self.iperf_invocation = Invocation.of_command(*iperf_command, '-s')
             else:
                 logging.debug("Waiting momentarily for iPerf server to come up...")
                 await asyncio.sleep(0.5)
                 logging.info("Launching iPerf client...")
                 # Launching clients
-                self.iperf_invocation = await Invocation.of_command(
+                self.iperf_invocation = Invocation.of_command(
                     *iperf_command, '-c', server_address, '-d', '-t', '0'
-                ).run()
+                )
+
+            await self.iperf_invocation.run()
         finally:
             # Attach log to profile raw data
             if self.iperf_invocation is not None:
+                logging.info(f"Saving iPerf log (length {len(self.iperf_invocation.output)}) to profile.")
                 self.profile.raw_data.update(iperf_log=self.iperf_invocation.output)
 
 
@@ -63,10 +66,12 @@ class CPUPerformanceDegrader:
 
         logging.info("Launching stress_ng tasks...")
         try:
-            self.stressng_process = await Invocation.of_command(
+            self.stressng_process = Invocation.of_command(
                 *stress_ng_command, '-c', current_configuration.machine.plugin_settings.stress_ng_cpus
-            ).run()
+            )
+            await self.stressng_process.run()
         finally:
             # Attach log to profile raw data
             if self.stressng_process is not None:
+                logging.info(f"Saving stress_ng log (length {len(self.stressng_process.output)}) to profile.")
                 self.profile.raw_data.update(stressng_log=self.stressng_process.output)

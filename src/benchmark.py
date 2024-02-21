@@ -77,11 +77,11 @@ async def benchmark(profile: BaseProfile):
         if profile.benchmark.artificial_load_network > 0:
             # Start iPerf
             artificial_network_load = NetworkPerformanceDegrader(profile)
-            background_tasks.add_coroutine(artificial_network_load.run())
+            background_tasks.add_coroutine(artificial_network_load.run(), label="iPerf")
         if profile.benchmark.artificial_load_cpu > 0:
             # Start Stress_ng
             artificial_cpu_load = CPUPerformanceDegrader(profile)
-            background_tasks.add_coroutine(artificial_cpu_load.run())
+            background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
 
 
         # Launch background hardware prompts if necessary. We only do this on the ptp_master
