@@ -51,6 +51,7 @@ def merge():
                         vendor_id=vendor.id,
                         profile_type=ProfileType.AGGREGATED,
                         machine_id=machine.id,
+                        start_time=max([profile.start_time for profile in profiles])
                     )
 
                     aggregated_profile.time_series = MergedTimeSeries.merge_series(
