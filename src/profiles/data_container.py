@@ -1,6 +1,7 @@
 import io
 import logging
 import math
+import typing
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
@@ -11,7 +12,8 @@ import matplotlib.ticker
 import numpy as np
 import pandas as pd
 
-from profiles.analysis import DetectedClockConvergence
+if typing.TYPE_CHECKING:
+    from profiles.analysis import DetectedClockConvergence
 
 ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
 
@@ -86,7 +88,7 @@ class ConvergenceStatistics:
         )
 
     @staticmethod
-    def from_convergence_series(detected_clock_convergence: DetectedClockConvergence, convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
+    def from_convergence_series(detected_clock_convergence: "DetectedClockConvergence", convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
         convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
         if math.isnan(convergence_max_offset):
             logging.warning("No convergence data on profile, cannot calculate convergence statistics.")
@@ -151,7 +153,7 @@ class Timeseries:
             orient="table", date_unit='ns',
         )
 
-    def validate(self, data_frame: pd.DataFrame = None):
+    def validate(self, data_frame: pd.DataFrame = None, maximum_time_jump=timedelta(seconds=5)):
         if data_frame is None:
             data_frame = self.data_frame
 
@@ -159,11 +161,11 @@ class Timeseries:
 
         # Ensure that data is sorted chronologically.
         min_time_jump = index_time_deltas.min()
-        if min_time_jump < 0:
+        if min_time_jump < timedelta(seconds=0):
             raise RuntimeError(f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
 
         # Make sure there are no gaps in the data
-        time_jumps = index_time_deltas[index_time_deltas >= timedelta(seconds=5)]
+        time_jumps = index_time_deltas[index_time_deltas >= maximum_time_jump]
         if not time_jumps.empty:
             raise RuntimeError(f"Timeseries contains {len(time_jumps)} holes (largest hole: {time_jumps.max()}, total: {time_jumps.sum()})")
 

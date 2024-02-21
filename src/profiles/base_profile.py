@@ -151,7 +151,7 @@ class BaseProfile:
         )
         result_frame.set_index(timestamps, drop=True, inplace=True)
         entire_series = Timeseries.from_series(result_frame)
-        entire_series.validate()
+        entire_series.validate(maximum_time_jump=timedelta(minutes=1, seconds=10))
 
         # Do some data post-processing to improve quality.
 
