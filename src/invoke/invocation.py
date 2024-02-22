@@ -166,7 +166,8 @@ class Invocation:
 
                 # Wait for process to exit while handling IO
                 try:
-                    logging.info(f"Terminating {self.command[0]}...")
+                    if self.log_output or self.dump_output_on_failure:
+                        logging.info(f"Terminating {self.command[0]}...")
                     self._process.terminate()
 
                     await asyncio.wait_for(self._communicate(), timeout=timeout)
