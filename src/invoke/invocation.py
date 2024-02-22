@@ -3,17 +3,15 @@ import logging
 import os
 from asyncio import subprocess, Task
 from dataclasses import dataclass, field
-from datetime import timedelta
 from pathlib import Path
 from typing import List, Union, Optional, Self
 
 import util
 from invoke import settings
 from invoke.environment import InvocationEnvironmentVariable, InvocationEnvironment
-from util import ImmediateException
 
 
-class InvocationFailedException(ImmediateException):
+class InvocationFailedException(Exception):
     pass
 
 @dataclass
@@ -196,6 +194,9 @@ class Invocation:
                 if self.dump_output_on_failure:
                     for line in self.output.splitlines():
                         logging.info(f"| {line}")
+
+                if self.log_output or self.dump_output_on_failure:
+                    logging.error(f"The process {self} returned with unexpected return code {self.return_code}")
 
                 raise InvocationFailedException(
                     f"The process {self} returned with unexpected return code {self.return_code}"

@@ -37,7 +37,8 @@ class ScheduleTask:
             invocation = Invocation.of_shell(command=self.command)
             asyncio.run(invocation.run(timeout=self.timeout.total_seconds()))
             self.success = True
-        except InvocationFailedException:
+        except InvocationFailedException as e:
+            logging.exception("Failed to run task", e)
             self.success = False
         self.completion_time = datetime.now()
         logging.info(f"Task {self.id} completed at {self.completion_time} (success: {self.success}).")
