@@ -110,7 +110,7 @@ class Invocation:
 
         common_invocation_arguments={
             'stdout': subprocess.PIPE,
-            'stderr': subprocess.STDOUT,
+            'stderr': subprocess.PIPE,
             'stdin': subprocess.PIPE,
             'cwd': self.working_directory,
             'env': self.environment,
@@ -133,10 +133,10 @@ class Invocation:
 
         return self
 
-    async def read_output_lines(self):
+    async def read_output_lines(self, stream: asyncio.StreamReader):
         """Iterate through the process output, logging and capturing output as necessary."""
         while True:
-            line = (await self._process.stdout.readline()).decode()
+            line = (await stream.readline()).decode()
             if line == '':
                 await self._process.wait()
                 break
@@ -150,11 +150,11 @@ class Invocation:
 
                 if self.capture_output:
                     self.output += line
-                yield line
 
     async def _communicate(self):
-        async for _ in self.read_output_lines():
-            pass
+        async with asyncio.TaskGroup() as read_tasks:
+            read_tasks.create_task(self.read_output_lines(self._process.stdout))
+            read_tasks.create_task(self.read_output_lines(self._process.stderr))
 
     async def _terminate(self, timeout: float = None, skip_verify_return_code: bool = False):
         """Send the program a SIGTERM to politely shut it down and then finalize the process.
