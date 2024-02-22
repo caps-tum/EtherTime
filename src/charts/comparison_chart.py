@@ -49,6 +49,7 @@ class ComparisonChart(ChartContainer):
             hue=data['hue'].rename(hue_name),
             marker='o',
             linestyle=linestyle,
+            errorbar=("pi", 95),
         )
         if include_confidence_intervals:
             for name, group in data.groupby("hue"):
