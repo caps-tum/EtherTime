@@ -1,6 +1,5 @@
 import io
 from dataclasses import dataclass
-from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -10,7 +9,7 @@ import constants
 from config import current_configuration
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile, ProfileType
-from util import read_file_if_exists
+from util import str_join
 from vendor.vendor import Vendor
 
 
@@ -51,10 +50,8 @@ class PTPDVendor(Vendor):
         Path(self.statistics_file_path).unlink(missing_ok=True)
 
         self._process = Invocation.of_command(
-            "ptpd", *self.ptpd_interface_options, "--foreground",
+            "ptpd", *self.ptpd_interface_options, "--verbose",
             '--masteronly' if current_configuration.machine.ptp_master else '--slaveonly',
-            '--log-file', str(self.log_file_path),
-            "--statistics-file", str(self.statistics_file_path),
             "--config-file", str(self.config_file_path),
         ).as_privileged()
 
@@ -74,8 +71,7 @@ class PTPDVendor(Vendor):
 
     def collect_data(self, profile: "BaseProfile"):
         profile.raw_data.update(
-            log=read_file_if_exists(self.log_file_path),
-            statistics= read_file_if_exists(self.statistics_file_path),
+            log=self._process.output if self._process is not None else None,
         )
 
     @property
@@ -85,11 +81,21 @@ class PTPDVendor(Vendor):
 
     @classmethod
     def convert_profile(cls, raw_profile: "BaseProfile") -> Optional[BaseProfile]:
-        frame = pd.read_csv(
-            io.StringIO(raw_profile.raw_data["statistics"]), delimiter=",", skipinitialspace=True,
-            parse_dates=True
+        # In old profiles, statistics were in statistics while the regular log was in "log".
+        # New profiles merge all data into log.
+        log = raw_profile.raw_data["statistics"] if "statistics" in raw_profile.raw_data.keys() else raw_profile.raw_data["log"]
+
+        # Keep only the CSV header and the statistics lines in the state "slave"
+        filtered_log = str_join(
+            [line for line in log.splitlines(keepends=True) if line.startswith("# Timestamp") or ", slv, " in line],
+            separator=''
         )
-        frame = frame[frame["State"] == "slv"]
+
+        frame = pd.read_csv(
+            io.StringIO(filtered_log), delimiter=",", skipinitialspace=True, parse_dates=True
+        )
+        # No longer necessary, the filtering is done above.
+        # frame = frame[frame["State"] == "slv"]
 
         if frame.empty:
             return None
