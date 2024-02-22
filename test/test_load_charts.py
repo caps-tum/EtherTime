@@ -119,3 +119,15 @@ class TestLoadCharts(TestCase):
             )
 
             chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_base_vs_1_percent_{vendor}.png"))
+
+    def test_generate_markdown_document(self):
+        profile_db = ProfileDB()
+        output_dir = constants.DATA_DIR.joinpath("profiles").joinpath("load").joinpath("net_unprioritized")
+
+        document = """# Network Load Contention Test (Unprioritized)\n"""
+
+        for aggregated_profile in profile_db.resolve_all(resolve.AGGREGATED_PROFILE(), resolve.BY_TAGS(ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)):
+            picture = aggregated_profile.file_path.parent.parent.joinpath("timeseries").joinpath("rpi08-path-delay.png").relative_to(output_dir)
+            document += f"![{aggregated_profile.id}]({picture})\n"
+
+        output_dir.joinpath("unprioritized-load.md").write_text(document)
