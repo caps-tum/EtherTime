@@ -169,7 +169,7 @@ class Timeseries:
         # Make sure there are no gaps in the data
         time_jumps = index_time_deltas[index_time_deltas >= maximum_time_jump]
         if not time_jumps.empty:
-            raise RuntimeError(f"Timeseries contains {len(time_jumps)} holes (largest hole: {time_jumps.max()}, total: {time_jumps.sum()})")
+            logging.warning(f"Timeseries contains {len(time_jumps)} holes (largest hole: {time_jumps.max()}, total: {time_jumps.sum()})")
 
 
     def summarize(self) -> SummaryStatistics:
