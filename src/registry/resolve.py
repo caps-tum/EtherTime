@@ -80,3 +80,6 @@ def BY_MACHINE(machine: Machine):
 
 def BY_VALID_BENCHMARK_AND_VENDOR(benchmark: Benchmark, vendor: Vendor):
     return lambda profile: VALID_PROCESSED_PROFILE()(profile) and BY_BENCHMARK(benchmark)(profile) and BY_VENDOR(vendor)(profile)
+
+def BY_AGGREGATED_BENCHMARK_AND_VENDOR(benchmark: Benchmark, vendor: Vendor):
+    return lambda profile: AGGREGATED_PROFILE()(profile) and BY_BENCHMARK(benchmark)(profile) and BY_VENDOR(vendor)(profile)

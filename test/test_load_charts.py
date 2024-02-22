@@ -85,13 +85,13 @@ class TestLoadCharts(TestCase):
         for vendor in VendorDB.ANALYZED_VENDORS:
             profiles = [
                 profile_db.resolve_most_recent(
-                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor),
+                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100), vendor),
+                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100), vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, 100), vendor),
+                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, 100), vendor),
                 ),
             ]
             if None in profiles:
@@ -105,8 +105,8 @@ class TestLoadCharts(TestCase):
         profile_db = ProfileDB()
         # Compare baseline to 1% additional load
         for vendor in VendorDB.ANALYZED_VENDORS:
-            baseline = profile_db.resolve_most_recent(resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor))
-            load_1_percent = profile_db.resolve_most_recent(resolve.BY_VALID_BENCHMARK_AND_VENDOR(
+            baseline = profile_db.resolve_most_recent(resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor))
+            load_1_percent = profile_db.resolve_most_recent(resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(
                 BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 1), vendor)
             )
 
