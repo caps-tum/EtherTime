@@ -35,10 +35,11 @@ class ProfileCache:
     cached_profiles: List[CachedProfile] = field(default_factory=list)
 
     @staticmethod
-    def build(profiles: List[BaseProfile]):
-        return ProfileCache(
-            cached_profiles=[CachedProfile.from_profile(profile) for profile in profiles]
-        )
+    def build(profiles: List[BaseProfile], persist: bool = False):
+        new_cache = ProfileCache(cached_profiles=[CachedProfile.from_profile(profile) for profile in profiles])
+        if persist:
+            new_cache.save()
+        return new_cache
 
     @staticmethod
     def load() -> "ProfileCache":
@@ -46,3 +47,6 @@ class ProfileCache:
 
     def save(self):
         return pydantic_save_model(ProfileCache, self, PROFILE_CACHE_LOCATION)
+
+    def invalidate(self):
+        PROFILE_CACHE_LOCATION.unlink(missing_ok=True)

@@ -17,6 +17,7 @@ from vendor.registry import VendorDB
 
 def analyze():
     profile_db = ProfileDB()
+    profile_db.invalidate_cache()
 
     # Remove all previously processed data to avoid out-of-date profiles
     old_profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
@@ -32,9 +33,12 @@ def analyze():
         if processed is not None:
             processed.save()
 
+    profile_db.invalidate_cache()
+
 
 def merge():
     profile_db = ProfileDB()
+    profile_db.invalidate_cache()
     for benchmark in BenchmarkDB.all():
         for vendor in VendorDB.ANALYZED_VENDORS:
             for machine in current_configuration.cluster.machines:
@@ -48,6 +52,7 @@ def merge():
                     logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(profiles)}")
                     aggregated_profile = AggregatedProfile.from_profiles(profiles)
                     aggregated_profile.save()
+    profile_db.invalidate_cache()
 
 
 

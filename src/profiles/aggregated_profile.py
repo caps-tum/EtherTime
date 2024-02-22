@@ -20,7 +20,7 @@ class AggregatedProfile(BaseProfile):
         aggregated_profile = AggregatedProfile(
             id=f"aggregated",
             benchmark=BenchmarkDB.get(benchmark_id),
-            vendor_id=VendorDB.get(vendor_id),
+            vendor_id=vendor_id,
             profile_type=ProfileType.AGGREGATED,
             machine_id=machine_id,
             start_time=max([profile.start_time for profile in profiles])

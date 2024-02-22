@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, ClassVar
 
 import constants
 from machine import Machine
@@ -14,26 +14,35 @@ PROFILE_FILTER = Callable[[BaseProfile], bool]
 @dataclass
 class ProfileDB:
     base_directory: Path = constants.MEASUREMENTS_DIR
-    _profile_cache = None
+    _profile_cache: ClassVar[ProfileCache] = None
 
     def find_profile_paths(self) -> List[Path]:
         return list(self.base_directory.rglob("*.json"))
 
-    def load_profiles(self) -> ProfileCache:
+    def get_cache(self) -> ProfileCache:
         if ProfileDB._profile_cache is None:
             try:
                 ProfileDB._profile_cache = ProfileCache.load()
             except FileNotFoundError:
                 ProfileDB._profile_cache = ProfileCache.build(
-                    [BaseProfile.load(profile_path) for profile_path in self.find_profile_paths()]
+                    [BaseProfile.load(profile_path) for profile_path in self.find_profile_paths()],
+                    persist=True
                 )
-                ProfileDB._profile_cache.save()
         return ProfileDB._profile_cache
+
+    def invalidate_cache(self):
+        self.get_cache().invalidate()
+        ProfileDB._profile_cache = None
 
     def resolve_all(self, *filters: PROFILE_FILTER) -> List[BaseProfile]:
         if filters is None:
             filters = []
-        return [profile.load_profile() for profile in self.load_profiles().cached_profiles if all(filter_function(profile) for filter_function in filters)]
+        try:
+            return [profile.load_profile() for profile in self.get_cache().cached_profiles if all(filter_function(profile) for filter_function in filters)]
+        except FileNotFoundError:
+            # Invalidate cache and retry
+            self.invalidate_cache()
+            return self.resolve_all(*filters)
 
     def resolve_most_recent(self, *filters: PROFILE_FILTER) -> Optional[BaseProfile]:
         try:
