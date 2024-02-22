@@ -79,39 +79,43 @@ class TestLoadCharts(TestCase):
             )
             chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_network_unisolated_versus_{vendor_id}.png"))
 
+    def test_unisolated_prioritized_isolated_comparison(self):
         # Compare base, unisolated, prioritized, (eventually isolated)
-        for vendor_id in vendors:
-            chart = TimeSeriesChartComparison([
+        profile_db = ProfileDB()
+        for vendor in VendorDB.ANALYZED_VENDORS:
+            profiles = [
                 profile_db.resolve_most_recent(
-                    resolve.VALID_PROCESSED_PROFILE(), resolve.BY_BENCHMARK(BenchmarkDB.BASE),
-                    resolve.BY_VENDOR(VendorDB.get(vendor_id))
+                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.VALID_PROCESSED_PROFILE(),
-                    resolve.BY_BENCHMARK(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100)),
-                    resolve.BY_VENDOR(VendorDB.get(vendor_id)),
+                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100), vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.VALID_PROCESSED_PROFILE(),
-                    resolve.BY_BENCHMARK(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, 100)),
-                    resolve.BY_VENDOR(VendorDB.get(vendor_id)),
+                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, 100), vendor),
                 ),
-            ], labels=["Baseline", "Unprioritized (100% load)", "Prioritized (100% load)"], x_label="Profile")
+            ]
+            if None in profiles:
+                self.skipTest("Missing comparison profiles.")
 
-            chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_network_versus_base_{vendor_id}.png"))
+            chart = TimeSeriesChartComparison(profiles, labels=["Baseline", "Unprioritized (100% load)", "Prioritized (100% load)"], x_label="Profile")
 
+            chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_network_versus_base_{vendor}.png"))
+
+    def test_baseline_versus_1_percent_comparison(self):
+        profile_db = ProfileDB()
         # Compare baseline to 1% additional load
-        for vendor_id in vendors:
-            chart = TimeSeriesChartVersus(
-                profile_db.resolve_most_recent(
-                    resolve.VALID_PROCESSED_PROFILE(), resolve.BY_BENCHMARK(BenchmarkDB.BASE),
-                    resolve.BY_VENDOR(VendorDB.get(vendor_id))
-                ),
-                profile_db.resolve_most_recent(
-                    resolve.VALID_PROCESSED_PROFILE(),
-                    resolve.BY_BENCHMARK(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 1)),
-                    resolve.BY_VENDOR(VendorDB.get(vendor_id)),
-                ),
+        for vendor in VendorDB.ANALYZED_VENDORS:
+            baseline = profile_db.resolve_most_recent(resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor))
+            load_1_percent = profile_db.resolve_most_recent(resolve.BY_VALID_BENCHMARK_AND_VENDOR(
+                BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 1), vendor)
             )
 
-            chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_base_vs_1_percent_{vendor_id}.png"))
+            if None in [baseline, load_1_percent]:
+                self.skipTest("Missing profiles.")
+
+            chart = TimeSeriesChartVersus(
+                baseline,
+                load_1_percent,
+            )
+
+            chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_base_vs_1_percent_{vendor}.png"))

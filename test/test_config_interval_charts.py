@@ -24,6 +24,9 @@ class TestConfigurationCharts(TestCase):
             )
         )
 
+        if len(profiles) == 0:
+            self.skipTest("Missing profiles.")
+
         chart = ComparisonChart("Time Sampling Interval", profiles, nrows=2)
         chart.plot_median_clock_diff_and_path_delay(
             lambda profile: self.sync_interval_to_syncs_per_second(profile.benchmark.ptp_config.log_sync_interval),
