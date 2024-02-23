@@ -47,24 +47,30 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         :param load_level: Percentage of load of (assumed GBit) interface to apply."""
 
         common_options = {
+            'id': f"load/net_{type.value}/load_{load_level}",
             'artificial_load_network': load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
             'duration': timedelta(minutes=60),
         }
 
         if type == NetworkContentionType.UNPRIORITIZED:
             return Benchmark(
-                id=f"load/net_{type.value}/load_{load_level}",
                 name=f"Unprioritized Network {load_level}% Load",
                 tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED],
                 **common_options,
             )
-        if type == NetworkContentionType.PRIORITIZED:
+        elif type == NetworkContentionType.PRIORITIZED:
             return Benchmark(
-                id=f"load/net_{type.value}/load_{load_level}",
                 name=f"Prioritized Network {load_level}% Load",
                 tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_PRIORITIZED],
                 artificial_load_network_dscp_priority='cs1', # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
                 **common_options,
+            )
+        elif type == NetworkContentionType.ISOLATED:
+            return Benchmark(
+                name=f"Isolated Network {load_level}% Load",
+                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_ISOLATED],
+                artificial_load_network_secondary_interface=True,
+                **common_options
             )
         else:
             raise RuntimeError(f"Unknown network contention type: {type}")

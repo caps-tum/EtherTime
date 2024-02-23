@@ -18,10 +18,15 @@ class NetworkPerformanceDegrader:
         target_bandwidth = self.profile.benchmark.artificial_load_network
         dscp_priority = self.profile.benchmark.artificial_load_network_dscp_priority
 
-        server_address = unpack_one_value_or_error(
-            [worker.plugin_settings.iperf_address for worker in current_configuration.cluster.machines if worker.plugin_settings.iperf_server],
+        worker = unpack_one_value_or_error(
+            [worker for worker in current_configuration.cluster.machines if worker.plugin_settings.iperf_server],
             "Exactly one worker should be specified as the iPerf server to use the network performance degrader plugin"
         )
+        if self.profile.benchmark.artificial_load_network_secondary_interface:
+            server_address = worker.plugin_settings.iperf_secondary_address
+        else:
+            server_address = worker.plugin_settings.iperf_address
+
 
         logging.debug(f"Determined iperf server address: {server_address}")
 

@@ -86,6 +86,7 @@ class Process:
 class PluginSettings:
     iperf_server: bool = False
     iperf_address: str = None
+    iperf_secondary_address: str = None
     stress_ng_cpus: int = 0
 
 @dataclass(kw_only=True)
