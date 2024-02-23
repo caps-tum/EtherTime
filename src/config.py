@@ -21,7 +21,7 @@ MACHINE_RPI06 = Machine(
     **RASPBERRY_PI_PTP_SETTINGS,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.6", iperf_secondary_address="192.168.1.106",
-        stress_ng_cpus=4, )
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
 MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
@@ -29,13 +29,13 @@ MACHINE_RPI08 = Machine(
     **RASPBERRY_PI_PTP_SETTINGS,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
-        stress_ng_cpus=4, )
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
 MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
     **RASPBERRY_PI_PTP_SETTINGS,
-    plugin_settings=PluginSettings(iperf_server=False, iperf_address=None, stress_ng_cpus=4, )
+    plugin_settings=PluginSettings(iperf_server=False, iperf_address=None, stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",

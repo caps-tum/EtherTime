@@ -88,6 +88,7 @@ class PluginSettings:
     iperf_address: str = None
     iperf_secondary_address: str = None
     stress_ng_cpus: int = 0
+    stress_ng_cpu_restrict_cores: str
 
 @dataclass(kw_only=True)
 class Machine(RPCTarget):
