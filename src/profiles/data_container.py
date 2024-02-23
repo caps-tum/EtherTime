@@ -54,6 +54,10 @@ class BootstrapMetric:
             confidence_interval_upper=bootstrap_result.confidence_interval.high
         )
 
+    @property
+    def relative_magnitude(self) -> float:
+        return abs((self.confidence_interval_upper - self.confidence_interval_lower) / self.value)
+
 
 @dataclass
 class SummaryStatistics:

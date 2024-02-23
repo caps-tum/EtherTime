@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from random import random, Random
 from typing import List, Callable, Optional, Any
 
 import pandas as pd
@@ -7,7 +8,10 @@ from matplotlib import pyplot as plt
 
 from charts.chart_container import ChartContainer, YAxisLabelType
 from profiles.base_profile import BaseProfile
-from profiles.data_container import MergedTimeSeries
+from profiles.data_container import MergedTimeSeries, BootstrapMetric
+from util import unpack_one_value
+from utilities.colors import adjust_lightness
+from vendor.ptpd import PTPDVendor
 
 
 @dataclass
@@ -42,7 +46,31 @@ class ComparisonChart(ChartContainer):
         if data.empty:
             raise RuntimeError("No data provided to plot script.")
 
-        ax = seaborn.lineplot(
+        indexes, values = data['hue'].factorize()
+        data['dodge_x'] = indexes
+        data['x'] += data['dodge_x']
+
+        # Draw error bars under the actual plot
+        if include_confidence_intervals:
+            # Draw median = most important, last, for all vendors
+            for quantile in [0.05, 0.95, 0.5]:
+                for name, group in data.groupby(by=["hue", "x"]):
+                    bootstrap_metric = BootstrapMetric.create(group["y"], quantile=quantile)
+                    # if bootstrap_metric.relative_magnitude >= 0.1:
+                    base_color = seaborn.color_palette()[1] if unpack_one_value(group["hue"].unique()) == PTPDVendor.name else seaborn.color_palette()[0]
+                    if quantile == 0.5:
+                        color = adjust_lightness(base_color, 1.4)
+                    else:
+                        color = adjust_lightness(base_color, 0.6)
+                    self.current_axes.vlines(
+                        x=unpack_one_value(group["x"].unique()) + (0 if quantile == 0.5 else 0.25),
+                          # + Random().randint(-2, 2),
+                        ymin=bootstrap_metric.confidence_interval_lower,
+                        ymax=bootstrap_metric.confidence_interval_upper,
+                        color=color,
+                    )
+
+        seaborn.lineplot(
             ax=self.current_axes,
             x=data['x'],
             y=data['y'],
@@ -51,9 +79,7 @@ class ComparisonChart(ChartContainer):
             linestyle=linestyle,
             errorbar=("pi", 95),
         )
-        if include_confidence_intervals:
-            for name, group in data.groupby("hue"):
-                ax.fill_between(group['x'], group['y_lower_bound'], group['y_upper_bound'], alpha=0.2)
+
         self.plot_decorate_yaxis(self.current_axes, ylabel=YAxisLabelType.OFFSET_GENERIC)
 
         self.current_axes.set_xlabel(x_axis_label)
@@ -94,7 +120,7 @@ class ComparisonChart(ChartContainer):
             y_lower_bound=profile.summary_statistics.clock_diff_median.confidence_interval_lower,
             y_upper_bound=profile.summary_statistics.clock_diff_median.confidence_interval_upper,
             hue=profile.vendor.name,
-        ), x_axis_label=x_axis_label, hue_name="Vendor")
+        ), x_axis_label=x_axis_label, hue_name="Vendor", include_confidence_intervals=True)
         # self.plot_statistic_timeseries_bootstrap(lambda profile: x_axis_values(profile),
         #                                          x_axis_label=x_axis_label, hue_name="Vendor")
         # chart.current_axes.set_yscale('log')
@@ -111,6 +137,7 @@ class ComparisonChart(ChartContainer):
                 x_axis_label=x_axis_label,
                 hue_name="Vendor",
                 linestyle='dotted',
+                include_confidence_intervals = True,
             )
 
         self.set_current_axes(1, 0)
@@ -120,7 +147,7 @@ class ComparisonChart(ChartContainer):
             y_lower_bound=profile.summary_statistics.path_delay_median.confidence_interval_lower,
             y_upper_bound=profile.summary_statistics.path_delay_median.confidence_interval_upper,
             hue=profile.vendor.name,
-        ), x_axis_label=x_axis_label, hue_name="Vendor")
+        ), x_axis_label=x_axis_label, hue_name="Vendor", include_confidence_intervals=True)
         self.current_axes.set_ylabel('Path Delay')
 
 
