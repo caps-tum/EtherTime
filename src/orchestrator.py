@@ -44,11 +44,18 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
 
 
 async def run_orchestration(benchmarks: List[str], vendors: List[str],
-                            num_iterations: int = 1, duration_override: timedelta = None):
+                            num_iterations: int = 1, duration_override: timedelta = None, test_mode: bool = False):
     configuration = config.current_configuration
     cluster = configuration.cluster
 
-    await restart_cluster(cluster)
+    if not test_mode:
+        await restart_cluster(cluster)
+    else:
+        logging.info("Skipping cluster restart due to test mode.")
+
+    if test_mode and duration_override is None:
+        duration_override = timedelta(minutes=1)
+        logging.info(f"Applying duration override of {duration_override} due to test mode.")
 
     RPCServer.service_type = RPCServerService
     rpc_server = RPCServer()
@@ -105,6 +112,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--duration", type=int, default=None, help="Duration override (in minutes)",
     )
+    parser.add_argument(
+        "--test", action="store_true", default=False, help="Run this benchmark in test mode (1 minute, no restart)"
+    )
 
     result = parser.parse_args()
 
@@ -115,8 +125,10 @@ if __name__ == '__main__':
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
 
+    test_mode = result.test
+
     with StackTraceGuard():
         asyncio.run(run_orchestration(
             benchmarks=benchmarks, vendors=result.vendor,
-            num_iterations=result.iterations, duration_override=duration_override,
+            num_iterations=result.iterations, duration_override=duration_override, test_mode=test_mode
         ))
