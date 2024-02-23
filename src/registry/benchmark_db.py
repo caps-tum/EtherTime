@@ -95,8 +95,9 @@ BenchmarkDB.register_all(
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
     BenchmarkDB.register(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, load_level=load_level))
 
-# Just one prioritized benchmark for now at 100%
+# Just one prioritized and isolated benchmark for now at 100%
 BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, load_level=100))
+BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.ISOLATED, load_level=100))
 
 
 # Different configurations
