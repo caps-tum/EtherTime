@@ -2,9 +2,9 @@ import asyncio
 import logging
 from asyncio import CancelledError
 from datetime import datetime, timedelta
-from typing import List
 
 import util
+from adapters.fault_generators import SoftwareFaultGenerator
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from config import current_configuration
 from constants import PTPPERF_REPOSITORY_ROOT
@@ -13,18 +13,7 @@ from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition, setup_logging
 from utilities.multi_task_controller import MultiTaskController
 from vendor.registry import VendorDB
-from vendor.vendor import Vendor
 
-
-async def restart_vendor_repeatedly(vendor: Vendor, interval: timedelta):
-    # We do this until we are cancelled
-    try:
-        while True:
-            await asyncio.sleep(interval.total_seconds())
-            logging.info(f"Scheduled software fault imminent on {current_configuration.machine}.")
-            await vendor.restart(kill=True)
-    except CancelledError:
-        pass
 
 async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_tolerance_prompt_downtime: timedelta):
     # We do this until we are cancelled
@@ -45,7 +34,6 @@ async def benchmark(profile: BaseProfile):
 
     profile.machine_id = current_configuration.machine.id
     background_tasks = MultiTaskController()
-    background_data_collection: List[BackgroundDataCollector]
 
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
     profile_log.parent.mkdir(exist_ok=True)
@@ -93,9 +81,9 @@ async def benchmark(profile: BaseProfile):
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == current_configuration.machine.id:
-            logging.info(f"Scheduling software faults every {profile.benchmark.fault_tolerance_software_fault_interval} on {current_configuration.machine.id}")
+            fault_generator = SoftwareFaultGenerator(profile)
             background_tasks.add_coroutine(
-                restart_vendor_repeatedly(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval)
+                fault_generator.run(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval)
             )
 
         logging.info(f"Starting {profile.vendor}...")
