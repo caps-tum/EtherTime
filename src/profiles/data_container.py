@@ -38,6 +38,22 @@ class BootstrapMetric:
 
         return formatter.format_data(self.value)
 
+    @staticmethod
+    def create(data: pd.Series, quantile: float):
+        import scipy
+        bootstrap_result = scipy.stats.bootstrap(
+            # Samples must be in a sequence, this isn't clear from the documentation
+            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html
+            (data,),
+            lambda sample, axis: np.quantile(sample, quantile, axis=axis),
+            random_state=np.random.default_rng(0), vectorized=True,
+        )
+        return BootstrapMetric(
+            value=data.quantile(quantile),
+            confidence_interval_lower=bootstrap_result.confidence_interval.low,
+            confidence_interval_upper=bootstrap_result.confidence_interval.high
+        )
+
 
 @dataclass
 class SummaryStatistics:
@@ -173,27 +189,14 @@ class Timeseries:
 
 
     def summarize(self) -> SummaryStatistics:
-        import scipy.stats
 
         clock_diff = self.get_clock_diff(abs=True)
         path_delay = self.path_delay
 
-        # Samples must be in a sequence, this isn't clear from the documentation
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html
-        bootstrap_clock_diff_median = scipy.stats.bootstrap(
-            (clock_diff,), np.median, random_state=np.random.default_rng(0), vectorized=True,
-        )
-        bootstrap_clock_diff_p99 = scipy.stats.bootstrap(
-            (clock_diff,), lambda sample, axis: np.quantile(sample, 0.99, axis=axis), random_state=np.random.default_rng(0), vectorized=True,
-        )
-        bootstrap_path_delay_median = scipy.stats.bootstrap(
-            (path_delay,), np.median, random_state=np.random.default_rng(0), vectorized=True,
-        )
-
         return SummaryStatistics(
-            clock_diff_median=BootstrapMetric(clock_diff.median(), bootstrap_clock_diff_median.confidence_interval[0], bootstrap_clock_diff_median.confidence_interval[1]),
-            clock_diff_p99=BootstrapMetric(clock_diff.quantile(0.99), bootstrap_clock_diff_p99.confidence_interval[0], bootstrap_clock_diff_p99.confidence_interval[1]),
-            path_delay_median=BootstrapMetric(path_delay.median(), bootstrap_path_delay_median.confidence_interval[0], bootstrap_path_delay_median.confidence_interval[1]),
+            clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
+            clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
+            path_delay_median=BootstrapMetric.create(path_delay, 0.5),
         )
 
     @property
