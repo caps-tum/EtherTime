@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -20,3 +21,5 @@ CHARTS_DIR = ensure_directory_exists(DATA_DIR.joinpath("charts"))
 CONFIG_DIR = ensure_directory_exists(DATA_DIR.joinpath("config"))
 
 LOCAL_DIR = ensure_directory_exists(PTPPERF_REPOSITORY_ROOT.joinpath("local"))
+
+DEFAULT_BENCHMARK_DURATION = timedelta(minutes=20)

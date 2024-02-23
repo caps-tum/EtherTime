@@ -3,6 +3,8 @@ from dataclasses import field, dataclass
 from datetime import timedelta
 from typing import List, Optional, Literal
 
+from constants import DEFAULT_BENCHMARK_DURATION
+
 
 @dataclass
 class PTPConfig:
@@ -22,7 +24,7 @@ class Benchmark:
     name : str
     tags: List[str] = field(default_factory=list)
     version: int = 1
-    duration: datetime.timedelta = None
+    duration: datetime.timedelta = DEFAULT_BENCHMARK_DURATION
 
     ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
 

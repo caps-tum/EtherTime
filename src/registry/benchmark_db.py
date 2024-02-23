@@ -21,18 +21,18 @@ class ResourceContentionComponent(str, Enum):
 
 class BenchmarkDB(BaseRegistry[Benchmark]):
 
-    BASE = Benchmark("base", "Baseline", tags=[], duration=timedelta(minutes=60))
+    BASE = Benchmark("base", "Baseline", tags=[])
     TEST = Benchmark("test/test", "Test", tags=[], duration=timedelta(minutes=1))
 
     DEMO = Benchmark("test/demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
-    NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[], duration=timedelta(minutes=60))
-    BASE_TWO_CLIENTS = Benchmark("scalability/1_to_2", "1 Master 2 Clients", tags=[], duration=timedelta(minutes=60))
+    NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[])
+    BASE_TWO_CLIENTS = Benchmark("scalability/1_to_2", "1 Master 2 Clients", tags=[])
 
     # Software crash, once every 30 seconds
     SOFTWARE_FAULT = Benchmark(
-        "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE], duration=timedelta(minutes=60),
-        fault_tolerance_software_fault_interval=timedelta(seconds=30),
+        "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE],
+        fault_tolerance_software_fault_interval=timedelta(minutes=1),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
     )
 
@@ -40,7 +40,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         duration=timedelta(minutes=5),
-        fault_tolerance_prompt_interval=timedelta(seconds=30),
+        fault_tolerance_prompt_interval=timedelta(minutes=1),
         fault_tolerance_prompt_downtime=timedelta(seconds=5),
     )
 
@@ -53,7 +53,6 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
         benchmark_options = {
             'id': f"load/{component.value}_{type.value}/load_{load_level}",
-            'duration': timedelta(minutes=60),
         }
         tags = [ProfileTags.CATEGORY_LOAD]
 
