@@ -25,8 +25,8 @@ class TestLoadCharts(TestCase):
             resolve.BY_TAGS(
                 ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED,
             ),
-            # For now, limit to 50% and 100% load.
-            lambda profile: profile.benchmark.artificial_load_network == 500 or profile.benchmark.artificial_load_network == 1000
+            # For now, limit to 20%, 50%, 80% and 100% load.
+            lambda profile: profile.benchmark.artificial_load_network in [200, 500, 800, 1000]
         )
         # Also include the baseline
         profiles += profile_db.resolve_all(
