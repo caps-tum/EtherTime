@@ -1,18 +1,15 @@
 from unittest import TestCase
 
-from matplotlib.ticker import PercentFormatter
-
-import config
 import constants
 
 LOAD_CHART_DIRECTORY = constants.CHARTS_DIR.joinpath("load")
-from charts.comparison_chart import ComparisonChart, ComparisonDataPoint
+from charts.comparison_chart import ComparisonChart
 from charts.timeseries_chart_comparison import TimeSeriesChartComparison
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from profiles.base_profile import ProfileTags
 from registry import resolve
-from registry.benchmark_db import BenchmarkDB, NetworkContentionType
-from registry.resolve import ProfileDB, VALID_PROCESSED_PROFILE
+from registry.benchmark_db import BenchmarkDB, ResourceContentionType
+from registry.resolve import ProfileDB
 from vendor.registry import VendorDB
 
 
@@ -75,7 +72,7 @@ class TestLoadCharts(TestCase):
                 ),
                 profile_db.resolve_most_recent(
                     resolve.VALID_PROCESSED_PROFILE(),
-                    resolve.BY_BENCHMARK(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100)),
+                    resolve.BY_BENCHMARK(BenchmarkDB.resource_contention(ResourceContentionType.UNPRIORITIZED, 100)),
                     resolve.BY_VENDOR(VendorDB.get(vendor_id)),
                 )
             )
@@ -90,10 +87,10 @@ class TestLoadCharts(TestCase):
                     resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 100), vendor),
+                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.resource_contention(ResourceContentionType.UNPRIORITIZED, 100), vendor),
                 ),
                 profile_db.resolve_most_recent(
-                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, 100), vendor),
+                    resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.resource_contention(ResourceContentionType.PRIORITIZED, 100), vendor),
                 ),
             ]
             if None in profiles:
@@ -109,7 +106,7 @@ class TestLoadCharts(TestCase):
         for vendor in VendorDB.ANALYZED_VENDORS:
             baseline = profile_db.resolve_most_recent(resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, vendor))
             load_1_percent = profile_db.resolve_most_recent(resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(
-                BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, 1), vendor)
+                BenchmarkDB.resource_contention(ResourceContentionType.UNPRIORITIZED, 1), vendor)
             )
 
             if None in [baseline, load_1_percent]:

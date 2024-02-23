@@ -30,6 +30,8 @@ class Benchmark:
     artificial_load_network_dscp_priority: Optional[str] = None
     artificial_load_network_secondary_interface: Optional[bool] = False
     artificial_load_cpu: Optional[int] = 0
+    artificial_load_cpu_scheduler: Optional[str] = None
+    artificial_load_cpu_restrict_cores: Optional[bool] = True
 
     fault_tolerance_software_fault_interval: Optional[timedelta] = None
     fault_tolerance_software_fault_machine: Optional[str] = None

@@ -1,4 +1,3 @@
-import re
 from datetime import timedelta
 from enum import Enum
 from typing import List
@@ -9,10 +8,15 @@ from profiles.benchmark import Benchmark, PTPConfig
 from registry.base_registry import BaseRegistry
 
 
-class NetworkContentionType(str, Enum):
+class ResourceContentionType(str, Enum):
     UNPRIORITIZED = "unprioritized"
     PRIORITIZED = "prioritized"
     ISOLATED = "isolated"
+
+class ResourceContentionComponent(str, Enum):
+    CPU = "cpu"
+    NET = "net"
+
 
 
 class BenchmarkDB(BaseRegistry[Benchmark]):
@@ -41,39 +45,77 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     @staticmethod
-    def network_contention(type: NetworkContentionType, load_level: int):
+    def resource_contention(component: ResourceContentionComponent, type: ResourceContentionType, load_level: int):
         """Create a network contention benchmark for a target bandwidth.
+        :param component: Which component is being artificially loaded.
         :param type: How the load should be generated.
         :param load_level: Percentage of load of (assumed GBit) interface to apply."""
 
-        common_options = {
-            'id': f"load/net_{type.value}/load_{load_level}",
-            'artificial_load_network': load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
+        benchmark_options = {
+            'id': f"load/{component.value}_{type.value}/load_{load_level}",
             'duration': timedelta(minutes=60),
         }
+        tags = [ProfileTags.CATEGORY_LOAD]
 
-        if type == NetworkContentionType.UNPRIORITIZED:
-            return Benchmark(
-                name=f"Unprioritized Network {load_level}% Load",
-                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED],
-                **common_options,
+        # Set up component specific values
+        if component == ResourceContentionComponent.NET:
+            component_name = "Network"
+            tags.append(ProfileTags.COMPONENT_NET)
+            benchmark_options.update(
+                artificial_load_network=load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
             )
-        elif type == NetworkContentionType.PRIORITIZED:
-            return Benchmark(
-                name=f"Prioritized Network {load_level}% Load",
-                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_PRIORITIZED],
-                artificial_load_network_dscp_priority='cs1', # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
-                **common_options,
-            )
-        elif type == NetworkContentionType.ISOLATED:
-            return Benchmark(
-                name=f"Isolated Network {load_level}% Load",
-                tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_ISOLATED],
-                artificial_load_network_secondary_interface=True,
-                **common_options
+        elif component == ResourceContentionComponent.CPU:
+            component_name = "CPU"
+            tags.append(ProfileTags.COMPONENT_CPU)
+            benchmark_options.update(
+                artificial_load_cpu=load_level
             )
         else:
+            raise RuntimeError(f"Unknown resource contention component: {component}")
+
+        # Setup isolation specific values.
+        if type == ResourceContentionType.UNPRIORITIZED:
+            contention_name = "Unprioritized"
+            tags.append(ProfileTags.ISOLATION_UNPRIORITIZED)
+
+        elif type == ResourceContentionType.PRIORITIZED:
+            contention_name = "Prioritized"
+            tags.append(ProfileTags.ISOLATION_PRIORITIZED)
+
+            if component == ResourceContentionComponent.NET:
+                benchmark_options.update(
+                    artificial_load_network_dscp_priority='cs1',
+                    # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
+                )
+            elif component == ResourceContentionComponent.CPU:
+                benchmark_options.update(
+                    artificial_load_cpu_scheduler="idle",
+                    # Cannot set nice priority, so use scheduler idle instead.
+                    # Nice priority +19 is lowest: https://www.man7.org/linux/man-pages/man7/sched.7.html
+                )
+
+        elif type == ResourceContentionType.ISOLATED:
+            contention_name = "Isolated"
+            tags.append(ProfileTags.ISOLATION_ISOLATED)
+
+            if component == ResourceContentionComponent.NET:
+                benchmark_options.update(
+                    artificial_load_network_secondary_interface=True,
+                )
+            elif component == ResourceContentionComponent.CPU:
+                benchmark_options.update(
+                    artificial_load_cpu_restrict_cores=True,
+                )
+
+        else:
             raise RuntimeError(f"Unknown network contention type: {type}")
+
+        return Benchmark(
+            name=f"{contention_name} {component_name} {load_level}% Load",
+            tags=tags,
+            **benchmark_options,
+        )
+
 
     @staticmethod
     def config_test(configuration: PTPConfig, label: str, extra_tags: List[str]):
@@ -93,11 +135,11 @@ BenchmarkDB.register_all(
 )
 
 for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-    BenchmarkDB.register(BenchmarkDB.network_contention(NetworkContentionType.UNPRIORITIZED, load_level=load_level))
+    BenchmarkDB.register(BenchmarkDB.resource_contention(ResourceContentionType.UNPRIORITIZED, load_level=load_level))
 
 # Just one prioritized and isolated benchmark for now at 100%
-BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.PRIORITIZED, load_level=100))
-BenchmarkDB.register_all(BenchmarkDB.network_contention(NetworkContentionType.ISOLATED, load_level=100))
+BenchmarkDB.register_all(BenchmarkDB.resource_contention(ResourceContentionType.PRIORITIZED, load_level=100))
+BenchmarkDB.register_all(BenchmarkDB.resource_contention(ResourceContentionType.ISOLATED, load_level=100))
 
 
 # Different configurations
