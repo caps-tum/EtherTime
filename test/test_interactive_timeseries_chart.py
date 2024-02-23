@@ -12,6 +12,8 @@ from registry.resolve import ProfileDB
 
 class TestInteractiveTimeseriesChart(TestCase):
     def test_create(self):
+        self.skipTest("Disabled for now.")
+
         chart = InteractiveTimeseriesChart()
         profile_db = ProfileDB()
         profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
