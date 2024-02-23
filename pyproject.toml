@@ -21,6 +21,7 @@ dependencies = [
     "pandas",
     "matplotlib",
     "scipy", # Only needed for analysis
+    "natsort",
 ]
 
 [project.urls]
