@@ -67,7 +67,7 @@ class CPUPerformanceDegrader:
 
         stress_ng_command = ["stress-ng", "--metrics", "--timestamp", "--timeout", "0"]
         if target_load is not None:
-            stress_ng_command += ["--cpu-load", target_load]
+            stress_ng_command += ["--cpu-load", str(target_load)]
         if self.profile.benchmark.artificial_load_cpu_restrict_cores:
             stress_ng_command += ["--taskset", current_configuration.machine.plugin_settings.stress_ng_cpu_restrict_cores]
         if self.profile.benchmark.artificial_load_cpu_scheduler is not None:
@@ -77,7 +77,7 @@ class CPUPerformanceDegrader:
         logging.info("Launching stress_ng tasks...")
         try:
             self.stressng_process = Invocation.of_command(
-                *stress_ng_command, '--cpu', current_configuration.machine.plugin_settings.stress_ng_cpus
+                *stress_ng_command, '--cpu', str(current_configuration.machine.plugin_settings.stress_ng_cpus)
             )
             await self.stressng_process.run()
         finally:
