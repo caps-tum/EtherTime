@@ -1,7 +1,7 @@
+import copy
 from dataclasses import dataclass
 from datetime import timedelta
 
-import util
 from machine import Cluster, Machine, PluginSettings
 from util import ImmediateException, str_join
 
@@ -103,3 +103,9 @@ def get_configuration_by_cluster_name(name: str) -> Configuration:
 
     verify(configuration)
     return configuration
+
+
+def subset_cluster(configuration: Configuration, num_machines: int) -> Configuration:
+    new_config = copy.deepcopy(configuration)
+    new_config.cluster = new_config.cluster[0:num_machines]
+    return new_config

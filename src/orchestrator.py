@@ -6,20 +6,20 @@ from datetime import datetime, timedelta
 from typing import List
 
 import config
+from config import Configuration
 import util
 from cluster_restart import restart_cluster
-from machine import Cluster
 from profiles.base_profile import BaseProfile, ProfileType
 from profiles.benchmark import Benchmark
 from registry.benchmark_db import BenchmarkDB
 from rpc.server import RPCServer
 from rpc.server_service import RPCServerService
-from util import StackTraceGuard, str_join
+from util import StackTraceGuard
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
 
-async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Benchmark, vendor: Vendor):
+async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor):
     profile_timestamp = datetime.now()
     profile_template = BaseProfile(
         id=f"{BaseProfile.format_id_timestamp(timestamp=profile_timestamp)}",
@@ -28,13 +28,14 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
         profile_type=ProfileType.RAW,
         vendor_id=vendor.id,
         start_time=profile_timestamp,
+        configuration=configuration,
     )
 
     profiles: List[str] = await util.async_gather_with_progress(*[
         rpc_server.remote_function_run_as_async(
             rpc_server.get_remote_service(machine.id).benchmark,
             profile_template.dump()
-        ) for machine in cluster.machines
+        ) for machine in configuration.cluster.machines
     ], label="Benchmarking...")
 
     for json in profiles:
@@ -43,13 +44,19 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
         profile.save()
 
 
-async def run_orchestration(benchmarks: List[str], vendors: List[str],
-                            num_iterations: int = 1, duration_override: timedelta = None, test_mode: bool = False):
-    configuration = config.get_configuration_by_cluster_name("Pi Cluster")
-    cluster = configuration.cluster
+async def run_orchestration(benchmark_id: str, vendor_id: str,
+                            duration_override: timedelta = None, test_mode: bool = False):
+
+    benchmark = BenchmarkDB.get(benchmark_id)
+    vendor = VendorDB.get(vendor_id)
+
+    configuration = config.subset_cluster(
+        config.get_configuration_by_cluster_name("Pi Cluster"),
+        benchmark.num_machines,
+    )
 
     if not test_mode:
-        await restart_cluster(cluster)
+        await restart_cluster(configuration.cluster)
     else:
         logging.info("Skipping cluster restart due to test mode.")
 
@@ -61,29 +68,22 @@ async def run_orchestration(benchmarks: List[str], vendors: List[str],
     rpc_server = RPCServer()
     try:
         rpc_server.start_rpc_server()
-        await rpc_server.start_remote_clients(cluster.machines)
+        await rpc_server.start_remote_clients(configuration.cluster.machines)
         await rpc_server.wait_for_clients_connected()
 
-        for iteration in range(num_iterations):
-            logging.info(f"Iteration {iteration+1}/{num_iterations}.")
-            logging.info(f"Running {len(benchmarks)} benchmarks ({str_join(benchmarks)}) on {len(vendors)} vendors ({str_join(vendors)})")
+        if duration_override:
+            benchmark = copy.deepcopy(benchmark)
+            benchmark.duration = duration_override
+            logging.info(f"Applied benchmark duration override: {benchmark.duration}")
 
-            for benchmark_id in benchmarks:
-                for vendor in vendors:
-                    benchmark = BenchmarkDB.get(benchmark_id)
-                    if duration_override:
-                        benchmark = copy.deepcopy(benchmark)
-                        benchmark.duration = duration_override
-                        logging.info(f"Applied benchmark duration override: {benchmark.duration}")
-
-                    logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor}")
-                    try:
-                        await do_benchmark(
-                            rpc_server, cluster,
-                            benchmark=benchmark, vendor=VendorDB.get(vendor)
-                        )
-                    except Exception as e:
-                        util.log_exception(e)
+        logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor_id}")
+        try:
+            await do_benchmark(
+                rpc_server, configuration,
+                benchmark=benchmark, vendor=vendor
+            )
+        except Exception as e:
+            util.log_exception(e)
     except Exception as e:
         util.log_exception(e)
     finally:
@@ -95,19 +95,12 @@ if __name__ == '__main__':
 
     parser = ArgumentParser(description="Program to run PTP-Perf benchmarks")
     parser.add_argument(
-        "--benchmark", choices=BenchmarkDB.all_by_id().keys(), action='append', default=[],
-        help="Specify which benchmark configuration to run, can be specified multiple times."
+        "--benchmark", choices=BenchmarkDB.all_by_id().keys(), required=True,
+        help="Specify which benchmark to run, by benchmark id."
     )
     parser.add_argument(
-        "--benchmark-regex", type=str, default=None,
-        help="Select benchmarks based off of a regex applied to their ids."
-    )
-    parser.add_argument(
-        "--vendor", choices=[vendor.id for vendor in VendorDB.all()], action='append', default=[], required=True,
-        help="Specify which vendor to benchmark, can be specified multiple times."
-    )
-    parser.add_argument(
-        "--iterations", "-i", type=int, default=1, help="Number of times to run the benchmark."
+        "--vendor", choices=[vendor.id for vendor in VendorDB.all()], required=True,
+        help="Specify which vendor to benchmark, by vendor id."
     )
     parser.add_argument(
         "--duration", type=int, default=None, help="Duration override (in minutes)",
@@ -118,9 +111,6 @@ if __name__ == '__main__':
 
     result = parser.parse_args()
 
-    benchmarks: List[str] = result.benchmark
-    if result.benchmark_regex:
-        benchmarks += [benchmark.id for benchmark in BenchmarkDB.get_by_regex(regex=result.benchmark_regex)]
     duration_override = None
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
@@ -129,6 +119,6 @@ if __name__ == '__main__':
 
     with StackTraceGuard():
         asyncio.run(run_orchestration(
-            benchmarks=benchmarks, vendors=result.vendor,
-            num_iterations=result.iterations, duration_override=duration_override, test_mode=test_mode
+            benchmark_id=result.benchmark, vendor_id=result.vendor,
+            duration_override=duration_override, test_mode=test_mode
         ))

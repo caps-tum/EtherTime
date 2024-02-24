@@ -27,6 +27,7 @@ class CachedProfile(BaseProfile):
             profile_type=profile.profile_type,
             machine_id=profile.machine_id,
             profile_location=str(profile.file_path),
+            configuration=profile.configuration,
         )
 
 
