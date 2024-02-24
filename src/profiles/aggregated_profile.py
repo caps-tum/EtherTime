@@ -16,7 +16,7 @@ class AggregatedProfile(BaseProfile):
         benchmark_id = unpack_one_value_or_error(set([profile.benchmark.id for profile in profiles]), "Cannot merge profiles with multiple benchmarks.")
         vendor_id = unpack_one_value_or_error(set([profile.vendor.id for profile in profiles]), "Cannot merge profiles with multiple vendors.")
         machine_id = unpack_one_value_or_error(set([profile.machine_id for profile in profiles]), "Cannot merge profiles with multiple machines.")
-        configuration_id = unpack_one_value_or_error(set([profile.configuration.cluster.id for profile in profiles]), "Cannot merge profiles with multiple cluster configurations.")
+        # configuration_id = unpack_one_value_or_error(set([profile.configuration.cluster.id for profile in profiles]), "Cannot merge profiles with multiple cluster configurations.")
 
         aggregated_profile = AggregatedProfile(
             id=f"aggregated",
@@ -25,7 +25,7 @@ class AggregatedProfile(BaseProfile):
             profile_type=ProfileType.AGGREGATED,
             machine_id=machine_id,
             start_time=max([profile.start_time for profile in profiles]),
-            configuration=config.get_configuration_by_cluster_name(configuration_id),
+            configuration=None,
         )
 
         aggregated_profile.time_series = MergedTimeSeries.merge_series(
