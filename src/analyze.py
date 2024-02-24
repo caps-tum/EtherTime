@@ -26,10 +26,13 @@ def analyze():
         processed_profile.file_path.unlink()
 
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
-        logging.info(f"Converting {profile.file_path_relative}")
-        processed = profile.vendor.convert_profile(profile)
-        if processed is not None:
-            processed.save()
+        try:
+            logging.info(f"Converting {profile.file_path_relative}")
+            processed = profile.vendor.convert_profile(profile)
+            if processed is not None:
+                processed.save()
+        except Exception as e:
+            logging.exception("Failed to convert profile!", e)
 
     profile_db.invalidate_cache()
 

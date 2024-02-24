@@ -60,7 +60,7 @@ class BaseProfile:
     vendor_id: str
     profile_type: Literal["raw", "processed", "processed-corrupt", "aggregated"]
     machine_id: Optional[str]
-    configuration: Configuration
+    configuration: Optional[Configuration] = None
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
     summary_statistics: Optional[SummaryStatistics] = None
