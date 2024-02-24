@@ -3,7 +3,6 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from config import current_configuration
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
 from util import unpack_one_value_or_error
@@ -19,7 +18,7 @@ class NetworkPerformanceDegrader:
         dscp_priority = self.profile.benchmark.artificial_load_network_dscp_priority
 
         worker = unpack_one_value_or_error(
-            [worker for worker in current_configuration.cluster.machines if worker.plugin_settings.iperf_server],
+            [worker for worker in self.profile.configuration.cluster.machines if worker.plugin_settings.iperf_server],
             "Exactly one worker should be specified as the iPerf server to use the network performance degrader plugin"
         )
         if self.profile.benchmark.artificial_load_network_secondary_interface:
@@ -37,7 +36,7 @@ class NetworkPerformanceDegrader:
             iperf_command.append(f"--tos={dscp_priority}")
 
         try:
-            if current_configuration.machine.plugin_settings.iperf_server:
+            if self.profile.configuration.machine.plugin_settings.iperf_server:
                 logging.info("Launching iPerf server...")
                 self.iperf_invocation = Invocation.of_command(*iperf_command, '-s')
             else:
@@ -69,7 +68,7 @@ class CPUPerformanceDegrader:
         if target_load is not None:
             stress_ng_command += ["--cpu-load", str(target_load)]
         if self.profile.benchmark.artificial_load_cpu_restrict_cores:
-            stress_ng_command += ["--taskset", current_configuration.machine.plugin_settings.stress_ng_cpu_restrict_cores]
+            stress_ng_command += ["--taskset", self.profile.configuration.machine.plugin_settings.stress_ng_cpu_restrict_cores]
         if self.profile.benchmark.artificial_load_cpu_scheduler is not None:
             stress_ng_command += ["--sched", self.profile.benchmark.artificial_load_cpu_scheduler]
 
@@ -77,7 +76,7 @@ class CPUPerformanceDegrader:
         logging.info("Launching stress_ng tasks...")
         try:
             self.stressng_process = Invocation.of_command(
-                *stress_ng_command, '--cpu', str(current_configuration.machine.plugin_settings.stress_ng_cpus)
+                *stress_ng_command, '--cpu', str(self.profile.configuration.machine.plugin_settings.stress_ng_cpus)
             )
             await self.stressng_process.run()
         finally:

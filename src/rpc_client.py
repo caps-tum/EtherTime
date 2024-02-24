@@ -8,6 +8,7 @@ import config
 import util
 from profiles.base_profile import BaseProfile
 from rpc.client_service import RPCClientService
+from util import unpack_one_value
 
 
 @rpyc.service
@@ -15,11 +16,15 @@ class PTPPerfRPCClient(RPCClientService):
 
     def __init__(self, client_id: str):
         super().__init__(client_id)
-        config.set_machine(client_id)
 
     @rpyc.exposed
     def benchmark(self, profile: str) -> str:
         profile_obj = BaseProfile.load_str(profile)
+        # Set the machine which this profile is running on.
+        profile_obj.configuration.machine = unpack_one_value(
+            [machine for machine in profile_obj.configuration.cluster.machines if machine.id == self.client_id]
+        )
+
         return asyncio.run(benchmark.benchmark(profile_obj)).dump()
 
 

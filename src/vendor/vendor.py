@@ -25,7 +25,7 @@ class Vendor:
     def running(self):
         raise NotImplementedError()
 
-    async def run(self):
+    async def run(self, profile: BaseProfile):
         raise NotImplementedError()
 
     async def restart(self, kill: bool = True):

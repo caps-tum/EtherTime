@@ -45,7 +45,7 @@ async def do_benchmark(rpc_server: RPCServer, cluster: Cluster, benchmark: Bench
 
 async def run_orchestration(benchmarks: List[str], vendors: List[str],
                             num_iterations: int = 1, duration_override: timedelta = None, test_mode: bool = False):
-    configuration = config.current_configuration
+    configuration = config.get_configuration_by_cluster_name("Pi Cluster")
     cluster = configuration.cluster
 
     if not test_mode:

@@ -1,13 +1,11 @@
-import asyncio
 import re
 import typing
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import timedelta
 
-from utilities.multi_task_controller import MultiTaskController
-from config import current_configuration
 from invoke.invocation import Invocation
 from utilities import units
+from utilities.multi_task_controller import MultiTaskController
 from vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
@@ -30,8 +28,8 @@ class LinuxPTPVendor(Vendor):
     # def running(self):
     #     pass
 
-    async def run(self):
-        machine = current_configuration.machine
+    async def run(self, profile: BaseProfile):
+        machine = profile.configuration.machine
 
         background_tasks = MultiTaskController()
 

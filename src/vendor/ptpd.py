@@ -6,7 +6,6 @@ from typing import Optional
 import pandas as pd
 
 import constants
-from config import current_configuration
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile, ProfileType
 from util import str_join
@@ -25,7 +24,7 @@ class PTPDVendor(Vendor):
 
         # This command prints the path to the log file
         ptpd_determine_path = Invocation.of_command(
-            "ptpd", *self.ptpd_interface_options, "-p"
+            "ptpd", "-i", "null", "-p"
         ).as_privileged().hide_unless_failure().run_sync()
 
         # We check whether the file exists.
@@ -41,7 +40,7 @@ class PTPDVendor(Vendor):
     def uninstall(self):
         self.invoke_package_manager("ptpd", action="purge")
 
-    async def run(self):
+    async def run(self, profile: BaseProfile):
 
         # Create output path
         Path(constants.MEASUREMENTS_DIR).mkdir(exist_ok=True)
@@ -50,8 +49,8 @@ class PTPDVendor(Vendor):
         Path(self.statistics_file_path).unlink(missing_ok=True)
 
         self._process = Invocation.of_command(
-            "ptpd", *self.ptpd_interface_options, "--verbose",
-            '--masteronly' if current_configuration.machine.ptp_master else '--slaveonly',
+            "ptpd", "-i", profile.configuration.machine.ptp_interface, "--verbose",
+            '--masteronly' if profile.configuration.machine.ptp_master else '--slaveonly',
             "--config-file", str(self.config_file_path),
         ).as_privileged()
 
@@ -73,10 +72,6 @@ class PTPDVendor(Vendor):
         profile.raw_data.update(
             log=self._process.output if self._process is not None else None,
         )
-
-    @property
-    def ptpd_interface_options(self):
-        return ["-i", current_configuration.machine.ptp_interface]
 
 
     @classmethod

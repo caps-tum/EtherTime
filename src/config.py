@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import timedelta
 
 import util
@@ -35,40 +36,50 @@ MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
     **RASPBERRY_PI_PTP_SETTINGS,
-    plugin_settings=PluginSettings(iperf_server=False, iperf_address=None, stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+    plugin_settings=PluginSettings(iperf_server=False, iperf_address=None, stress_ng_cpus=4,
+                                   stress_ng_cpu_restrict_cores="2,3")
 )
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
     ptp_interface="",
 )
 
+machines = {
+    machine.id: machine for machine in [MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08, MACHINE_RPISERV]
+}
+
+CLUSTER_PI = Cluster(
+    id="Pi Cluster",
+    machines=[
+        MACHINE_RPI06, MACHINE_RPI08
+    ]
+)
+CLUSTER_RPI_SERV = Cluster(
+    id="rpi-serv",
+    machines=[
+        MACHINE_RPISERV
+    ]
+)
+CLUSTER_3_PI = Cluster(
+    id="3-Pi",
+    machines=[MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07],
+)
 
 clusters = {
-    "Pi Cluster": Cluster(
-        machines=[
-            MACHINE_RPI06, MACHINE_RPI08
-        ]
-    ),
-    "rpi-serv": Cluster(
-        machines=[
-            MACHINE_RPISERV
-        ]
-    ),
-    "3-Pi": Cluster(
-        machines=[MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07],
-    )
+    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_RPI_SERV, CLUSTER_3_PI]
 }
 
 
+@dataclass
 class Configuration:
     cluster: Cluster = None
     machine: Machine = None
 
 
-current_configuration = Configuration()
+# current_configuration = Configuration()
 
 # Currently we default to the first (only) defined cluster
-current_configuration.cluster = clusters["Pi Cluster"]
+# current_configuration.cluster = clusters["Pi Cluster"]
 # current_configuration.cluster = clusters["3-Pi"]
 
 
@@ -80,18 +91,6 @@ def verify(configuration: Configuration):
     if len(set(ids)) != len(ids):
         raise RuntimeError("The configuration contains duplicate machine ids.")
 
-
-verify(current_configuration)
-
-
-def set_machine(id: str):
-    current_configuration.machine = util.unpack_one_value_or_error(
-        [machine for machine in current_configuration.cluster.machines if machine.id == id],
-        message=f"No or too many machines found for machine id {id}.",
-    )
-
-def set_machine_direct(machine: Machine):
-    current_configuration.machine = machine
 
 def get_configuration_by_cluster_name(name: str) -> Configuration:
     try:

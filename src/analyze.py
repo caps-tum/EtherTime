@@ -1,13 +1,11 @@
 import logging
 from datetime import datetime
-from pathlib import Path
 
+import config
 import constants
 import util
-from config import current_configuration
-from profiles.base_profile import ProfileType, BaseProfile
 from profiles.aggregated_profile import AggregatedProfile
-from profiles.data_container import MergedTimeSeries
+from profiles.base_profile import ProfileType
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
@@ -41,7 +39,7 @@ def merge():
     profile_db.invalidate_cache()
     for benchmark in BenchmarkDB.all():
         for vendor in VendorDB.ANALYZED_VENDORS:
-            for machine in current_configuration.cluster.machines:
+            for machine in config.machines.values():
                 profiles = profile_db.resolve_all(
                     resolve.BY_BENCHMARK(benchmark), resolve.BY_VENDOR(vendor),
                     resolve.BY_MACHINE(machine),

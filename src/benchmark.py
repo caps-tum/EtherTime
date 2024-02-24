@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import util
 from adapters.fault_generators import SoftwareFaultGenerator
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
-from config import current_configuration
 from constants import PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
 from profiles.base_profile import BaseProfile
@@ -32,7 +31,8 @@ async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_to
 
 async def benchmark(profile: BaseProfile):
 
-    profile.machine_id = current_configuration.machine.id
+    configuration = profile.configuration
+    profile.machine_id = configuration.machine.id
     background_tasks = MultiTaskController()
 
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
@@ -51,14 +51,14 @@ async def benchmark(profile: BaseProfile):
         await systemd_ntp_vendor.toggle_ntp_service(active=False)
 
         # Step the clock using PPSi tool
-        target_clock_offset = current_configuration.machine.initial_clock_offset
+        target_clock_offset = configuration.machine.initial_clock_offset
         if target_clock_offset is not None:
-            logging.info(f"Adjusting node {current_configuration.machine} time by {target_clock_offset}.")
+            logging.info(f"Adjusting node {configuration.machine} time by {target_clock_offset}.")
             await Invocation.of_command(
                 "lib/ppsi/tools/jmptime", str(target_clock_offset.total_seconds())
             ).as_privileged().set_working_directory(PTPPERF_REPOSITORY_ROOT).run()
 
-        logging.info(f"{current_configuration.machine} time is now {datetime.now()}")
+        logging.info(f"{configuration.machine} time is now {datetime.now()}")
 
         # Actually start the benchmark
 
@@ -73,14 +73,14 @@ async def benchmark(profile: BaseProfile):
 
 
         # Launch background hardware prompts if necessary. We only do this on the ptp_master
-        if profile.benchmark.fault_tolerance_prompt_interval is not None and current_configuration.machine.ptp_master:
+        if profile.benchmark.fault_tolerance_prompt_interval is not None and configuration.machine.ptp_master:
             logging.warning(f"Will prompt repeatedly every {profile.benchmark.fault_tolerance_prompt_interval} so that you can manually power cycle the hardware.")
             background_tasks.add_coroutine(
                 prompt_repeatedly(profile.benchmark.fault_tolerance_prompt_interval, profile.benchmark.fault_tolerance_prompt_downtime)
             )
 
         # Launch background "crashes" of vendor if necessary
-        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == current_configuration.machine.id:
+        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == profile.configuration.machine.id:
             fault_generator = SoftwareFaultGenerator(profile)
             background_tasks.add_coroutine(
                 fault_generator.run(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval)
@@ -88,7 +88,7 @@ async def benchmark(profile: BaseProfile):
 
         logging.info(f"Starting {profile.vendor}...")
         background_tasks.add_coroutine(
-            profile.vendor.run(), label=f"{profile.vendor.name}"
+            profile.vendor.run(profile), label=f"{profile.vendor.name}"
         )
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
         await background_tasks.run_for(profile.benchmark.duration)

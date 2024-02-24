@@ -9,6 +9,7 @@ import pandas as pd
 from pydantic import RootModel
 
 import constants
+from config import Configuration
 from profiles.analysis import detect_clock_step, detect_clock_convergence
 from profiles.benchmark import Benchmark
 from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
@@ -56,6 +57,7 @@ class BaseProfile:
     vendor_id: str
     profile_type: Literal["raw", "processed", "processed-corrupt", "aggregated"]
     machine_id: Optional[str]
+    configuration: Configuration
     start_time: datetime = field(default_factory=lambda: datetime.now())
 
     summary_statistics: Optional[SummaryStatistics] = None

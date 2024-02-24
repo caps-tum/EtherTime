@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-from config import current_configuration
 from invoke.invocation import Invocation, InvocationFailedException
 from machine import Machine, Cluster
 from util import setup_logging, async_gather_with_progress
@@ -33,11 +32,8 @@ async def restart_node(machine: Machine):
     else:
         logging.warning(f"Machine {machine} not restarted successfully, ({i} connection failures).")
 
+
 async def restart_cluster(cluster: Cluster):
     logging.info(f"Restarting cluster ({len(cluster.machines)} nodes)...")
     await async_gather_with_progress(*[restart_node(machine) for machine in cluster.machines], label="Restarting machines")
 
-if __name__ == "__main__":
-    setup_logging()
-
-    asyncio.run(restart_cluster(current_configuration.cluster))

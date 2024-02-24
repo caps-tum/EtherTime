@@ -107,4 +107,5 @@ class Machine(RPCTarget):
 
 @dataclass
 class Cluster:
+    id: str
     machines: List[Machine]

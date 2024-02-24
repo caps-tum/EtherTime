@@ -19,7 +19,7 @@ class SystemDNTPVendor(Vendor):
     def running(self):
         return 'NTP service: active' in subprocess.check_output("timedatectl").decode()
 
-    async def run(self):
+    async def run(self, profile: BaseProfile):
         await self.toggle_ntp_service(active=True)
         try:
             while True:
