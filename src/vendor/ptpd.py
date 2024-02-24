@@ -40,7 +40,7 @@ class PTPDVendor(Vendor):
     def uninstall(self):
         self.invoke_package_manager("ptpd", action="purge")
 
-    async def run(self, profile: BaseProfile):
+    async def run(self, profile: "BaseProfile"):
 
         # Create output path
         Path(constants.MEASUREMENTS_DIR).mkdir(exist_ok=True)

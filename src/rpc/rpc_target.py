@@ -2,7 +2,9 @@ import asyncio
 from asyncio import Task
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, ClassVar
+
+from pydantic import PrivateAttr
 
 from invoke.invocation import Invocation
 from rpc import settings
@@ -15,12 +17,13 @@ from util import PathOrStr
 class RPCTarget:
     id: str
     address: str
-    user: str = None
+    user: Optional[str] = None
     remote_root: str = rpc_get_local_root()
     deploy_root: bool = True
 
-    _rpc_ssh_connection: Optional[Invocation] = None
-    _rpc_server_service: Optional[RPCServerService] = None
+    # Omit type annotations so that pydantic ignores these fields :/
+    _rpc_ssh_connection = None
+    _rpc_server_service = None
 
     async def rpc_start(self):
         # Copy code changes to remote before launching RPC
@@ -37,8 +40,10 @@ class RPCTarget:
         self._rpc_ssh_connection.run_as_task()
 
     async def rpc_stop(self):
-        self._rpc_server_service.remote_service().shutdown()
-        await self._rpc_ssh_connection.wait(terminate_after=3)
+        if self._rpc_server_service is not None:
+            self._rpc_server_service.remote_service().shutdown()
+        if self._rpc_ssh_connection is not None:
+            await self._rpc_ssh_connection.wait(terminate_after=3)
         self._rpc_ssh_connection = None
 
 

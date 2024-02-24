@@ -28,7 +28,7 @@ class LinuxPTPVendor(Vendor):
     # def running(self):
     #     pass
 
-    async def run(self, profile: BaseProfile):
+    async def run(self, profile: "BaseProfile"):
         machine = profile.configuration.machine
 
         background_tasks = MultiTaskController()

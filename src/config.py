@@ -1,6 +1,7 @@
 import copy
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Optional
 
 from machine import Cluster, Machine, PluginSettings
 from util import ImmediateException, str_join
@@ -36,8 +37,9 @@ MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
     **RASPBERRY_PI_PTP_SETTINGS,
-    plugin_settings=PluginSettings(iperf_server=False, iperf_address=None, stress_ng_cpus=4,
-                                   stress_ng_cpu_restrict_cores="2,3")
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
@@ -69,7 +71,7 @@ clusters = {
 @dataclass
 class Configuration:
     cluster: Cluster = None
-    machine: Machine = None
+    machine: Optional[Machine] = None
 
 
 # current_configuration = Configuration()
@@ -103,5 +105,5 @@ def get_configuration_by_cluster_name(name: str) -> Configuration:
 
 def subset_cluster(configuration: Configuration, num_machines: int) -> Configuration:
     new_config = copy.deepcopy(configuration)
-    new_config.cluster = new_config.cluster[0:num_machines]
+    new_config.cluster = Cluster(f"{new_config.cluster}-subset-{num_machines}", new_config.cluster.machines[0:num_machines])
     return new_config

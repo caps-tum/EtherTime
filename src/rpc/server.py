@@ -55,7 +55,10 @@ class RPCServer(Generic[SERVER_SERVICE_TYPE, CLIENT_SERVICE_TYPE]):
 
     @staticmethod
     def unregister_client(id: str):
-        RPCServer.targets[id]._rpc_server_service = None
+        try:
+            RPCServer.targets[id]._rpc_server_service = None
+        except KeyError:
+            pass
 
     @staticmethod
     def num_identified_clients():

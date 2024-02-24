@@ -1,5 +1,6 @@
 import copy
 import logging
+import typing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,7 +16,9 @@ from profiles.benchmark import Benchmark
 from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
     COLUMN_PATH_DELAY
 from util import PathOrStr
-from vendor.vendor import Vendor
+
+if typing.TYPE_CHECKING:
+    from vendor.vendor import Vendor
 
 
 class ProfileType:
@@ -124,7 +127,7 @@ class BaseProfile:
         return constants.MEASUREMENTS_DIR.joinpath(self.benchmark.id).joinpath(self.vendor.id).joinpath(self.id)
 
     @property
-    def vendor(self) -> Vendor:
+    def vendor(self) -> "Vendor":
         from vendor.registry import VendorDB
         return VendorDB.get(self.vendor_id)
 
