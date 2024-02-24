@@ -25,6 +25,7 @@ class Benchmark:
     tags: List[str] = field(default_factory=list)
     version: int = 1
     duration: datetime.timedelta = DEFAULT_BENCHMARK_DURATION
+    num_machines: int = 2
 
     ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
 

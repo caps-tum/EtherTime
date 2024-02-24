@@ -51,7 +51,7 @@ machines = {
 CLUSTER_PI = Cluster(
     id="Pi Cluster",
     machines=[
-        MACHINE_RPI06, MACHINE_RPI08
+        MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
     ]
 )
 CLUSTER_RPI_SERV = Cluster(
@@ -60,13 +60,9 @@ CLUSTER_RPI_SERV = Cluster(
         MACHINE_RPISERV
     ]
 )
-CLUSTER_3_PI = Cluster(
-    id="3-Pi",
-    machines=[MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07],
-)
 
 clusters = {
-    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_RPI_SERV, CLUSTER_3_PI]
+    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_RPI_SERV]
 }
 
 

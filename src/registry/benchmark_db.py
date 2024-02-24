@@ -27,11 +27,15 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     DEMO = Benchmark("test/demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
     NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[])
-    BASE_TWO_CLIENTS = Benchmark("scalability/1_to_2", "1 Master 2 Clients", tags=[])
+    BASE_TWO_CLIENTS = Benchmark(
+        "scalability/1_to_2", "1 Master 2 Clients", tags=[],
+        num_machines=3,
+    )
 
     # Software crash, once every 30 seconds
     SOFTWARE_FAULT = Benchmark(
         "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE],
+        num_machines=3,
         fault_tolerance_software_fault_interval=timedelta(minutes=1),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
     )
