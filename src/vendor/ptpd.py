@@ -20,15 +20,9 @@ class PTPDVendor(Vendor):
 
 
     def running(self):
-        """Check whether a PTPd instance is running by resolving the PTPd lock file. """
-
-        # This command prints the path to the log file
-        ptpd_determine_path = Invocation.of_command(
-            "ptpd", "-i", "null", "-p"
-        ).as_privileged().hide_unless_failure().run_sync()
-
-        # We check whether the file exists.
-        return Path(ptpd_determine_path.output).exists()
+        if self._process is not None:
+            return self._process.running
+        return False
 
     @property
     def installed(self):

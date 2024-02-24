@@ -23,8 +23,9 @@ class SoftwareFaultGenerator:
         try:
             while True:
                 await asyncio.sleep(interval.total_seconds())
-                self.log(f"Scheduled software fault imminent on {self.profile.configuration.machine}.")
-                await vendor.restart(kill=True)
+                if vendor.running:
+                    self.log(f"Scheduled software fault imminent on {self.profile.configuration.machine}.")
+                    await vendor.restart(kill=True)
         finally:
             if self.log_history is not None:
                 self.profile.raw_data.update(software_fault_log=self.log_history)

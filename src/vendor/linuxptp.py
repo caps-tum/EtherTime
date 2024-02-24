@@ -105,3 +105,9 @@ class LinuxPTPVendor(Vendor):
         return BaseProfile.template_from_existing(profile, ProfileType.PROCESSED).process_timeseries_data(
             pd.Series(timestamps), pd.Series(offsets), pd.Series(path_delays)
         )
+
+    @property
+    def running(self):
+        if self._process_ptp4l is not None:
+            return self._process_ptp4l.running
+        return False
