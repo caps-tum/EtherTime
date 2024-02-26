@@ -13,7 +13,7 @@ class DeviceControl(Adapter):
 
     # Which machine is plugged where
     machine_socket_map = {
-        'switch': 0,
+        'switch': 1,
         'rpi06': 2,
         'rpi07': 4,
         'rpi08': 6,
