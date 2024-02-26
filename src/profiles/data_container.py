@@ -175,7 +175,7 @@ class Timeseries:
             orient="table", date_unit='ns',
         )
 
-    def validate(self, data_frame: pd.DataFrame = None, maximum_time_jump=timedelta(seconds=5)):
+    def validate(self, data_frame: pd.DataFrame = None, maximum_allowable_time_jump=timedelta(seconds=5)):
         if data_frame is None:
             data_frame = self.data_frame
 
@@ -187,9 +187,11 @@ class Timeseries:
             raise RuntimeError(f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
 
         # Make sure there are no gaps in the data
-        time_jumps = index_time_deltas[index_time_deltas >= maximum_time_jump]
+        time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
         if not time_jumps.empty:
-            logging.warning(f"Timeseries contains {len(time_jumps)} holes (largest hole: {time_jumps.max()}, total: {time_jumps.sum()})")
+            logging.warning(f"Timeseries contains {len(time_jumps)} holes "
+                            f"(largest hole: {time_jumps.max()}, "
+                            f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / index_time_deltas.sum():.0f}%)")
 
 
     def summarize(self) -> SummaryStatistics:

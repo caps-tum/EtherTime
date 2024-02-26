@@ -24,39 +24,8 @@ class TestTimeseriesChart(TestCase):
         profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
 
         for profile in profiles:
-            output_path = profile.storage_base_path.joinpath("timeseries")
+            profile.create_timeseries_charts()
 
-            # We create multiple charts:
-            # one only showing the filtered data, one showing the convergence, and one including the path delay
-            if profile.time_series is not None:
-                chart =  TimeseriesChart(
-                    title=profile.get_title(),
-                    timeseries=profile.time_series,
-                    summary_statistics=profile.summary_statistics,
-                )
-                chart.add_clock_difference(profile.time_series)
-                chart.save(output_path.joinpath(f"{profile.filename_base}.png"), make_parent=True)
-
-                chart =  TimeseriesChart(
-                    title=profile.get_title("with Path Delay"),
-                    timeseries=profile.time_series,
-                    summary_statistics=profile.summary_statistics,
-                )
-                chart.add_path_delay(profile.time_series)
-                chart.add_clock_difference(profile.time_series)
-                chart.save(output_path.joinpath(f"{profile.filename_base}-path-delay.png"), make_parent=True)
-
-            if profile.time_series_unfiltered is not None:
-                chart_convergence = TimeseriesChart(
-                    title=profile.get_title("with Convergence"),
-                    timeseries=profile.time_series_unfiltered,
-                    summary_statistics=profile.convergence_statistics,
-                )
-                chart_convergence.add_clock_difference(profile.time_series_unfiltered)
-                chart_convergence.add_path_delay(profile.time_series_unfiltered)
-                if profile.convergence_statistics is not None:
-                    chart_convergence.add_boundary(chart_convergence.axes[0], profile.convergence_statistics.convergence_time)
-                chart_convergence.save(output_path.joinpath(f"{profile.filename_base}-convergence.png"), make_parent=True)
 
     def test_comparison(self):
         ptpd_profile = ProfileDB().resolve_most_recent(

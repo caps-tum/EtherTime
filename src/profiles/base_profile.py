@@ -126,6 +126,10 @@ class BaseProfile:
     def storage_base_path(self) -> Path:
         return constants.MEASUREMENTS_DIR.joinpath(self.benchmark.id).joinpath(self.vendor.id).joinpath(self.id)
 
+    def get_chart_timeseries_path(self, convergence_included: bool = False) -> Path:
+        suffix = "" if not convergence_included else "-convergence"
+        return self.storage_base_path.joinpath("timeseries").joinpath(f"{self.filename_base}{suffix}.png")
+
     @property
     def vendor(self) -> "Vendor":
         from vendor.registry import VendorDB
@@ -155,7 +159,7 @@ class BaseProfile:
         )
         result_frame.set_index(timestamps, drop=True, inplace=True)
         entire_series = Timeseries.from_series(result_frame)
-        entire_series.validate(maximum_time_jump=timedelta(minutes=1, seconds=10))
+        entire_series.validate(maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
 
         # Do some data post-processing to improve quality.
 
@@ -207,6 +211,36 @@ class BaseProfile:
             logging.warning("Profile marked as corrupt.")
 
         return self
+
+    def create_timeseries_charts(self):
+        from charts.timeseries_chart import TimeseriesChart
+
+        # We create multiple charts:
+        # one only showing the filtered data and one showing the entire convergence trajectory
+        if self.time_series is not None:
+
+            chart = TimeseriesChart(
+                title=self.get_title(),
+                timeseries=self.time_series,
+                summary_statistics=self.summary_statistics,
+            )
+            chart.add_path_delay(self.time_series)
+            chart.add_clock_difference(self.time_series)
+            chart.save(self.get_chart_timeseries_path(), make_parent=True)
+
+        if self.time_series_unfiltered is not None:
+            chart_convergence = TimeseriesChart(
+                title=self.get_title("with Convergence"),
+                timeseries=self.time_series_unfiltered,
+                summary_statistics=self.convergence_statistics,
+            )
+            chart_convergence.add_clock_difference(self.time_series_unfiltered)
+            chart_convergence.add_path_delay(self.time_series_unfiltered)
+            if self.convergence_statistics is not None:
+                chart_convergence.add_boundary(
+                    chart_convergence.axes[0], self.convergence_statistics.convergence_time
+                )
+            chart_convergence.save(self.get_chart_timeseries_path(convergence_included=True), make_parent=True)
 
     def __str__(self):
         return self.id

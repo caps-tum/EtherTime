@@ -27,7 +27,9 @@ def analyze():
 
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
         try:
-            logging.info(f"Converting {profile.file_path_relative}")
+            logging.info(f"Converting {profile.file_path_relative} "
+                         f"([Folder]({profile.storage_base_path}), "
+                         f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True)})")
             processed = profile.vendor.convert_profile(profile)
             if processed is not None:
                 processed.save()
@@ -58,7 +60,7 @@ def merge():
 
 
 if __name__ == '__main__':
-    util.setup_logging(log_file=constants.CHARTS_DIR.joinpath("analysis_log.log"), log_file_mode="w")
+    util.setup_logging(log_file=constants.MEASUREMENTS_DIR.joinpath("analysis.log.md"), log_file_mode="w")
 
     with util.StackTraceGuard():
         start_time = datetime.now()
