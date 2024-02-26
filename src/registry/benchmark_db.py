@@ -43,9 +43,8 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     HARDWARE_FAULT_SWITCH = Benchmark(
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
-        duration=timedelta(minutes=5),
-        fault_tolerance_prompt_interval=timedelta(minutes=1),
-        fault_tolerance_prompt_downtime=timedelta(seconds=5),
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_machine='switch',
     )
 
     @staticmethod
