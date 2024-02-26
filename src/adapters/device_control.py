@@ -42,11 +42,14 @@ class DeviceControl(Adapter):
         machine_id = self.profile.benchmark.fault_tolerance_hardware_fault_machine
         interval = self.profile.benchmark.fault_tolerance_hardware_fault_interval
 
+        self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
         try:
             while True:
                 self.toggle_machine(machine_id, True)
                 await asyncio.sleep(interval.total_seconds())
+                self.log(f"Scheduled hardware fault imminent on {machine_id}.")
                 self.toggle_machine(machine_id, False)
                 await asyncio.sleep(delay=5)
+                self.log(f"Scheduled hardware fault resolved on {machine_id}.")
         finally:
             self.toggle_machine(machine_id, True)
