@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 import config
+from adapters.device_control import DeviceControl
 from config import Configuration
 import util
 from cluster_restart import restart_cluster
@@ -15,6 +16,7 @@ from registry.benchmark_db import BenchmarkDB
 from rpc.server import RPCServer
 from rpc.server_service import RPCServerService
 from util import StackTraceGuard
+from utilities.multi_task_controller import MultiTaskController
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
@@ -31,17 +33,33 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
         configuration=configuration,
     )
 
-    profiles: List[str] = await util.async_gather_with_progress(*[
-        rpc_server.remote_function_run_as_async(
-            rpc_server.get_remote_service(machine.id).benchmark,
-            profile_template.dump()
-        ) for machine in configuration.cluster.machines
-    ], label="Benchmarking...")
+    controller = MultiTaskController()
 
-    for json in profiles:
-        profile = BaseProfile.load_str(json)
-        print(f"Saving profile to {profile.file_path_relative}")
-        profile.save()
+    try:
+        if benchmark.fault_tolerance_hardware_fault_interval is not None:
+            device_controller = DeviceControl(profile_template)
+            controller.add_coroutine(
+                device_controller.run()
+            )
+
+        profiles: List[str] = await util.async_gather_with_progress(*[
+            rpc_server.remote_function_run_as_async(
+                rpc_server.get_remote_service(machine.id).benchmark,
+                profile_template.dump()
+            ) for machine in configuration.cluster.machines
+        ], label="Benchmarking...")
+
+        for json in profiles:
+            profile = BaseProfile.load_str(json)
+
+            # Merge raw_data on orchestrator into raw_data on client
+            profile.raw_data.update(profile_template.raw_data)
+
+            print(f"Saving profile to {profile.file_path_relative}")
+            profile.save()
+
+    finally:
+        await controller.cancel_pending_tasks()
 
 
 async def run_orchestration(benchmark_id: str, vendor_id: str,
