@@ -193,6 +193,11 @@ class Timeseries:
                             f"(largest hole: {time_jumps.max()}, "
                             f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / index_time_deltas.sum():.0f}%)")
 
+        # Ensure we have sufficient data in general
+        # At least 10 minutes -> At least 600 samples
+        if len(data_frame) < 600:
+            logging.warning(f"Timeseries contains too few data points: {len(data_frame)}")
+
 
     def summarize(self) -> SummaryStatistics:
 
