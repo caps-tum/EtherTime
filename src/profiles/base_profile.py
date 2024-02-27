@@ -148,6 +148,14 @@ class BaseProfile:
         if not (pd.api.types.is_datetime64_dtype(timestamps.dtype) or pd.api.types.is_timedelta64_dtype(timestamps.dtype)):
             raise RuntimeError(f"Received a time series the is not a datetime64 (type: {timestamps.dtype}).")
 
+        # Basic sanity checks, no duplicate timestamps
+        if not timestamps.is_unique:
+            value_counts = timestamps.value_counts()
+            duplicate_timestamps = value_counts[value_counts != 1]
+            raise RuntimeError(f"Timestamps not unique:\n{duplicate_timestamps}")
+        if not timestamps.is_monotonic_increasing:
+            raise RuntimeError("Timestamps not monotonically increasing.")
+
         # Normalize time: Move the origin to the epoch
         timestamps = timestamps - timestamps.min()
 

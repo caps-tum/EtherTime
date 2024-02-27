@@ -41,12 +41,14 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a'):
+def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a', log_file_formatter: logging.Formatter = None):
     handlers = [
         logging.StreamHandler()
     ]
     if log_file:
         handlers.append(logging.FileHandler(log_file, mode=log_file_mode, encoding='utf-8'))
+        if log_file_formatter is not None:
+            handlers[-1].setFormatter(log_file_formatter)
 
     formatter = ColoredFormatter()
     formatter.use_colors = sys.stdout.isatty()

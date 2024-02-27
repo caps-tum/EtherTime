@@ -42,12 +42,13 @@ class DetectedClockConvergence:
     converged: pd.Series
 
     @property
-    def divergence_ratio(self) -> float:
+    def divergence_ratio(self) -> Optional[float]:
         """The amount of samples after the convergence time that were in diverged state."""
         cropped = self.converged[self.converged.index > self.time]
 
         if len(cropped) == 0:
-            logging.warning(f"No convergence data after convergence time of {cropped}.")
+            logging.warning(f"No convergence data after convergence time of {self.time}.")
+            return None
 
         return len(cropped[cropped == 0]) / len(cropped)
 
@@ -84,7 +85,7 @@ def detect_clock_convergence(series_with_convergence: Timeseries, minimum_conver
 
     detected_convergence = DetectedClockConvergence(convergence_time, converged)
 
-    if detected_convergence.divergence_ratio != 0:
+    if detected_convergence.divergence_ratio is not None and detected_convergence.divergence_ratio != 0:
         logging.warning(f"Clock diverged after converging ({detected_convergence.divergence_ratio * 100:.0f}% of samples in diverged state).")
 
     return detected_convergence

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
+from pandas.core.dtypes.common import is_numeric_dtype
 
 if typing.TYPE_CHECKING:
     from profiles.analysis import DetectedClockConvergence
@@ -47,6 +48,7 @@ class BootstrapMetric:
             (data,),
             lambda sample, axis: np.quantile(sample, quantile, axis=axis),
             random_state=np.random.default_rng(0), vectorized=True,
+            # method='basic',
         )
         return BootstrapMetric(
             value=data.quantile(quantile),
@@ -146,6 +148,15 @@ class Timeseries:
         if self._data_frame is None:
             read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
             read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
+
+            # Validate some things
+            for column in [COLUMN_CLOCK_DIFF, COLUMN_PATH_DELAY]:
+                assert is_numeric_dtype(read_frame[column])
+            num_cols = 3 if COLUMN_SOURCE in read_frame.columns else 2
+            assert num_cols == len(read_frame.columns)
+            assert read_frame.index.is_unique
+            assert read_frame.index.is_monotonic_increasing
+
             self._data_frame = read_frame
         return self._data_frame
 
@@ -169,8 +180,8 @@ class Timeseries:
 
     @staticmethod
     def _serialize_frame(result_frame):
-        serialization_frame = result_frame.copy()
-        serialization_frame.index = serialization_frame.index.astype("int64")
+        serialization_frame: pd.DataFrame = result_frame.copy()
+        serialization_frame.set_index(serialization_frame.index.astype("int64"), inplace=True)
         return serialization_frame.to_json(
             orient="table", date_unit='ns',
         )
