@@ -52,6 +52,10 @@ class DetectedClockConvergence:
 
         return len(cropped[cropped == 0]) / len(cropped)
 
+    @property
+    def divergence_counts(self):
+        return (self.converged.diff() < 0).sum()
+
 
 def detect_clock_convergence(series_with_convergence: Timeseries, minimum_convergence_time: timedelta) -> Optional[DetectedClockConvergence]:
     # Detect when the clock is synchronized and crop the convergence.
@@ -85,7 +89,8 @@ def detect_clock_convergence(series_with_convergence: Timeseries, minimum_conver
 
     detected_convergence = DetectedClockConvergence(convergence_time, converged)
 
-    if detected_convergence.divergence_ratio is not None and detected_convergence.divergence_ratio != 0:
-        logging.warning(f"Clock diverged after converging ({detected_convergence.divergence_ratio * 100:.0f}% of samples in diverged state).")
+    if detected_convergence.divergence_ratio is not None and detected_convergence.divergence_ratio > 0.1:
+        logging.warning(f"Clock diverged {detected_convergence.divergence_counts}x after converging "
+                        f"({detected_convergence.divergence_ratio * 100:.0f}% of samples in diverged state).")
 
     return detected_convergence
