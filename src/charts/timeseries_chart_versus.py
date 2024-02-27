@@ -39,7 +39,8 @@ class TimeSeriesChartVersus(ChartContainer):
 
         merge_series = MergedTimeSeries.merge_series(
             [profile1.time_series, profile2.time_series],
-            labels=[0, 1]
+            labels=[0, 1],
+            timestamp_align=True,
         )
         self.plot_timeseries_distribution(
             merge_series.clock_diff,

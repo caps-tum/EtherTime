@@ -88,7 +88,8 @@ class ComparisonChart(ChartContainer):
                        hue_name: str = None, linestyle=None):
         merged = MergedTimeSeries.merge_series(
             [profile.time_series for profile in self.profiles],
-            [profile_get_discriminator(profile) for profile in self.profiles]
+            [profile_get_discriminator(profile) for profile in self.profiles],
+            timestamp_align=True,
         )
 
         if merged.empty:

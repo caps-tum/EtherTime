@@ -19,6 +19,7 @@ class TimeSeriesChartComparison(ChartContainer):
         merged_series = MergedTimeSeries.merge_series(
             original_series=[profile.time_series for profile in profiles],
             labels=labels,
+            timestamp_align=True,
         )
 
         self.plot_timeseries_distribution(
