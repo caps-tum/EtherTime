@@ -234,6 +234,26 @@ class Timeseries:
             cache.update(data_hash, statistics)
             return statistics
 
+    def segment(self, align: pd.Series):
+        """Split the series by cutting it at the midway points between the alignment points and then time shifting the series to align."""
+        cuts = (align + align.shift(1)) / 2
+        cuts.dropna(inplace=True)
+
+        # Divide the frame into segments.
+        new_data = self.data_frame.copy()
+        new_data["segment"] = np.searchsorted(new_data.index, cuts)
+
+        # Align the timestamps of the frame segment by segment
+        for label, group in new_data.groupby("segment"):
+            assert is_numeric_dtype(label)
+            alignment_value = align.loc[label]
+            assert group.index.min() <= alignment_value <= group.index.max()
+
+            group.index -= alignment_value
+
+        return Timeseries.from_series(new_data)
+
+
     @property
     def empty(self):
         return self.data_frame.empty

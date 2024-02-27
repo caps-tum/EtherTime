@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TypeVar, ClassVar, Dict, Any, Optional, Self
 
 from constants import LOCAL_DIR
@@ -9,13 +10,16 @@ T = TypeVar("T")
 @dataclass
 class DataCache:
     cache: Optional[Dict[str, Any]] = field(default_factory=dict)
-    cache_location: ClassVar[str]
-    singleton: ClassVar[Optional[Self]]
+    cache_location: ClassVar[str] = None
+    singleton: ClassVar[Optional[Self]] = None
 
     @classmethod
     def resolve(cls) -> Self:
         if cls.singleton is None:
-            cls.singleton = pydantic_load_model(type(cls), cls.cache_location)
+            if Path(cls.cache_location).exists():
+                cls.singleton = pydantic_load_model(type(cls), cls.cache_location)
+            else:
+                cls.singleton = cls()
         return cls.singleton
 
     def get(self, key: str) -> T:
