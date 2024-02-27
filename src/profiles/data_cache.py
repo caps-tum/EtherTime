@@ -17,7 +17,7 @@ class DataCache:
     def resolve(cls) -> Self:
         if cls.singleton is None:
             if Path(cls.cache_location).exists():
-                cls.singleton = pydantic_load_model(type(cls), cls.cache_location)
+                cls.singleton = pydantic_load_model(cls, cls.cache_location)
             else:
                 cls.singleton = cls()
         return cls.singleton
@@ -28,6 +28,10 @@ class DataCache:
     def update(self, key: str, value: T):
         self.cache[key] = value
         pydantic_save_model(type(self), self, self.cache_location)
+
+    def purge(self):
+        self.cache.clear()
+        Path(self.cache_location).unlink(missing_ok=True)
 
 
 class SummaryStatisticCache(DataCache):
