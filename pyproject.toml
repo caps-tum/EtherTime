@@ -21,6 +21,7 @@ dependencies = [
     "pandas==2.2.1",
     "matplotlib==3.8.3",
     "scipy==1.12.0", # Only needed for analysis
+    "seaborn==0.13.2",
     "natsort==8.4.0",
     "tinytuya==1.13.2",
 ]
