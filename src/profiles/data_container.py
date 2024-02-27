@@ -12,10 +12,13 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
+from profiles.data_cache import SummaryStatisticCache
+
 if typing.TYPE_CHECKING:
     from profiles.analysis import DetectedClockConvergence
 
 ANNOTATION_BBOX_PROPS = dict(boxstyle='round', facecolor=(1.0, 1.0, 1.0, 0.85), edgecolor=(0.6, 0.6, 0.6, 1.0))
+
 
 @dataclass
 class BootstrapMetric:
@@ -109,7 +112,8 @@ class ConvergenceStatistics:
         )
 
     @staticmethod
-    def from_convergence_series(detected_clock_convergence: "DetectedClockConvergence", convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
+    def from_convergence_series(detected_clock_convergence: "DetectedClockConvergence",
+                                convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
         convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
         if math.isnan(convergence_max_offset):
             logging.warning("No convergence data on profile, cannot calculate convergence statistics.")
@@ -182,6 +186,7 @@ class Timeseries:
     def _serialize_frame(result_frame):
         serialization_frame: pd.DataFrame = result_frame.copy()
         serialization_frame.set_index(serialization_frame.index.astype("int64"), inplace=True)
+        assert serialization_frame.index.is_unique
         return serialization_frame.to_json(
             orient="table", date_unit='ns',
         )
@@ -195,7 +200,8 @@ class Timeseries:
         # Ensure that data is sorted chronologically.
         min_time_jump = index_time_deltas.min()
         if min_time_jump < timedelta(seconds=0):
-            raise RuntimeError(f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
+            raise RuntimeError(
+                f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
 
         # Make sure there are no gaps in the data
         time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
@@ -209,17 +215,24 @@ class Timeseries:
         if len(data_frame) < 600:
             logging.warning(f"Timeseries contains too few data points: {len(data_frame)}")
 
-
     def summarize(self) -> SummaryStatistics:
 
         clock_diff = self.get_clock_diff(abs=True)
         path_delay = self.path_delay
 
-        return SummaryStatistics(
-            clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
-            clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
-            path_delay_median=BootstrapMetric.create(path_delay, 0.5),
-        )
+        data_hash = hex(hash(self.data))
+        cache = SummaryStatisticCache.resolve()
+
+        try:
+            cache.get(data_hash)
+        except KeyError:
+            statistics = SummaryStatistics(
+                clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
+                clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
+                path_delay_median=BootstrapMetric.create(path_delay, 0.5),
+            )
+            cache.update(data_hash, statistics)
+            return statistics
 
     @property
     def empty(self):
@@ -229,7 +242,8 @@ class Timeseries:
 class MergedTimeSeries(Timeseries):
 
     @staticmethod
-    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any], timestamp_align: bool = False) -> "MergedTimeSeries":
+    def merge_series(original_series: Iterable[Timeseries], labels: Iterable[Any],
+                     timestamp_align: bool = False) -> "MergedTimeSeries":
         """Timestamp align: We modify all timestamps so that profiles are immediately adjacent to each other (stitched)."""
         frames = []
 
@@ -247,4 +261,6 @@ class MergedTimeSeries(Timeseries):
 
             frames.append(frame)
 
-        return MergedTimeSeries.from_series(pd.concat(frames))
+        merged_frame = pd.concat(frames)
+        assert merged_frame.index.is_unique
+        return MergedTimeSeries.from_series(merged_frame)
