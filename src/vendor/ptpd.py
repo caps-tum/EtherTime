@@ -1,4 +1,5 @@
 import io
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -73,6 +74,9 @@ class PTPDVendor(Vendor):
         # In old profiles, statistics were in statistics while the regular log was in "log".
         # New profiles merge all data into log.
         log = raw_profile.raw_data["statistics"] if "statistics" in raw_profile.raw_data.keys() else raw_profile.raw_data["log"]
+
+        if log is None:
+            logging.warning("Profile without ptpd log, corrupted.")
 
         # Keep only the CSV header and the statistics lines in the state "slave"
         filtered_log = str_join(

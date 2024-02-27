@@ -1,3 +1,4 @@
+import logging
 import re
 import typing
 from dataclasses import dataclass
@@ -87,6 +88,10 @@ class LinuxPTPVendor(Vendor):
             raise NotImplementedError("Cannot import phc2sys log for the moment.")
 
         log = profile.raw_data["ptp4l_log"]
+
+        if log is None:
+            logging.warning("Profile without a ptp4l_log, corrupted.")
+            return None
 
         timestamps = []
         offsets = []
