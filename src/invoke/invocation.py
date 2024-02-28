@@ -33,6 +33,7 @@ class Invocation:
 
     _process: Optional[subprocess.Process] = None
     _monitor_task: Optional[Task] = None
+    _should_restart_process: Optional[bool] = False
 
     return_code: Optional[int] = None
     output: Optional[str] = None
@@ -206,6 +207,9 @@ class Invocation:
         if not kill or not ignore_return_code:
             raise NotImplementedError("Unsupported options for process restart.")
 
+        # Signal the monitor task that we wish to restart the process
+        self._should_restart_process = True
+
         if self._process is not None:
             if self._process.returncode is None:
                 try:
@@ -213,20 +217,24 @@ class Invocation:
                     self._process.kill()
                 except ProcessLookupError:
                     pass # The process has already exited.
-
-            # We don't want to verify exit code.
-            # await self._finalize_async(skip_verify_return_code=ignore_return_code)
-
-        await self._start()
+            else:
+                raise RuntimeError("Tried to restart invocation that has already exited.")
+        else:
+            raise RuntimeError("Tried to restart invocation that has not been started.")
 
 
     async def _run(self) -> Self:
         """Internal API to actually run the task."""
-        await self._start()
-        try:
-            await self._communicate()
-        finally:
-            await self._terminate(timeout=5)
+        self._should_restart_process = True
+
+        while self._should_restart_process:
+            await self._start()
+            self._should_restart_process = False
+            try:
+                await self._communicate()
+            finally:
+                # Don't check exit code if we are restarting the process.
+                await self._terminate(timeout=5, skip_verify_return_code=self._should_restart_process)
         return self
 
 
