@@ -25,6 +25,7 @@ class Invocation:
 
     verify_return_code: bool = True
     expected_return_code: int = 0
+    keep_alive: bool = False
 
     log_invocation: bool = True
     log_output: bool = True
@@ -229,7 +230,7 @@ class Invocation:
 
         while self._should_restart_process:
             await self._start()
-            self._should_restart_process = False
+            self._should_restart_process = self.keep_alive
             try:
                 await self._communicate()
             finally:

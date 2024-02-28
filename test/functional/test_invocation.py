@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from asyncio import CancelledError
 from unittest import IsolatedAsyncioTestCase
 
 from invoke.invocation import Invocation
@@ -30,3 +30,15 @@ class TestInvocation(IsolatedAsyncioTestCase):
 
         with self.assertRaises(RuntimeError):
             await invocation.restart(kill=True, ignore_return_code=True)
+
+
+    async def test_process_keepalive(self):
+        invocation = Invocation.of_shell("echo OK")
+        invocation.keep_alive = True
+
+        task = invocation.run_as_task()
+        await asyncio.sleep(1.5)
+        task.cancel()
+        with self.assertRaises(CancelledError):
+            await task
+        self.assertListEqual(["OK"] * 2, invocation.output.splitlines())
