@@ -14,16 +14,13 @@ class TestInvocation(IsolatedAsyncioTestCase):
         setup_logging()
 
     async def test_process_restart(self):
-        invocation = Invocation.of_command("sleep", "1")
-        start = datetime.now()
+        invocation = Invocation.of_shell("sleep 1; echo OK")
         task = invocation.run_as_task()
         await asyncio.sleep(0.5)
+        self.assertNotIn("OK", invocation.output)
         await invocation.restart(kill=True, ignore_return_code=True)
         await task
-        stop = datetime.now()
-        elapsed = stop - start
-        self.assertGreater(elapsed, timedelta(seconds=1.5))
-        self.assertLess(elapsed, timedelta(seconds=1.7))
+        self.assertIn("OK", invocation.output)
 
 
     async def test_process_restart_if_already_exited(self):
