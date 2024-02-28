@@ -43,14 +43,15 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
                 device_controller.run()
             )
 
-        profiles: List[str] = await util.async_gather_with_progress(*[
+        profiles_json: List[str] = await util.async_gather_with_progress(*[
             rpc_server.remote_function_run_as_async(
                 rpc_server.get_remote_service(machine.id).benchmark,
                 profile_template.dump()
             ) for machine in configuration.cluster.machines
         ], label="Benchmarking...")
+        profiles = []
 
-        for json in profiles:
+        for json in profiles_json:
             profile = BaseProfile.load_str(json)
 
             # Merge raw_data on orchestrator into raw_data on client
@@ -58,6 +59,7 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
 
             print(f"Saving profile to {profile.file_path_relative}")
             profile.save()
+            profiles.append(profile)
 
         return profiles
     finally:

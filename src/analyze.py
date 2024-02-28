@@ -5,7 +5,7 @@ import config
 import constants
 import util
 from profiles.aggregated_profile import AggregatedProfile
-from profiles.base_profile import ProfileType
+from profiles.base_profile import ProfileType, BaseProfile
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
@@ -36,7 +36,7 @@ def analyze():
     profile_db.invalidate_cache()
 
 
-def convert_profile(profile):
+def convert_profile(profile: BaseProfile):
     logging.info(
         f"Converting {profile.file_path_relative} "
         f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
