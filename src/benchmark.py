@@ -82,9 +82,7 @@ async def benchmark(profile: BaseProfile):
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == profile.configuration.machine.id:
             fault_generator = SoftwareFaultGenerator(profile)
-            background_tasks.add_coroutine(
-                fault_generator.run(profile.vendor, profile.benchmark.fault_tolerance_software_fault_interval)
-            )
+            background_tasks.add_coroutine(fault_generator.run())
 
         logging.info(f"Starting {profile.vendor}...")
         background_tasks.add_coroutine(
