@@ -79,8 +79,12 @@ class PTPDVendor(Vendor):
             logging.warning("Profile without ptpd log, corrupted.")
 
         # Keep only the CSV header and the statistics lines in the state "slave"
-        filtered_log = str_join(
-            [line for line in log.splitlines(keepends=True) if line.startswith("# Timestamp") or ", slv, " in line],
+        # We are only interested in the first CSV header (when process is restarted there might be multiple)
+        csv_header_lines = [line for line in log.splitlines(keepends=True) if line.startswith("# Timestamp")]
+        filtered_log = csv_header_lines[0]
+        # Actual data.
+        filtered_log += str_join(
+            [line for line in log.splitlines(keepends=True) if ", slv, " in line],
             separator=''
         )
 
