@@ -13,7 +13,7 @@ class MultiTaskController:
     background_tasks: List[Task] = field(default_factory=list)
     exit_stack: AsyncExitStack = field(default_factory=AsyncExitStack)
 
-    async def run_for(self, duration: timedelta = None):
+    async def run_for(self, duration: timedelta = None, wait_for_all: bool = False):
         if duration is not None:
             timeout = duration.total_seconds()
         else:
@@ -21,7 +21,7 @@ class MultiTaskController:
 
         try:
             done, pending = await asyncio.wait(
-                self.background_tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED,
+                self.background_tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED if not wait_for_all else asyncio.ALL_COMPLETED,
             )
             for task in done:
                 task.result()
@@ -53,3 +53,15 @@ class MultiTaskController:
     def add_task(self, task: Task):
         self.background_tasks.append(task)
         self.exit_stack.push_async_callback(self._stop_task, task)
+
+
+    def results(self, only_successful: bool = False) -> List:
+        results = []
+        for task in self.background_tasks:
+            try:
+                results.append(task.result())
+            except Exception:
+                if only_successful:
+                    pass
+                raise
+        return results

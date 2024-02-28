@@ -43,15 +43,24 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
                 device_controller.run()
             )
 
-        profiles_json: List[str] = await util.async_gather_with_progress(*[
-            rpc_server.remote_function_run_as_async(
-                rpc_server.get_remote_service(machine.id).benchmark,
-                profile_template.dump()
-            ) for machine in configuration.cluster.machines
-        ], label="Benchmarking...")
-        profiles = []
+        for machine in configuration.cluster.machines:
+            controller.add_coroutine(
+                rpc_server.remote_function_run_as_async(
+                    rpc_server.get_remote_service(machine.id).benchmark,
+                    profile_template.dump()
+                )
+            )
 
-        for json in profiles_json:
+        # Wait until the first exit, then give some more time for others to exit.
+        # If the others don't exit in time, they will be cancelled
+        await controller.run_for()
+        await controller.run_for(duration=timedelta(seconds=10), wait_for_all=True)
+
+    finally:
+        await controller.cancel_pending_tasks()
+
+        profiles = controller.results(only_successful=True)
+        for json in controller.results():
             profile = BaseProfile.load_str(json)
 
             # Merge raw_data on orchestrator into raw_data on client
@@ -62,8 +71,6 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
             profiles.append(profile)
 
         return profiles
-    finally:
-        await controller.cancel_pending_tasks()
 
 
 async def run_orchestration(benchmark_id: str, vendor_id: str,
