@@ -4,15 +4,17 @@ import math
 import typing
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Iterable, Any, Optional, Dict
+from typing import Iterable, Any, Optional, Dict, List
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_numeric_dtype
+from pandas.core.dtypes.common import is_numeric_dtype, is_timedelta64_ns_dtype
+from pandas.core.dtypes.inference import is_number
 
 from profiles.data_cache import SummaryStatisticCache
+from util import unpack_one_value
 
 if typing.TYPE_CHECKING:
     from profiles.analysis import DetectedClockConvergence
@@ -136,9 +138,13 @@ class ConvergenceStatistics:
         }
 
 
+COLUMN_TIMESTAMP_INDEX = "timestamp"
 COLUMN_CLOCK_DIFF = "clock_diff"
 COLUMN_PATH_DELAY = "path_delay"
 COLUMN_SOURCE = "source"
+
+def non_timestamp_index(df: pd.DataFrame) -> List[str]:
+    return [name for name in df.index.names if name != COLUMN_TIMESTAMP_INDEX]
 
 
 @dataclass
@@ -151,18 +157,17 @@ class Timeseries:
     def data_frame(self):
         if self._data_frame is None:
             read_frame = pd.read_json(io.StringIO(self.data), convert_dates=True, orient='table')
-            read_frame.set_index(read_frame.index.astype("timedelta64[ns]"), inplace=True)
-
-            # Validate some things
-            for column in [COLUMN_CLOCK_DIFF, COLUMN_PATH_DELAY]:
-                assert is_numeric_dtype(read_frame[column])
-            num_cols = 3 if COLUMN_SOURCE in read_frame.columns else 2
-            assert num_cols == len(read_frame.columns)
-            assert read_frame.index.is_unique
-            assert read_frame.index.is_monotonic_increasing
+            Timeseries.convert_data_frame_index_type(
+                read_frame, COLUMN_TIMESTAMP_INDEX, "timedelta64[ns]",
+            )
+            self.validate(read_frame)
 
             self._data_frame = read_frame
         return self._data_frame
+
+    @property
+    def time_index(self) -> pd.TimedeltaIndex:
+        return self.data_frame.index.get_level_values(COLUMN_TIMESTAMP_INDEX)
 
     @property
     def clock_diff(self) -> pd.Series:
@@ -185,35 +190,74 @@ class Timeseries:
     @staticmethod
     def _serialize_frame(result_frame):
         serialization_frame: pd.DataFrame = result_frame.copy()
-        serialization_frame.set_index(serialization_frame.index.astype("int64"), inplace=True)
+        Timeseries._validate_frame(result_frame)
+
+        # Convert index type cause pandas cannot read iso timedeltas.
+        Timeseries.convert_data_frame_index_type(serialization_frame, COLUMN_TIMESTAMP_INDEX, "int64")
         assert serialization_frame.index.is_unique
         return serialization_frame.to_json(
             orient="table", date_unit='ns',
         )
 
-    def validate(self, data_frame: pd.DataFrame = None, maximum_allowable_time_jump=timedelta(seconds=5)):
+    @staticmethod
+    def convert_data_frame_index_type(frame: pd.DataFrame, level: str, type: str):
+        # We need to differentiate between single level and multi level index
+        if frame.index.nlevels > 1:
+            assert frame.index.levels[-1].name == COLUMN_TIMESTAMP_INDEX
+            frame.index = frame.index.set_levels(
+                frame.index.levels[-1].astype(type),
+                level=level,
+            )
+        else:
+            frame.set_index(
+                frame.index.astype(type),
+                inplace=True,
+            )
+
+    def validate(self, data_frame: pd.DataFrame = None, maximum_allowable_time_jump: timedelta = timedelta(seconds=5)):
         if data_frame is None:
             data_frame = self.data_frame
 
-        index_time_deltas = data_frame.index.diff()
+        self._validate_frame(data_frame, maximum_allowable_time_jump)
 
-        # Ensure that data is sorted chronologically.
-        min_time_jump = index_time_deltas.min()
-        if min_time_jump < timedelta(seconds=0):
-            raise RuntimeError(
-                f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}.")
+    @staticmethod
+    def _validate_frame(data_frame, maximum_allowable_time_jump: timedelta = timedelta(seconds=5)):
+        # Validate shape of frame and properties
+        for column in [COLUMN_CLOCK_DIFF, COLUMN_PATH_DELAY]:
+            assert is_numeric_dtype(data_frame[column])
+        num_cols = 3 if COLUMN_SOURCE in data_frame.columns else 2
+        assert num_cols == len(data_frame.columns), f"Unexpected columns in frame:\n{data_frame}"
+        assert data_frame.index.is_unique, f"Frame index is not unique:\n{data_frame}"
+        assert COLUMN_TIMESTAMP_INDEX in data_frame.index.names, f"Frame index does not have a timestamp level\n{data_frame}"
+        assert str(data_frame.index.get_level_values(COLUMN_TIMESTAMP_INDEX).dtype) == 'timedelta64[ns]', f"Frame index level timestamps is not a series of timedeltas.\n{data_frame}"
 
-        # Make sure there are no gaps in the data
-        time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
-        if not time_jumps.empty:
-            logging.warning(f"Timeseries contains {len(time_jumps)} holes "
-                            f"(largest hole: {time_jumps.max()}, "
-                            f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / index_time_deltas.sum():.0f}%)")
+        for label, group in Timeseries.groupby_individual_timeseries(data_frame):
+            index_time_deltas = group.index.get_level_values(COLUMN_TIMESTAMP_INDEX).diff()
 
-        # Ensure we have sufficient data in general
-        # At least 10 minutes -> At least 600 samples
-        if len(data_frame) < 600:
-            logging.warning(f"Timeseries contains too few data points: {len(data_frame)}")
+            # Ensure that data is sorted chronologically.
+            min_time_jump = index_time_deltas.min()
+            if min_time_jump < timedelta(seconds=0):
+                raise RuntimeError(
+                    f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}."
+                )
+            # Make sure there are no gaps in the data
+            time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
+            if not time_jumps.empty:
+                logging.warning(f"Timeseries contains {len(time_jumps)} holes "
+                                f"(largest hole: {time_jumps.max()}, "
+                                f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / index_time_deltas.sum():.0f}%)")
+            # Ensure we have sufficient data in general
+            # At least 10 minutes -> At least 600 samples
+            if len(group) < 600:
+                logging.warning(f"Timeseries contains too few data points: {len(data_frame)}")
+
+    @staticmethod
+    def groupby_individual_timeseries(data_frame):
+        # Only timestamps
+        if data_frame.index.nlevels == 1:
+            return [(None, data_frame)]
+        # MultiIndex
+        return data_frame.groupby(level=non_timestamp_index(data_frame))
 
     def summarize(self) -> SummaryStatistics:
 
@@ -236,20 +280,34 @@ class Timeseries:
 
     def segment(self, align: pd.Series):
         """Split the series by cutting it at the midway points between the alignment points and then time shifting the series to align."""
+        assert isinstance(align, pd.Series)
+        assert is_timedelta64_ns_dtype(align)
+
         cuts = (align + align.shift(1)) / 2
         cuts.dropna(inplace=True)
 
-        # Divide the frame into segments.
         new_data = self.data_frame.copy()
-        new_data["segment"] = np.searchsorted(new_data.index, cuts)
+
+        # Ensure all the aligns are inside the data
+        assert align.min() >= new_data.index.min(), f"Alignment value {align.min()} outside data frame minimum {new_data.min()}"
+        assert align.max() <= new_data.index.max(), f"Alignment value {align.max()} outside data frame maximum {new_data.max()}"
+
+        # Divide the frame into segments.
+        new_data["segment"] = np.searchsorted(cuts, new_data.index)
+        # This calculates the time shifts
+        new_data["alignment"] = align.loc[new_data["segment"]].values
 
         # Align the timestamps of the frame segment by segment
         for label, group in new_data.groupby("segment"):
-            assert is_numeric_dtype(label)
-            alignment_value = align.loc[label]
+            assert is_number(label)
+            alignment_value = unpack_one_value(group["alignment"].unique())
             assert group.index.min() <= alignment_value <= group.index.max()
 
-            group.index -= alignment_value
+        # Sort values
+        new_data["timestamp"] = new_data.index - new_data["alignment"]
+        new_data.set_index(["segment", COLUMN_TIMESTAMP_INDEX], inplace=True)
+        new_data.drop(columns=["alignment"], inplace=True)
+        new_data.sort_index(inplace=True)
 
         return Timeseries.from_series(new_data)
 
@@ -257,6 +315,9 @@ class Timeseries:
     @property
     def empty(self):
         return self.data_frame.empty
+
+    def __str__(self):
+        return f"Timeseries:\n{self.data_frame}"
 
 
 class MergedTimeSeries(Timeseries):
