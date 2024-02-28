@@ -19,7 +19,6 @@ class PTPDVendor(Vendor):
     name: str = "PTPd"
     _process: Invocation = None
 
-
     def running(self):
         if self._process is not None:
             return self._process.running
@@ -37,12 +36,6 @@ class PTPDVendor(Vendor):
 
     async def run(self, profile: "BaseProfile"):
 
-        # Create output path
-        Path(constants.MEASUREMENTS_DIR).mkdir(exist_ok=True)
-        # Remove previous logs
-        Path(self.log_file_path).unlink(missing_ok=True)
-        Path(self.statistics_file_path).unlink(missing_ok=True)
-
         self._process = Invocation.of_command(
             "ptpd", "-i", profile.configuration.machine.ptp_interface, "--verbose",
             '--masteronly' if profile.configuration.machine.ptp_master else '--slaveonly',
@@ -52,15 +45,6 @@ class PTPDVendor(Vendor):
 
         await self._process.run()
 
-
-    @property
-    def statistics_file_path(self):
-        return constants.LOCAL_DIR.joinpath("ptpd-statistics.txt")
-
-    @property
-    def log_file_path(self):
-        return constants.LOCAL_DIR.joinpath("ptpd-log.txt")
-
     async def restart(self, kill: bool = True):
         await self._process.restart(kill, ignore_return_code=True)
 
@@ -68,7 +52,6 @@ class PTPDVendor(Vendor):
         profile.raw_data.update(
             log=self._process.output if self._process is not None else None,
         )
-
 
     @classmethod
     def convert_profile(cls, raw_profile: "BaseProfile") -> Optional[BaseProfile]:
