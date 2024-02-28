@@ -14,7 +14,7 @@ from config import Configuration
 from profiles.analysis import detect_clock_step, detect_clock_convergence
 from profiles.benchmark import Benchmark
 from profiles.data_container import SummaryStatistics, Timeseries, COLUMN_CLOCK_DIFF, ConvergenceStatistics, \
-    COLUMN_PATH_DELAY
+    COLUMN_PATH_DELAY, COLUMN_TIMESTAMP_INDEX
 from util import PathOrStr
 
 if typing.TYPE_CHECKING:
@@ -166,6 +166,7 @@ class BaseProfile:
             }
         )
         result_frame.set_index(timestamps, drop=True, inplace=True)
+        result_frame.index.set_names(COLUMN_TIMESTAMP_INDEX, inplace=True)
         entire_series = Timeseries.from_series(result_frame)
         entire_series.validate(maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
 
