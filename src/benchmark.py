@@ -8,6 +8,7 @@ from adapters.fault_generators import SoftwareFaultGenerator
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from constants import PTPPERF_REPOSITORY_ROOT
 from invoke.invocation import Invocation
+from machine import Machine
 from profiles.base_profile import BaseProfile
 from util import async_wait_for_condition, setup_logging
 from utilities.multi_task_controller import MultiTaskController
@@ -43,22 +44,7 @@ async def benchmark(profile: BaseProfile):
     try:
         profile.vendor.create_configuration_file(profile)
 
-        # Synchronize the time to NTP
-        logging.info(f"Starting initial time synchronization via SystemD-NTP.")
-        systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
-        await systemd_ntp_vendor.toggle_ntp_service(active=True)
-        await async_wait_for_condition(systemd_ntp_vendor.check_clock_synchronized, target=True, timeout=timedelta(seconds=10), quiet=True)
-        await systemd_ntp_vendor.toggle_ntp_service(active=False)
-
-        # Step the clock using PPSi tool
-        target_clock_offset = configuration.machine.initial_clock_offset
-        if target_clock_offset is not None:
-            logging.info(f"Adjusting node {configuration.machine} time by {target_clock_offset}.")
-            await Invocation.of_command(
-                "lib/ppsi/tools/jmptime", str(target_clock_offset.total_seconds())
-            ).as_privileged().set_working_directory(PTPPERF_REPOSITORY_ROOT).run()
-
-        logging.info(f"{configuration.machine} time is now {datetime.now()}")
+        await synchronize_time_ntp(configuration.machine)
 
         # Actually start the benchmark
 
@@ -111,3 +97,23 @@ async def benchmark(profile: BaseProfile):
         profile.log = profile_log.read_text()
 
     return profile
+
+
+async def synchronize_time_ntp(local_machine: Machine, use_initial_clock_offset: bool = True):
+    # Synchronize the time to NTP
+    logging.info(f"Starting initial time synchronization via SystemD-NTP.")
+    systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
+    await systemd_ntp_vendor.toggle_ntp_service(active=True)
+    await async_wait_for_condition(
+        systemd_ntp_vendor.check_clock_synchronized, target=True, timeout=timedelta(seconds=10), quiet=True
+    )
+    await systemd_ntp_vendor.toggle_ntp_service(active=False)
+
+    # Step the clock using PPSi tool
+    target_clock_offset = local_machine.initial_clock_offset if use_initial_clock_offset else None
+    if target_clock_offset is not None:
+        logging.info(f"Adjusting node {local_machine} time by {target_clock_offset}.")
+        await Invocation.of_command(
+            "lib/ppsi/tools/jmptime", str(target_clock_offset.total_seconds())
+        ).as_privileged().set_working_directory(PTPPERF_REPOSITORY_ROOT).run()
+    logging.info(f"{local_machine} time is now {datetime.now()}")

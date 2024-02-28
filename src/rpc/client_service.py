@@ -31,14 +31,14 @@ class RPCClientService(rpyc.Service):
         except Exception as e:
             logging.warning(f"RPC connection error: {e}. Shutting down.")
 
-        self.finalize()
+        self._finalize()
 
     @rpyc.exposed
     def shutdown(self):
         """Shutdown this worker by a remote command."""
         self.running = False
 
-    def finalize(self):
+    def _finalize(self):
         """Terminate this RPC client, either because of regular shutdown or because of an error."""
         logging.info("Exiting RPC.")
         self.connection.close()
