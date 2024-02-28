@@ -235,6 +235,10 @@ class Invocation:
             finally:
                 # Don't check exit code if we are restarting the process.
                 await self._terminate(timeout=5, skip_verify_return_code=self._should_restart_process)
+
+            # Delay process restart to avoid too rapid looping
+            if self._should_restart_process:
+                await asyncio.sleep(1)
         return self
 
 
