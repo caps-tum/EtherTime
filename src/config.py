@@ -14,7 +14,6 @@ RASPBERRY_PI_PTP_SETTINGS = {
 
 PTP_SLAVE_SETTINGS = {
     'ptp_master': False,
-    'initial_clock_offset': timedelta(minutes=-1),
 }
 
 MACHINE_RPI06 = Machine(
@@ -28,6 +27,7 @@ MACHINE_RPI06 = Machine(
 MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
+    initial_clock_offset=timedelta(minutes=-1),
     **RASPBERRY_PI_PTP_SETTINGS,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
@@ -36,6 +36,8 @@ MACHINE_RPI08 = Machine(
 MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
+    # ALERT: RPI7 does not have a time shift so that the logs will not jump backward in time for the software fault benchmark!
+    initial_clock_offset=timedelta(minutes=0),
     **RASPBERRY_PI_PTP_SETTINGS,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
