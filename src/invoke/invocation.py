@@ -207,7 +207,7 @@ class Invocation:
             raise NotImplementedError("Unsupported options for process restart.")
 
         if self._process is not None:
-            if self._process.returncode is not None:
+            if self._process.returncode is None:
                 try:
                     logging.info(f"Killing {self.command[0]}")
                     self._process.kill()
