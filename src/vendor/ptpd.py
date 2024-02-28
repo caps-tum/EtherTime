@@ -48,6 +48,7 @@ class PTPDVendor(Vendor):
             '--masteronly' if profile.configuration.machine.ptp_master else '--slaveonly',
             "--config-file", str(self.config_file_path),
         ).as_privileged()
+        self._process.keep_alive = profile.benchmark.ptp_keepalive
 
         await self._process.run()
 

@@ -28,6 +28,7 @@ class Benchmark:
     num_machines: int = 2
 
     ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
+    ptp_keepalive: bool = False
 
     artificial_load_network: Optional[int] = 0
     artificial_load_network_dscp_priority: Optional[str] = None
