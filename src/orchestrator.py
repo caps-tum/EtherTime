@@ -7,6 +7,7 @@ from typing import List
 
 import config
 from adapters.device_control import DeviceControl
+from analyze import convert_profile
 from config import Configuration
 import util
 from cluster_restart import restart_cluster
@@ -15,13 +16,13 @@ from profiles.benchmark import Benchmark
 from registry.benchmark_db import BenchmarkDB
 from rpc.server import RPCServer
 from rpc.server_service import RPCServerService
-from util import StackTraceGuard
+from util import StackTraceGuard, str_join
 from utilities.multi_task_controller import MultiTaskController
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
 
-async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor):
+async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> List[BaseProfile]:
     profile_timestamp = datetime.now()
     profile_template = BaseProfile(
         id=f"{BaseProfile.format_id_timestamp(timestamp=profile_timestamp)}",
@@ -58,12 +59,13 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
             print(f"Saving profile to {profile.file_path_relative}")
             profile.save()
 
+        return profiles
     finally:
         await controller.cancel_pending_tasks()
 
 
 async def run_orchestration(benchmark_id: str, vendor_id: str,
-                            duration_override: timedelta = None, test_mode: bool = False):
+                            duration_override: timedelta = None, test_mode: bool = False, analyze: bool = False):
 
     benchmark = BenchmarkDB.get(benchmark_id)
     vendor = VendorDB.get(vendor_id)
@@ -95,13 +97,15 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
             logging.info(f"Applied benchmark duration override: {benchmark.duration}")
 
         logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor_id}")
-        try:
-            await do_benchmark(
-                rpc_server, configuration,
-                benchmark=benchmark, vendor=vendor
-            )
-        except Exception as e:
-            util.log_exception(e)
+        profiles = await do_benchmark(
+            rpc_server, configuration,
+            benchmark=benchmark, vendor=vendor
+        )
+
+        if analyze:
+            logging.info(f"Analyzing profiles: {str_join(profiles)}")
+            for profile in profiles:
+                convert_profile(profile)
     except Exception as e:
         util.log_exception(e)
     finally:
@@ -126,6 +130,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--test", action="store_true", default=False, help="Run this benchmark in test mode (1 minute, no restart)"
     )
+    parser.add_argument(
+        "--analyze", action='store_true', default=False, help="Analyze the benchmark profile after running the benchmark."
+    )
 
     result = parser.parse_args()
 
@@ -138,5 +145,6 @@ if __name__ == '__main__':
     with StackTraceGuard():
         asyncio.run(run_orchestration(
             benchmark_id=result.benchmark, vendor_id=result.vendor,
-            duration_override=duration_override, test_mode=test_mode
+            duration_override=duration_override, test_mode=test_mode,
+            analyze=result.analyze,
         ))

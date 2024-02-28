@@ -29,21 +29,25 @@ def analyze():
 
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
         try:
-            logging.info(
-                f"Converting {profile.file_path_relative} "
-                f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
-                f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
-                f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
-            )
-            processed = profile.vendor.convert_profile(profile)
-            if processed is not None:
-                processed.save()
-            else:
-                logging.info("No profile generated.")
+            convert_profile(profile)
         except Exception as e:
             logging.exception("Failed to convert profile!", exc_info=e)
 
     profile_db.invalidate_cache()
+
+
+def convert_profile(profile):
+    logging.info(
+        f"Converting {profile.file_path_relative} "
+        f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
+        f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
+        f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
+    )
+    processed = profile.vendor.convert_profile(profile)
+    if processed is not None:
+        processed.save()
+    else:
+        logging.info("No profile generated.")
 
 
 def merge():
