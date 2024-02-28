@@ -43,9 +43,11 @@ def convert_profile(profile):
         f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
         f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
     )
-    processed = profile.vendor.convert_profile(profile)
-    if processed is not None:
-        processed.save()
+    processed_profile = profile.vendor.convert_profile(profile)
+    if processed_profile is not None:
+        processed_profile.save()
+
+        processed_profile.create_timeseries_charts()
     else:
         logging.info("No profile generated.")
 
