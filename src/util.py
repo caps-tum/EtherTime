@@ -329,8 +329,12 @@ def log_exception(exc_val, force_traceback: bool = False):
         logging.error(f"Error: {exc_val}")
         if os.getenv("LOG_EXCEPTIONS") == "1" or force_traceback:
             traceback.print_exception(exc_val)
-    elif isinstance(exc_val, BaseException):
+    elif isinstance(exc_val, KeyboardInterrupt | SystemExit):
         logging.warning(f"Exiting due to request.")
+    else:
+        if exc_val is not None:
+            logging.error("Unknown exception encountered.")
+            logging.exception(exc_val)
 
 class ImmediateException(Exception):
     """Exception that is logged as an error immediately upon construction."""
