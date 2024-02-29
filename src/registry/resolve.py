@@ -1,7 +1,8 @@
+import glob
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional, ClassVar
+from typing import Callable, List, Optional, ClassVar, Iterable
 
 import constants
 from machine import Machine
@@ -17,8 +18,13 @@ class ProfileDB:
     base_directory: Path = constants.MEASUREMENTS_DIR
     _profile_cache: ClassVar[ProfileCache] = None
 
-    def find_profile_paths(self) -> List[Path]:
-        return list(self.base_directory.rglob("*.json"))
+    def find_profile_paths(self) -> Iterable[str]:
+        # Optimization: Path.rglob is quite slow until Python 3.12/3.13
+        # Faster to iterate by string.
+        # https://github.com/python/cpython/issues/102613
+        base_path_as_str = str(self.base_directory)
+        for result in glob.glob("**/*.json", root_dir=self.base_directory, recursive=True):
+            yield base_path_as_str + '/' + result
 
     def update_cache(self):
         cache = self.get_cache()

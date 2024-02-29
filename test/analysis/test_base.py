@@ -6,7 +6,7 @@ from profiles.aggregated_profile import AggregatedProfile
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
-from util import setup_logging
+from util import setup_logging, TimerUtil
 from vendor.registry import VendorDB
 
 
@@ -16,6 +16,11 @@ class TestBase(TestCase):
 
     def setUp(self):
         setup_logging()
+
+    def test_update_profile_cache(self):
+        profile_db = ProfileDB()
+        with TimerUtil("Updating profile cache"):
+            profile_db.update_cache()
 
     def test_analyze(self):
         profile = ProfileDB().resolve_most_recent(
