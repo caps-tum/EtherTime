@@ -65,7 +65,7 @@ class ProfileDB:
 
     def resolve_most_recent(self, *filters: PROFILE_FILTER) -> Optional[BaseProfile]:
         cached_profiles = self.get_cached_profiles(filters)
-        for cached_profile in sorted(cached_profiles, key=lambda profile: profile.start_time):
+        for cached_profile in sorted(cached_profiles, key=lambda profile: profile.start_time, reverse=True):
             real_profile = cached_profile.load_profile()
             if real_profile is not None:
                 return real_profile
