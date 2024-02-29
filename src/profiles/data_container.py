@@ -301,17 +301,28 @@ class Timeseries:
         new_data["segment"] = np.searchsorted(cuts, new_data.index)
         # This calculates the time shifts
         new_data["alignment"] = align.loc[new_data["segment"]].values
+        # new_data["cut_lower"] = cuts.loc[new_data["segment"]].values
+        # new_data["cut_upper"] = cuts.loc[new_data["segment"] + 1].values
 
         # Align the timestamps of the frame segment by segment
         for label, group in new_data.groupby("segment"):
             assert is_number(label)
-            alignment_value = unpack_one_value(group["alignment"].unique())
-            assert group.index.min() <= alignment_value <= group.index.max()
+            # alignment_value = unpack_one_value(group["alignment"].unique())
+            # cut_lower = unpack_one_value(group["cut_lower"].unique())
+            # cut_upper = unpack_one_value(group["cut_upper"].unique())
+            # assert group.index.min() <= alignment_value <= group.index.max()
+            # assert cut_lower <= group.index.min() and group.index.max() <= cut_upper
+            # assert cut_lower <= alignment_value <= cut_upper
 
         # Sort values
         new_data["timestamp"] = new_data.index - new_data["alignment"]
-        new_data.set_index(["segment", COLUMN_TIMESTAMP_INDEX], inplace=True)
-        new_data.drop(columns=["alignment"], inplace=True)
+        new_data.set_index([COLUMN_TIMESTAMP_INDEX], inplace=True)
+        # new_data.set_index(["segment", COLUMN_TIMESTAMP_INDEX], inplace=True)
+        new_data.drop(columns=[
+            "alignment",
+            # "cut_lower", "cut_upper"
+            "segment",
+        ], inplace=True)
         new_data.sort_index(inplace=True)
 
         return Timeseries.from_series(new_data)

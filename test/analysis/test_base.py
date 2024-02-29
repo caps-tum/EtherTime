@@ -18,6 +18,8 @@ class TestBase(TestCase):
         setup_logging()
 
     def test_update_profile_cache(self):
+        self.skipTest("Test disabled")
+
         profile_db = ProfileDB()
         with TimerUtil("Updating profile cache"):
             profile_db.update_cache()

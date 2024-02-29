@@ -25,3 +25,9 @@ BYTES_TO_MIBIBYTE = 1 / BYTES_IN_MIBIBYTE
 
 def convert_all_units(factor: Union[float, int], iterable: Iterable):
     return [value * factor for value in iterable]
+
+
+def format(value: float, unit: str = "s", places: int =  0):
+    import matplotlib.ticker
+    formatter = matplotlib.ticker.EngFormatter(unit=unit, places=places, usetex=False)
+    return formatter.format_data(value)

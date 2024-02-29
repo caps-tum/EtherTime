@@ -11,6 +11,7 @@ from charts.chart_container import ChartContainer, YAxisLabelType
 from profiles.base_profile import BaseProfile
 from profiles.data_container import MergedTimeSeries, BootstrapMetric
 from util import unpack_one_value
+from utilities import units
 from utilities.colors import adjust_lightness
 from vendor.ptpd import PTPDVendor
 
@@ -42,6 +43,7 @@ class ComparisonChart(ChartContainer):
     include_p99: bool = True
     include_p99_separate_axis: bool = True
     include_profile_confidence_intervals: bool = False
+    include_annotate_range: bool = False
     """Whether to import the confidence intervals from each profile that is plotted."""
     include_additional_quantile_confidence_intervals: bool = False
     """Whether to compute additional aggregate quantile confidence intervals for the confidence intervals provided by seaborn."""
@@ -126,6 +128,15 @@ class ComparisonChart(ChartContainer):
                 color="#444444",
             )
 
+        if self.include_annotate_range:
+            axis.get_legend().set_loc("upper left")
+
+            range = data['y'].max() - data['y'].min()
+            relative_range = 100 * (range / abs(data['y'].median()))
+            self.annotate(
+                axis,
+                f"Range: {units.format(range)} = {relative_range:.0f}%"
+            )
 
         self.plot_decorate_yaxis(axis, ylabel=y_axis_label_type)
 

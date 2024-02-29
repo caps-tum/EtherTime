@@ -9,7 +9,7 @@ from profiles.data_container import Timeseries, SummaryStatistics, ConvergenceSt
 class TimeseriesChart(ChartContainer):
     axes: List[plt.Axes]
 
-    def __init__(self, title: str, timeseries: Timeseries, summary_statistics: Union[SummaryStatistics, ConvergenceStatistics] = None):
+    def __init__(self, title: str, summary_statistics: Union[SummaryStatistics, ConvergenceStatistics] = None):
         self.figure, self.axes = plt.subplots(
             nrows=1, ncols=2, figsize=(10, 7),
             sharey=True,

@@ -34,18 +34,22 @@ class TestLoadCharts(TestCase):
 
         profiles.sort(key=lambda profile: profile.benchmark.artificial_load_network)
 
-        chart = ComparisonChart("Unisolated Network Load", profiles, nrows=2)
+        chart = ComparisonChart(
+            "Unisolated Network Load", profiles,
+            x_axis_label="Network Utilization"
+        )
         chart.plot_median_clock_diff_and_path_delay(
             lambda profile: profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-            x_axis_label="Network Utilization"
         )
         chart.save(LOAD_CHART_DIRECTORY.joinpath("load_network_unisolated.png"), make_parent=True)
 
-        chart = ComparisonChart("Unisolated Network Load", profiles, nrows=2)
+        chart = ComparisonChart(
+            "Unisolated Network Load", profiles,
+            x_axis_label = "Network Utilization",
+            include_p99=True,
+        )
         chart.plot_median_clock_diff_and_path_delay(
             lambda profile: profile.benchmark.artificial_load_network / 10,  # GBit/s to %
-            x_axis_label="Network Utilization",
-            include_p99=True,
         )
         chart.save(LOAD_CHART_DIRECTORY.joinpath("load_network_unisolated_p99.png"), make_parent=True)
 

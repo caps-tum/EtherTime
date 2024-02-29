@@ -2,13 +2,13 @@ from datetime import timedelta
 from pathlib import Path
 
 import matplotlib.ticker
-import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib import pyplot as plt, patheffects
 
-from profiles.data_container import Timeseries
+from profiles.data_container import ANNOTATION_BBOX_PROPS
 from util import PathOrStr
 from utilities import units
+
 
 class YAxisLabelType:
     CLOCK_DIFF_ABS_P99 = "Absolute Clock Offset $P_{99}$"
@@ -187,3 +187,12 @@ class ChartContainer:
         if abs:
             pass
             # ax.update_datalim(((0, 0),), updatex=False)
+
+
+    def annotate(self, ax: plt.Axes, annotation: str, position=(0.95, 0.95)):
+        ax.annotate(
+            annotation,
+            xy=position, xycoords='axes fraction',
+            verticalalignment='top', horizontalalignment='right',
+            bbox=ANNOTATION_BBOX_PROPS,
+        )

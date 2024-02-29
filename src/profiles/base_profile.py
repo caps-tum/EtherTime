@@ -239,7 +239,6 @@ class BaseProfile:
             if self.check_dependent_file_needs_update(output_path) or force_regeneration:
                 chart = TimeseriesChart(
                     title=self.get_title(),
-                    timeseries=self.time_series,
                     summary_statistics=self.summary_statistics,
                 )
                 chart.add_path_delay(self.time_series)
@@ -251,7 +250,6 @@ class BaseProfile:
             if self.check_dependent_file_needs_update(output_path) or force_regeneration:
                 chart_convergence = TimeseriesChart(
                     title=self.get_title("with Convergence"),
-                    timeseries=self.time_series_unfiltered,
                     summary_statistics=self.convergence_statistics,
                 )
                 chart_convergence.add_path_delay(self.time_series_unfiltered)
