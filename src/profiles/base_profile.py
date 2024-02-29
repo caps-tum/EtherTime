@@ -221,37 +221,46 @@ class BaseProfile:
 
         return self
 
-    def create_timeseries_charts(self):
+    def create_timeseries_charts(self, force_regeneration: bool = False):
         from charts.timeseries_chart import TimeseriesChart
 
         # We create multiple charts:
         # one only showing the filtered data and one showing the entire convergence trajectory
         if self.time_series is not None:
-
-            chart = TimeseriesChart(
-                title=self.get_title(),
-                timeseries=self.time_series,
-                summary_statistics=self.summary_statistics,
-            )
-            chart.add_path_delay(self.time_series)
-            chart.add_clock_difference(self.time_series)
-            chart.save(self.get_chart_timeseries_path(), make_parent=True)
+            output_path = self.get_chart_timeseries_path()
+            if self.check_dependent_file_needs_update(output_path) or force_regeneration:
+                chart = TimeseriesChart(
+                    title=self.get_title(),
+                    timeseries=self.time_series,
+                    summary_statistics=self.summary_statistics,
+                )
+                chart.add_path_delay(self.time_series)
+                chart.add_clock_difference(self.time_series)
+                chart.save(output_path, make_parent=True)
 
         if self.time_series_unfiltered is not None:
-            chart_convergence = TimeseriesChart(
-                title=self.get_title("with Convergence"),
-                timeseries=self.time_series_unfiltered,
-                summary_statistics=self.convergence_statistics,
-            )
-            chart_convergence.add_clock_difference(self.time_series_unfiltered)
-            chart_convergence.add_path_delay(self.time_series_unfiltered)
-            if self.convergence_statistics is not None:
-                chart_convergence.add_boundary(
-                    chart_convergence.axes[0], self.convergence_statistics.convergence_time
+            output_path = self.get_chart_timeseries_path(convergence_included=True)
+            if self.check_dependent_file_needs_update(output_path) or force_regeneration:
+                chart_convergence = TimeseriesChart(
+                    title=self.get_title("with Convergence"),
+                    timeseries=self.time_series_unfiltered,
+                    summary_statistics=self.convergence_statistics,
                 )
-            chart_convergence.save(self.get_chart_timeseries_path(convergence_included=True), make_parent=True)
+                chart_convergence.add_path_delay(self.time_series_unfiltered)
+                chart_convergence.add_clock_difference(self.time_series_unfiltered)
+                if self.convergence_statistics is not None:
+                    chart_convergence.add_boundary(
+                        chart_convergence.axes[0], self.convergence_statistics.convergence_time
+                    )
+                chart_convergence.save(output_path, make_parent=True)
 
     def __str__(self):
         return self.id
 
 
+    def check_dependent_file_needs_update(self, other: Path):
+        if not other.exists():
+            return True
+        if not self.file_path.exists():
+            raise RuntimeError(f"Cannot check whether dependent file needs update when original file does not exist: {self.file_path}")
+        return other.stat().st_mtime < self.file_path.stat().st_mtime

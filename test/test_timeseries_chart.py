@@ -24,6 +24,7 @@ class TestTimeseriesChart(TestCase):
         profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
 
         for profile in profiles:
+            print(f"Processing {profile}")
             profile.create_timeseries_charts()
 
 
