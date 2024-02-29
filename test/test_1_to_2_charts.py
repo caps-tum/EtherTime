@@ -53,14 +53,16 @@ class Test1To2Charts(TestCase):
                 chart_profiles = [*baselines, *profiles_1_to_2_clients]
                 chart = ComparisonChart(
                     "Scalability: 1-to-2", chart_profiles,
-                    nrows=2,
+                    nrows=3,
                 )
                 chart.plot_median_clock_diff_and_path_delay(
-                    x_axis_values=lambda profile: 0 if profile.benchmark == BenchmarkDB.BASE else (1 if profile.machine_id == MACHINE_RPI08.id else 2),
+                    x_axis_values=lambda profile: 'Base' if profile.benchmark == BenchmarkDB.BASE else ('Client 1' if profile.machine_id == MACHINE_RPI08.id else 'Client 2'),
                     x_axis_label="Profile",
-                    include_p99=True,
+                    use_bar=True,
+                    include_p99=True, p99_separate_axis=True,
+                    include_confidence_intervals=False,
                 )
-                chart.save(CHART_DIRECTORY.joinpath(f"1_to_2_clients_versus_base_{vendor}.png"), make_parent=True)
+                chart.save(BenchmarkDB.BASE_TWO_CLIENTS.storage_base_path.joinpath("clients_vs_base.png"), make_parent=True)
 
             # Software Fault
             if None not in profiles_software_fault_clients:

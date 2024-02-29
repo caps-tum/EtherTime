@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from random import random, Random
-from typing import List, Callable, Optional, Any
+from typing import List, Callable, Optional, Any, Union
 
 import pandas as pd
 import seaborn
 from matplotlib import pyplot as plt
+from pandas.core.dtypes.common import is_numeric_dtype
 
 from charts.chart_container import ChartContainer, YAxisLabelType
 from profiles.base_profile import BaseProfile
@@ -59,7 +60,8 @@ class ComparisonChart(ChartContainer):
 
         indexes, values = data['hue'].factorize()
         data['dodge_x'] = indexes
-        data['x'] += data['dodge_x']
+        if is_numeric_dtype(data['x']):
+            data['x'] += data['dodge_x']
 
         # Draw error bars under the actual plot
         if include_confidence_intervals:
@@ -145,8 +147,9 @@ class ComparisonChart(ChartContainer):
         self.current_axes = self.axes[row][col]
 
 
-    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[BaseProfile], float],
-                                              x_axis_label="Network Utilization", include_p99: bool = False, p99_separate_axis: bool = False, use_bar: bool = False):
+    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[BaseProfile], Union[float, str]],
+                                              x_axis_label="Network Utilization", include_p99: bool = False, p99_separate_axis: bool = False, use_bar: bool = False,
+                                              include_confidence_intervals=True):
         row = 0
         self.set_current_axes(row, 0)
 
@@ -155,7 +158,7 @@ class ComparisonChart(ChartContainer):
                 x=x_axis_values(profile), y=profile.summary_statistics.clock_diff_median, hue=profile.vendor.name,
             ),
             x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS, hue_name="Vendor",
-            include_confidence_intervals=True, use_bar=use_bar)
+            include_confidence_intervals=include_confidence_intervals, use_bar=use_bar)
         # self.plot_statistic_timeseries_bootstrap(lambda profile: x_axis_values(profile),
         #                                          x_axis_label=x_axis_label, hue_name="Vendor")
         # chart.current_axes.set_yscale('log')
@@ -173,7 +176,7 @@ class ComparisonChart(ChartContainer):
                 ),
                 x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS_P99, hue_name="Vendor",
                 linestyle='dotted',
-                include_confidence_intervals = True, use_bar = use_bar
+                include_confidence_intervals =include_confidence_intervals, use_bar = use_bar
             )
 
         row += 1
@@ -185,7 +188,7 @@ class ComparisonChart(ChartContainer):
                 hue=profile.vendor.name,
             ),
             x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.PATH_DELAY, hue_name="Vendor",
-            include_confidence_intervals=True, use_bar=use_bar)
+            include_confidence_intervals=include_confidence_intervals, use_bar=use_bar)
         self.current_axes.set_ylabel('Path Delay')
 
 
