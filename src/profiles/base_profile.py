@@ -259,8 +259,10 @@ class BaseProfile:
 
 
     def check_dependent_file_needs_update(self, other: Path):
-        if not other.exists():
-            return True
-        if not self.file_path.exists():
-            raise RuntimeError(f"Cannot check whether dependent file needs update when original file does not exist: {self.file_path}")
-        return other.stat().st_mtime < self.file_path.stat().st_mtime
+        try:
+            return other.stat().st_mtime < self.file_path.stat().st_mtime
+        except FileNotFoundError:
+            if not other.exists():
+                return True
+            if not self.file_path.exists():
+                raise RuntimeError(f"Cannot check whether dependent file needs update when original file does not exist: {self.file_path}")
