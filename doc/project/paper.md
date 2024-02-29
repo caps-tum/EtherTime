@@ -81,6 +81,16 @@ Default-time synchronization via NTP -- with local-ish servers and servers on th
 
 PTP and accuracy over a local network.
 
+
+### Stability
+
+Variance is an important factor to consider for evaluating PTP solutions. Surprisingly, even with no adverse conditions present, the accuracy of timestamping can vary a lot. Running 15 identical experiments of 20 minutes each (collecting around 1000 samples per experiment), we find that the median observed clock variance has a range of over 100% in regard to the median across all experiments. This gets worse when moving closer to the outer quantiles.
+![base_variance.png](res%2Fbase_variance.png)
+_Reproducing experiments is difficult: a single restart of PTP can e.g. result in the clock difference doubling._
+
+Interestingly, the path delay is comparatively very stable. The above data represents 10 hours of collection runs.
+
+
 ### Detrimental conditions and Scalability
 
 ### Congestion and contention
@@ -119,22 +129,6 @@ The general trend looks like this:
 
 
 ![load_network_unisolated.png](..%2F..%2Fdata%2Fcharts%2Fload%2Fload_network_unisolated.png)
-
-The discrepancy between 80% load and 90% load for LinuxPTP:
-#### 80% Load
-![net_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series.png)
-
-#### 90% Load
-![net_unprioritized_load_90-2024-02-07-08-28-02-LinuxPTP-processed-rpi08-series.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_90-2024-02-07-08-28-02-LinuxPTP-processed-rpi08-series.png)
-
-The big difference is the path delay, the same comparison again:
-
-### 80% Load
-
-![net_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series-path-delay.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_80-2024-02-07-06-27-51-LinuxPTP-processed-rpi08-series-path-delay.png)
-
-### 90% Load
-![net_unprioritized_load_90-2024-02-07-07-27-56-PTPd-processed-rpi08-series-path-delay.png](..%2F..%2Fdata%2Fprofiles%2Fload%2Fnet%2Funprioritized%2Fnet_unprioritized_load_90-2024-02-07-07-27-56-PTPd-processed-rpi08-series-path-delay.png)
 
 ### Fault Tolerance
 
