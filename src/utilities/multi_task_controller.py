@@ -59,8 +59,10 @@ class MultiTaskController:
         for task in self.background_tasks:
             try:
                 results.append(task.result())
+            except CancelledError:
+                if not only_successful:
+                    raise
             except Exception:
-                if only_successful:
-                    pass
-                raise
+                if not only_successful:
+                    raise
         return results
