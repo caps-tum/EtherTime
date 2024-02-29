@@ -5,10 +5,11 @@ import config
 import constants
 from charts.comparison_chart import ComparisonChart
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
-from config import MACHINE_RPI08
+from config import MACHINE_RPI08, MACHINE_RPI07
 from machine import Machine
 from profiles.base_profile import BaseProfile
 from profiles.benchmark import Benchmark
+from util import unpack_one_value
 from vendor.vendor import Vendor
 
 CHART_DIRECTORY = constants.CHARTS_DIR.joinpath("1_to_2")
@@ -22,9 +23,9 @@ from vendor.registry import VendorDB
 class Test1To2Charts(TestCase):
     profile_db = ProfileDB()
 
-    def resolve_1_to_2(self, benchmark: Benchmark, machine: Machine, vendor: Vendor) -> List[BaseProfile]:
+    def resolve_1_to_2(self, benchmark: Benchmark, machine: Machine, vendor: Vendor, aggregated: bool = False) -> List[BaseProfile]:
         return self.profile_db.resolve_all(
-            resolve.BY_VALID_BENCHMARK_AND_VENDOR(benchmark, vendor),
+            resolve.BY_VALID_BENCHMARK_AND_VENDOR(benchmark, vendor) if not aggregated else resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(benchmark, vendor),
             resolve.BY_MACHINE(machine),
         )
 
@@ -53,47 +54,44 @@ class Test1To2Charts(TestCase):
                 chart_profiles = [*baselines, *profiles_1_to_2_clients]
                 chart = ComparisonChart(
                     "Scalability: 1-to-2", chart_profiles,
-                    nrows=3,
+                    x_axis_label="Profile",
+                    use_bar=True,
+                    include_p99=True, include_p99_separate_axis=True,
                 )
                 chart.plot_median_clock_diff_and_path_delay(
                     x_axis_values=lambda profile: 'Base' if profile.benchmark == BenchmarkDB.BASE else ('Client 1' if profile.machine_id == MACHINE_RPI08.id else 'Client 2'),
-                    x_axis_label="Profile",
-                    use_bar=True,
-                    include_p99=True, p99_separate_axis=True,
-                    include_confidence_intervals=False,
                 )
                 chart.save(BenchmarkDB.BASE_TWO_CLIENTS.storage_base_path.joinpath("clients_vs_base.png"), make_parent=True)
 
+    def test_software_fault(self):
+        for vendor in VendorDB.ANALYZED_VENDORS:
             # Software Fault
-            if None not in profiles_software_fault_clients:
-                chart = DistributionComparisonChart(
-                    [
-                        *profiles_1_to_2_clients, *profiles_software_fault_clients
-                    ],
-                    labels=["1-to-2\nClient 1", "1-to-2\nClient 2", "Software Fault\nNormal Client",
-                            "Software Fault\nFaulty Client"],
-                    x_label="Profile")
-                chart.save(CHART_DIRECTORY.joinpath(f"software_fault_clients_comparison_{vendor}.png"), make_parent=True)
+            non_fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI08, vendor, aggregated=True))
+            fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI07, vendor, aggregated=True))
 
-                chart = TimeSeriesChartVersus(
-                    profiles_1_to_2_clients[0], profiles_software_fault_clients[0]
-                )
-                chart.set_titles("No Faults", "Software Faults (Non-Faulty Client)")
-                chart.save(CHART_DIRECTORY.joinpath(f"software_fault_clients_versus_{vendor}.png"), make_parent=True)
+            if non_fault_client_profile is None or fault_client_profile is None:
+                self.skipTest("Missing profiles.")
 
-            # Hardware Fault
-            if None not in profiles_hardware_fault_clients:
-                chart = DistributionComparisonChart(
-                    [
-                        baselines, *profiles_1_to_2_clients, *profiles_hardware_fault_clients
-                    ],
-                    labels=["1-to-2\nClient 1", "1-to-2\nClient 2", "Hardware Fault\nNormal Client",
-                            "Hardware Fault\nFaulty Client"],
-                    x_label="Profile")
-                chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_comparison_{vendor}.png"), make_parent=True)
+            chart = TimeSeriesChartVersus(
+                non_fault_client_profile, fault_client_profile,
+            )
+            chart.save(BenchmarkDB.SOFTWARE_FAULT.storage_base_path.joinpath(f"software_fault_clients_comparison_{vendor}.png"))
 
-                chart = TimeSeriesChartVersus(
-                    profiles_1_to_2_clients[0], profiles_hardware_fault_clients[0]
-                )
-                chart.set_titles("No Faults", "Switch Hardware Fault")
-                chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_versus_{vendor}.png"), make_parent=True)
+    def test_hardware_fault(self):
+        self.skipTest("Unupdated")
+        # # Hardware Fault
+        # if None not in profiles_hardware_fault_clients:
+        #     chart = DistributionComparisonChart(
+        #         [
+        #             baselines, *profiles_1_to_2_clients, *profiles_hardware_fault_clients
+        #         ],
+        #         labels=["1-to-2\nClient 1", "1-to-2\nClient 2", "Hardware Fault\nNormal Client",
+        #                 "Hardware Fault\nFaulty Client"],
+        #         x_label="Profile")
+        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_comparison_{vendor}.png"), make_parent=True)
+        #
+        #     chart = TimeSeriesChartVersus(
+        #         profiles_1_to_2_clients[0], profiles_hardware_fault_clients[0]
+        #     )
+        #     chart.set_titles("No Faults", "Switch Hardware Fault")
+        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_versus_{vendor}.png"), make_parent=True)
