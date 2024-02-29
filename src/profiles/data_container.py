@@ -1,3 +1,4 @@
+import hashlib
 import io
 import logging
 import math
@@ -14,7 +15,7 @@ from pandas.core.dtypes.common import is_numeric_dtype, is_timedelta64_ns_dtype
 from pandas.core.dtypes.inference import is_number
 
 from profiles.data_cache import SummaryStatisticCache
-from util import unpack_one_value
+from util import unpack_one_value, TimerUtil
 
 if typing.TYPE_CHECKING:
     from profiles.analysis import DetectedClockConvergence
@@ -53,6 +54,8 @@ class BootstrapMetric:
             (data,),
             lambda sample, axis: np.quantile(sample, quantile, axis=axis),
             random_state=np.random.default_rng(0), vectorized=True,
+            # Try to stay within 10M values processed per batch to limit memory consumption
+            batch=max(10 * (1024 ** 2) // len(data), 1),
             # method='basic',
         )
         return BootstrapMetric(
@@ -264,17 +267,19 @@ class Timeseries:
         clock_diff = self.get_clock_diff(abs=True)
         path_delay = self.path_delay
 
-        data_hash = hex(hash(self.data))
+        data_hash = hashlib.md5(self.data.encode()).hexdigest()
         cache = SummaryStatisticCache.resolve()
 
         try:
-            cache.get(data_hash)
+            return cache.get(data_hash)
         except KeyError:
-            statistics = SummaryStatistics(
-                clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
-                clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
-                path_delay_median=BootstrapMetric.create(path_delay, 0.5),
-            )
+            with TimerUtil("recalculating bootstrap metrics"):
+                statistics = SummaryStatistics(
+                    clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
+                    clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
+                    path_delay_median=BootstrapMetric.create(path_delay, 0.5),
+                )
+
             cache.update(data_hash, statistics)
             return statistics
 
@@ -319,6 +324,8 @@ class Timeseries:
     def __str__(self):
         return f"Timeseries:\n{self.data_frame}"
 
+    def memory_usage(self):
+        return len(self.data) + (self._data_frame.memory_usage(deep=True).sum() if self.data_frame is not None else 0)
 
 class MergedTimeSeries(Timeseries):
 

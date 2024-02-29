@@ -33,12 +33,12 @@ class AggregatedProfile(BaseProfile):
             configuration=None,
         )
 
-        logging.info(f"Profiles sizes (mibibytes): {str_join([profile.time_series_unfiltered.data_frame.memory_usage().sum() * 2 / (1024 ** 2) for profile in profiles])}")
         aggregated_profile.time_series = MergedTimeSeries.merge_series(
             [profile.time_series for profile in profiles],
             labels=[profile.id for profile in profiles],
             timestamp_align=True,
         )
+        logging.info(f"Profile memory usage: {aggregated_profile.memory_usage() / (1024 ** 2):.0f}M")
         aggregated_profile.summary_statistics = aggregated_profile.time_series.summarize()
 
         return aggregated_profile

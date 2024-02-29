@@ -274,3 +274,6 @@ class BaseProfile:
                 return True
             if not self.file_path.exists():
                 raise RuntimeError(f"Cannot check whether dependent file needs update when original file does not exist: {self.file_path}")
+
+    def memory_usage(self):
+        return (self.time_series.memory_usage() if self.time_series is not None else 0) + (self.time_series_unfiltered.memory_usage() if self.time_series_unfiltered is not None else 0)

@@ -518,3 +518,17 @@ def read_file_if_exists(path: PathOrStr) -> Optional[str]:
         return Path(path).read_text()
     except FileNotFoundError:
         return None
+
+@dataclass
+class TimerUtil:
+    label: str
+    start_time: datetime = None
+    stop_time: datetime = None
+
+    def __enter__(self):
+        logging.info(f"Starting {self.label}...")
+        self.start_time = datetime.now()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_time = datetime.now()
+        logging.info(f"Completed {self.label} in {self.stop_time - self.start_time}")

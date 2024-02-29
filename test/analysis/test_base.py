@@ -27,7 +27,7 @@ class TestBase(TestCase):
 
     def test_merge(self):
         profiles = ProfileDB().resolve_all(
-            resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, VendorDB.LINUXPTP),
+            resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.BASE, VendorDB.PTPD),
             resolve.BY_MACHINE(MACHINE_RPI08)
         )
         AggregatedProfile.from_profiles(profiles)
