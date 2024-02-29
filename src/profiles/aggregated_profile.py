@@ -1,9 +1,11 @@
+import logging
+import sys
 from typing import List
 
 import config
 from profiles.base_profile import BaseProfile, ProfileType
 from profiles.data_container import MergedTimeSeries
-from util import unpack_one_value_or_error
+from util import unpack_one_value_or_error, str_join
 
 
 class AggregatedProfile(BaseProfile):
@@ -12,6 +14,9 @@ class AggregatedProfile(BaseProfile):
     @staticmethod
     def from_profiles(profiles: List[BaseProfile]):
         from registry.benchmark_db import BenchmarkDB
+
+        if len(profiles) == 0:
+            raise ValueError("No profiles to merge.")
 
         benchmark_id = unpack_one_value_or_error(set([profile.benchmark.id for profile in profiles]), "Cannot merge profiles with multiple benchmarks.")
         vendor_id = unpack_one_value_or_error(set([profile.vendor.id for profile in profiles]), "Cannot merge profiles with multiple vendors.")
@@ -28,6 +33,7 @@ class AggregatedProfile(BaseProfile):
             configuration=None,
         )
 
+        logging.info(f"Profiles sizes (mibibytes): {str_join([profile.time_series_unfiltered.data_frame.memory_usage().sum() * 2 / (1024 ** 2) for profile in profiles])}")
         aggregated_profile.time_series = MergedTimeSeries.merge_series(
             [profile.time_series for profile in profiles],
             labels=[profile.id for profile in profiles],

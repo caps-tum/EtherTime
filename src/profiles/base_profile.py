@@ -116,7 +116,15 @@ class BaseProfile:
 
     @property
     def file_path(self):
-        return self.storage_base_path.joinpath(self.profile_type).joinpath(self.filename)
+        return self.get_file_path()
+
+    def get_file_path(self, profile_type: str = None, machine_id: str = None) -> Path:
+        if profile_type is None:
+            profile_type = self.profile_type
+        if machine_id is None:
+            machine_id = self.machine_id
+
+        return self.storage_base_path.joinpath(profile_type).joinpath(f"{machine_id}.json")
 
     @property
     def file_path_relative(self):

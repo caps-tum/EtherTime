@@ -15,28 +15,24 @@ from vendor.registry import VendorDB
 
 def analyze():
     profile_db = ProfileDB()
-    profile_db.invalidate_cache()
 
-    logging.info("About to remove all processed profiles.")
-
-    # Remove all previously processed data to avoid out-of-date profiles
-    old_profiles = profile_db.resolve_all(resolve.VALID_PROCESSED_PROFILE())
-    old_profiles += profile_db.resolve_all(resolve.BY_TYPE(ProfileType.PROCESSED_CORRUPT))
-    old_profiles += profile_db.resolve_all(resolve.BY_TYPE(ProfileType.AGGREGATED))
-    logging.info(f"Removing {len(old_profiles)} processed profiles.")
-    for processed_profile in old_profiles:
-        processed_profile.file_path.unlink()
+    logging.info("Updating profile cache...")
+    start_time = datetime.now()
+    profile_db.update_cache()
+    logging.info(f"Updated profile cache in {datetime.now() - start_time}.")
 
     for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
         try:
-            convert_profile(profile)
+            if profile.check_dependent_file_needs_update(profile.get_file_path(ProfileType.PROCESSED, profile.machine_id)):
+                convert_profile(profile, profile_db)
         except Exception as e:
             logging.exception("Failed to convert profile!", exc_info=e)
 
-    profile_db.invalidate_cache()
 
+def convert_profile(profile: BaseProfile, profile_db: ProfileDB = None):
+    if profile_db is None:
+        profile_db = ProfileDB()
 
-def convert_profile(profile: BaseProfile):
     logging.info(
         f"Converting {profile.file_path_relative} "
         f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
@@ -45,7 +41,12 @@ def convert_profile(profile: BaseProfile):
     )
     processed_profile = profile.vendor.convert_profile(profile)
     if processed_profile is not None:
+        # Remove existing processed profiles (they may be in a different path)
+        processed_profile.get_file_path(ProfileType.PROCESSED).unlink(missing_ok=True)
+        processed_profile.get_file_path(ProfileType.PROCESSED_CORRUPT).unlink(missing_ok=True)
+
         processed_profile.save()
+        profile_db.get_cache().update(processed_profile)
 
         processed_profile.create_timeseries_charts()
     else:
@@ -54,7 +55,7 @@ def convert_profile(profile: BaseProfile):
 
 def merge():
     profile_db = ProfileDB()
-    profile_db.invalidate_cache()
+    profile_cache = profile_db.get_cache()
     for benchmark in BenchmarkDB.all():
         for vendor in VendorDB.ANALYZED_VENDORS:
             for machine in config.machines.values():
@@ -65,11 +66,22 @@ def merge():
                 )
 
                 if len(profiles) > 0:
-                    links = [f"[{profile}]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)})" for profile in profiles]
-                    logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(links)}")
-                    aggregated_profile = AggregatedProfile.from_profiles(profiles)
-                    aggregated_profile.save()
-    profile_db.invalidate_cache()
+
+                    # Check if update needed
+                    current_aggregate_profile = profile_db.resolve_most_recent(
+                        resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(benchmark, vendor),
+                        resolve.BY_MACHINE(machine),
+                    )
+                    if current_aggregate_profile is None or any(profile.check_dependent_file_needs_update(current_aggregate_profile.file_path) for profile in profiles):
+
+                        links = [f"[{profile}]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)})" for profile in profiles]
+                        logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(links)}")
+                        aggregated_profile = AggregatedProfile.from_profiles(profiles)
+                        aggregated_profile.save()
+
+                        profile_cache.update(aggregated_profile, persist=False)
+
+    profile_cache.save()
 
 
 

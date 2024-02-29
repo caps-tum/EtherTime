@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, ClassVar
@@ -19,15 +20,24 @@ class ProfileDB:
     def find_profile_paths(self) -> List[Path]:
         return list(self.base_directory.rglob("*.json"))
 
+    def update_cache(self):
+        cache = self.get_cache()
+        for path in self.find_profile_paths():
+            if path not in cache.cached_profiles.keys():
+                cache.update(BaseProfile.load(path), persist=False)
+        cache.save()
+
     def get_cache(self) -> ProfileCache:
         if ProfileDB._profile_cache is None:
             try:
                 ProfileDB._profile_cache = ProfileCache.load()
             except FileNotFoundError:
+                logging.info("Building profile cache...")
                 ProfileDB._profile_cache = ProfileCache.build(
                     [BaseProfile.load(profile_path) for profile_path in self.find_profile_paths()],
                     persist=True
                 )
+                logging.info(f"Built profile cache: {len(self._profile_cache.cached_profiles)} profiles cached.")
         return ProfileDB._profile_cache
 
     def invalidate_cache(self):
@@ -37,22 +47,24 @@ class ProfileDB:
     def resolve_all(self, *filters: PROFILE_FILTER) -> List[BaseProfile]:
         if filters is None:
             filters = []
-        try:
-            return [profile.load_profile() for profile in self.get_cache().cached_profiles if all(filter_function(profile) for filter_function in filters)]
-        except FileNotFoundError:
-            # Invalidate cache and retry
-            self.invalidate_cache()
-            return self.resolve_all(*filters)
+
+        cached_profile = self.get_cached_profiles(filters)
+        # Some profiles might have been deleted, remove those from results
+        real_profiles = [profile.load_profile() for profile in cached_profile]
+        return [profile for profile in real_profiles if profile is not None]
+
+    def get_cached_profiles(self, filters):
+        return [profile for profile in self.get_cache().all() if
+                all(filter_function(profile) for filter_function in filters)]
 
     def resolve_most_recent(self, *filters: PROFILE_FILTER) -> Optional[BaseProfile]:
-        try:
-            return sorted(
-                self.resolve_all(*filters),
-                key=lambda profile: profile.start_time
-            )[-1]
-        except IndexError:
-            return None
+        cached_profiles = self.get_cached_profiles(filters)
+        for cached_profile in sorted(cached_profiles, key=lambda profile: profile.start_time):
+            real_profile = cached_profile.load_profile()
+            if real_profile is not None:
+                return real_profile
 
+        return None
 
 def VALID_PROCESSED_PROFILE():
     return lambda profile: profile.profile_type == ProfileType.PROCESSED
