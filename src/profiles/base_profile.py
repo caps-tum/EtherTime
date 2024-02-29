@@ -124,7 +124,7 @@ class BaseProfile:
 
     @property
     def storage_base_path(self) -> Path:
-        return constants.MEASUREMENTS_DIR.joinpath(self.benchmark.id).joinpath(self.vendor.id).joinpath(self.id)
+        return self.benchmark.storage_base_path.joinpath(self.vendor.id).joinpath(self.id)
 
     def get_chart_timeseries_path(self, convergence_included: bool = False) -> Path:
         suffix = "" if not convergence_included else "-convergence"

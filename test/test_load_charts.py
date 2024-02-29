@@ -4,7 +4,7 @@ import constants
 
 LOAD_CHART_DIRECTORY = constants.CHARTS_DIR.joinpath("load")
 from charts.comparison_chart import ComparisonChart
-from charts.timeseries_chart_comparison import TimeSeriesChartComparison
+from charts.distribution_comparison_chart import DistributionComparisonChart
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from profiles.base_profile import ProfileTags
 from registry import resolve
@@ -54,7 +54,7 @@ class TestLoadCharts(TestCase):
         for vendor_id in vendors:
             filtered_profiles = [profile for profile in profiles if profile.vendor.id == vendor_id]
             # Distribution chart
-            chart = TimeSeriesChartComparison(
+            chart = DistributionComparisonChart(
                 filtered_profiles,
                 labels=[f"{profile.benchmark.artificial_load_network / 10:.0f}%" for profile in filtered_profiles],
                 x_label="Network Load",
@@ -96,7 +96,7 @@ class TestLoadCharts(TestCase):
             if None in profiles:
                 self.skipTest("Missing comparison profiles.")
 
-            chart = TimeSeriesChartComparison(profiles, labels=["Baseline", "Unprioritized (100% load)", "Prioritized (100% load)"], x_label="Profile")
+            chart = DistributionComparisonChart(profiles, labels=["Baseline", "Unprioritized (100% load)", "Prioritized (100% load)"], x_label="Profile")
 
             chart.save(LOAD_CHART_DIRECTORY.joinpath(f"load_network_versus_base_{vendor}.png"))
 

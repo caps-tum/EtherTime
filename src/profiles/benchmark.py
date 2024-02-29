@@ -3,6 +3,7 @@ from dataclasses import field, dataclass
 from datetime import timedelta
 from typing import List, Optional, Literal
 
+import constants
 from constants import DEFAULT_BENCHMARK_DURATION
 
 
@@ -44,3 +45,7 @@ class Benchmark:
 
     fault_tolerance_prompt_interval: Optional[timedelta] = None
     fault_tolerance_prompt_downtime: Optional[timedelta] = None
+
+    @property
+    def storage_base_path(self):
+        return constants.MEASUREMENTS_DIR.joinpath(self.id)

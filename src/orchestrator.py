@@ -59,8 +59,8 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
     finally:
         await controller.cancel_pending_tasks()
 
-        profiles = controller.results(only_successful=True)
-        for json in controller.results():
+        profiles = []
+        for json in controller.results(only_successful=True):
             profile = BaseProfile.load_str(json)
 
             # Merge raw_data on orchestrator into raw_data on client

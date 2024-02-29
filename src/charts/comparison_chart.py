@@ -22,6 +22,16 @@ class ComparisonDataPoint:
     y_upper_bound: Optional[float] = None
     hue: Optional[Any] = None
 
+    @staticmethod
+    def from_bootstrap_metric(x: float, y: BootstrapMetric, hue: Optional[Any] = None) -> "ComparisonDataPoint":
+        return ComparisonDataPoint(
+            x=x,
+            y=y.value,
+            y_lower_bound=y.confidence_interval_lower,
+            y_upper_bound=y.confidence_interval_upper,
+            hue=hue,
+        )
+
 class ComparisonChart(ChartContainer):
     axes: List[List[plt.Axes]]
     current_axes: plt.Axes
@@ -39,7 +49,8 @@ class ComparisonChart(ChartContainer):
         self.plot_decorate_title(self.current_axes, title)
 
     def plot_statistic(self, profile_callback: Callable[[BaseProfile], ComparisonDataPoint], x_axis_label: str,
-                       hue_name: str = None, linestyle=None, include_confidence_intervals: bool = False):
+                       hue_name: str = None, linestyle=None, include_confidence_intervals: bool = False, use_bar: bool = False,
+                       y_axis_label_type=YAxisLabelType.OFFSET_GENERIC):
         data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
         data = pd.DataFrame(data_points)
 
@@ -55,6 +66,9 @@ class ComparisonChart(ChartContainer):
             # Draw median = most important, last, for all vendors
             for quantile in [0.05, 0.95, 0.5]:
                 for name, group in data.groupby(by=["hue", "x"]):
+                    if len(group) <= 1:
+                        continue
+
                     bootstrap_metric = BootstrapMetric.create(group["y"], quantile=quantile)
                     # if bootstrap_metric.relative_magnitude >= 0.1:
                     base_color = seaborn.color_palette()[1] if unpack_one_value(group["hue"].unique()) == PTPDVendor.name else seaborn.color_palette()[0]
@@ -70,17 +84,37 @@ class ComparisonChart(ChartContainer):
                         color=color,
                     )
 
-        seaborn.lineplot(
-            ax=self.current_axes,
-            x=data['x'],
-            y=data['y'],
-            hue=data['hue'].rename(hue_name),
-            marker='o',
-            linestyle=linestyle,
-            errorbar=("pi", 95),
-        )
+        if use_bar:
+            # assert linestyle is None
+            seaborn.barplot(
+                ax=self.current_axes,
+                x=data['x'],
+                y=data['y'],
+                hue=data['hue'].rename(hue_name),
+                errorbar=("pi", 95),
+                native_scale=True,
+                linestyle=linestyle,
+            )
 
-        self.plot_decorate_yaxis(self.current_axes, ylabel=YAxisLabelType.OFFSET_GENERIC)
+            self.current_axes.vlines(
+                x=data['x'],
+                ymin=data['y_lower_bound'],
+                ymax=data['y_upper_bound'],
+                color="#444444",
+            )
+
+        else:
+            seaborn.lineplot(
+                ax=self.current_axes,
+                x=data['x'],
+                y=data['y'],
+                hue=data['hue'].rename(hue_name),
+                marker='o',
+                linestyle=linestyle,
+                errorbar=("pi", 95),
+            )
+
+        self.plot_decorate_yaxis(self.current_axes, ylabel=y_axis_label_type)
 
         self.current_axes.set_xlabel(x_axis_label)
 
@@ -112,43 +146,46 @@ class ComparisonChart(ChartContainer):
 
 
     def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[BaseProfile], float],
-                                              x_axis_label="Network Utilization", include_p99: bool = False):
-        self.set_current_axes(0, 0)
+                                              x_axis_label="Network Utilization", include_p99: bool = False, p99_separate_axis: bool = False, use_bar: bool = False):
+        row = 0
+        self.set_current_axes(row, 0)
 
-        self.plot_statistic(lambda profile: ComparisonDataPoint(
-            x=x_axis_values(profile),
-            y=profile.summary_statistics.clock_diff_median.value,
-            y_lower_bound=profile.summary_statistics.clock_diff_median.confidence_interval_lower,
-            y_upper_bound=profile.summary_statistics.clock_diff_median.confidence_interval_upper,
-            hue=profile.vendor.name,
-        ), x_axis_label=x_axis_label, hue_name="Vendor", include_confidence_intervals=True)
+        self.plot_statistic(
+            lambda profile: ComparisonDataPoint.from_bootstrap_metric(
+                x=x_axis_values(profile), y=profile.summary_statistics.clock_diff_median, hue=profile.vendor.name,
+            ),
+            x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS, hue_name="Vendor",
+            include_confidence_intervals=True, use_bar=use_bar)
         # self.plot_statistic_timeseries_bootstrap(lambda profile: x_axis_values(profile),
         #                                          x_axis_label=x_axis_label, hue_name="Vendor")
         # chart.current_axes.set_yscale('log')
 
         if include_p99:
+            if p99_separate_axis:
+                row += 1
+            self.set_current_axes(row, 0)
+
             self.plot_statistic(
-                lambda profile: ComparisonDataPoint(
+                lambda profile: ComparisonDataPoint.from_bootstrap_metric(
                     x=x_axis_values(profile),  # GBit/s to %
-                    y=profile.summary_statistics.clock_diff_p99.value,
-                    y_lower_bound=profile.summary_statistics.clock_diff_p99.confidence_interval_lower,
-                    y_upper_bound=profile.summary_statistics.clock_diff_p99.confidence_interval_upper,
+                    y=profile.summary_statistics.clock_diff_p99,
                     hue=f"{profile.vendor.name} $P_{{99}}$",
                 ),
-                x_axis_label=x_axis_label,
-                hue_name="Vendor",
+                x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS_P99, hue_name="Vendor",
                 linestyle='dotted',
-                include_confidence_intervals = True,
+                include_confidence_intervals = True, use_bar = use_bar
             )
 
-        self.set_current_axes(1, 0)
-        self.plot_statistic(lambda profile: ComparisonDataPoint(
-            x=x_axis_values(profile),
-            y=profile.summary_statistics.path_delay_median.value,
-            y_lower_bound=profile.summary_statistics.path_delay_median.confidence_interval_lower,
-            y_upper_bound=profile.summary_statistics.path_delay_median.confidence_interval_upper,
-            hue=profile.vendor.name,
-        ), x_axis_label=x_axis_label, hue_name="Vendor", include_confidence_intervals=True)
+        row += 1
+        self.set_current_axes(row, 0)
+        self.plot_statistic(
+            lambda profile: ComparisonDataPoint.from_bootstrap_metric(
+                x=x_axis_values(profile),
+                y=profile.summary_statistics.path_delay_median,
+                hue=profile.vendor.name,
+            ),
+            x_axis_label=x_axis_label, y_axis_label_type=YAxisLabelType.PATH_DELAY, hue_name="Vendor",
+            include_confidence_intervals=True, use_bar=use_bar)
         self.current_axes.set_ylabel('Path Delay')
 
 

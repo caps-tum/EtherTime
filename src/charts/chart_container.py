@@ -11,6 +11,7 @@ from util import PathOrStr
 from utilities import units
 
 class YAxisLabelType:
+    CLOCK_DIFF_ABS_P99 = "Absolute Clock Offset $P_{99}$"
     CLOCK_DIFF_ABS = "Absolute Clock Offset"
     CLOCK_DIFF = "Clock Offset"
     PATH_DELAY = "Path Delay"

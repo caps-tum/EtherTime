@@ -33,7 +33,6 @@ class MultiTaskController:
             await self.exit_stack.aclose()
         except CancelledError:
             logging.warning(f"Tasks were cancelled during multitasking.")
-        self.background_tasks.clear()
 
 
     @staticmethod

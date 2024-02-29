@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import constants
 from charts.timeseries_chart import TimeseriesChart
-from charts.timeseries_chart_comparison import TimeSeriesChartComparison
+from charts.distribution_comparison_chart import DistributionComparisonChart
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
@@ -61,7 +61,7 @@ class TestTimeseriesChart(TestCase):
             if not profiles:
                 continue
 
-            chart = TimeSeriesChartComparison(
+            chart = DistributionComparisonChart(
                 profiles,
                 [f"#{index+1}: {profile.start_time.replace(second=0, microsecond=0)}" for index, profile in enumerate(profiles)],
                 x_label="Profile Date",

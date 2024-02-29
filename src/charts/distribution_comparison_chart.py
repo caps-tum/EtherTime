@@ -8,7 +8,7 @@ from profiles.base_profile import BaseProfile
 from profiles.data_container import MergedTimeSeries
 
 
-class TimeSeriesChartComparison(ChartContainer):
+class DistributionComparisonChart(ChartContainer):
     axes: List[plt.Axes]
 
     def __init__(self, profiles: Iterable[BaseProfile], labels: Iterable[Any], x_label: str):
