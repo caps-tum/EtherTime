@@ -43,6 +43,7 @@ class LinuxPTPVendor(Vendor):
             "-S", condition=machine.ptp_software_timestamping
         ).as_privileged()
         self._process_ptp4l.keep_alive = profile.benchmark.ptp_keepalive
+        self._process_ptp4l.restart_delay = profile.benchmark.ptp_restart_delay
         background_tasks.add_task(self._process_ptp4l.run_as_task())
 
         if machine.ptp_use_phc2sys:
@@ -54,6 +55,7 @@ class LinuxPTPVendor(Vendor):
                 "-r", condition=machine.ptp_master,
             ).as_privileged()
             self._process_phc2sys.keep_alive = profile.benchmark.ptp_keepalive
+            self._process_ptp4l.restart_delay = profile.benchmark.ptp_restart_delay
             background_tasks.add_task(self._process_phc2sys.run_as_task())
         try:
             await background_tasks.run_for()

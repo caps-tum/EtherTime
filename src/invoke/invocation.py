@@ -3,6 +3,7 @@ import logging
 import os
 from asyncio import subprocess, Task
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Union, Optional, Self
 
@@ -26,6 +27,7 @@ class Invocation:
     verify_return_code: bool = True
     expected_return_code: int = 0
     keep_alive: bool = False
+    restart_delay: timedelta = timedelta(seconds=1)
 
     log_invocation: bool = True
     log_output: bool = True
@@ -239,7 +241,7 @@ class Invocation:
 
             # Delay process restart to avoid too rapid looping
             if self._should_restart_process:
-                await asyncio.sleep(1)
+                await asyncio.sleep(self.restart_delay.total_seconds())
         return self
 
 

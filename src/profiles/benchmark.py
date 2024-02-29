@@ -30,6 +30,7 @@ class Benchmark:
 
     ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
     ptp_keepalive: bool = False
+    ptp_restart_delay: Optional[timedelta] = None
 
     artificial_load_network: Optional[int] = 0
     artificial_load_network_dscp_priority: Optional[str] = None

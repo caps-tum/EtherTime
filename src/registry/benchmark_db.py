@@ -38,6 +38,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE],
         num_machines=3,
         ptp_keepalive=True,
+        ptp_restart_delay=timedelta(seconds=5),
         fault_tolerance_software_fault_interval=timedelta(minutes=1),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
     )

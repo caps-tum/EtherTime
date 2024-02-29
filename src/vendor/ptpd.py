@@ -42,6 +42,7 @@ class PTPDVendor(Vendor):
             "--config-file", str(self.config_file_path),
         ).as_privileged()
         self._process.keep_alive = profile.benchmark.ptp_keepalive
+        self._process.restart_delay = profile.benchmark.ptp_restart_delay
 
         await self._process.run()
 
