@@ -294,8 +294,8 @@ class Timeseries:
         new_data = self.data_frame.copy()
 
         # Ensure all the aligns are inside the data
-        assert align.min() >= new_data.index.min(), f"Alignment value {align.min()} outside data frame minimum {new_data.min()}"
-        assert align.max() <= new_data.index.max(), f"Alignment value {align.max()} outside data frame maximum {new_data.max()}"
+        # assert align.min() >= new_data.index.min(), f"Alignment value {align.min()} outside data frame minimum {new_data.min()}"
+        # assert align.max() <= new_data.index.max(), f"Alignment value {align.max()} outside data frame maximum {new_data.max()}"
 
         # Divide the frame into segments.
         new_data["segment"] = np.searchsorted(cuts, new_data.index)

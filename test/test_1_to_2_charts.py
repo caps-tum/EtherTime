@@ -21,7 +21,7 @@ from util import unpack_one_value
 from vendor.registry import VendorDB
 from vendor.vendor import Vendor
 
-CHART_DIRECTORY = BenchmarkDB.SOFTWARE_FAULT.storage_base_path
+SOFTWARE_FAULT_CHART_DIRECTORY = BenchmarkDB.SOFTWARE_FAULT.storage_base_path
 
 class Test1To2Charts(TestCase):
     profile_db = ProfileDB()
@@ -83,29 +83,53 @@ class Test1To2Charts(TestCase):
                 non_fault_client_profile, fault_client_profile,
             )
             chart.set_titles("Non-faulty client", "Software fault client")
-            chart.save(CHART_DIRECTORY.joinpath(f"software_fault_clients_comparison_{vendor}.png"))
+            chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_clients_comparison_{vendor}.png"))
 
 
     def test_software_fault_wave(self):
         for vendor in VendorDB.ANALYZED_VENDORS:
-            fault_client_profile = self.profile_db.resolve_most_recent(
-                resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.SOFTWARE_FAULT, vendor), resolve.BY_MACHINE(MACHINE_RPI07)
-            )
-            if fault_client_profile is None:
-                continue
+            for machine in [MACHINE_RPI07, MACHINE_RPI08]:
+                fault_client_profile = self.profile_db.resolve_most_recent(
+                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.SOFTWARE_FAULT, vendor), resolve.BY_MACHINE(machine)
+                )
+                if fault_client_profile is None:
+                    continue
 
-            segmentation_points = [
-                timedelta(seconds=x) for x in range(
-                    math.ceil(fault_client_profile.time_series.time_index.min().total_seconds()),
-                    math.floor(fault_client_profile.time_series.time_index.max().total_seconds()),
-                    60,
-                )]
-            segmented = fault_client_profile.time_series.segment(align=pd.Series(segmentation_points))
-            print(segmented)
-            chart = TimeseriesChart("Software Fault: The Wave")
-            chart.add_clock_difference(segmented)
-            chart.annotate(chart.axes[0], f"Number Faults = {len(segmentation_points)}")
-            chart.save(CHART_DIRECTORY.joinpath(f"software_fault_wave_{vendor}.png"))
+                segmentation_points = [
+                    timedelta(seconds=x) for x in range(
+                        math.floor(fault_client_profile.time_series.time_index.min().total_seconds()),
+                        math.ceil(fault_client_profile.time_series.time_index.max().total_seconds()) + 60,
+                        60,
+                    )]
+                segmented = fault_client_profile.time_series.segment(align=pd.Series(segmentation_points))
+                print(segmented)
+                chart = TimeseriesChart("Software Fault: The Wave")
+                chart.add_clock_difference(segmented)
+                chart.annotate(chart.axes[0], f"Number Faults = {len(segmentation_points)}")
+                chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_wave_{vendor}_{machine.id}.png"))
+
+    # TODO: Code duplication
+    def test_hardware_fault_wave(self):
+        for vendor in VendorDB.ANALYZED_VENDORS:
+            for machine in [MACHINE_RPI07, MACHINE_RPI08]:
+                fault_client_profile = self.profile_db.resolve_most_recent(
+                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.HARDWARE_FAULT_SWITCH, vendor), resolve.BY_MACHINE(machine)
+                )
+                if fault_client_profile is None:
+                    continue
+
+                segmentation_points = [
+                    timedelta(seconds=x) for x in range(
+                        math.floor(fault_client_profile.time_series.time_index.min().total_seconds()),
+                        math.ceil(fault_client_profile.time_series.time_index.max().total_seconds()) + 60,
+                        60,
+                    )]
+                segmented = fault_client_profile.time_series.segment(align=pd.Series(segmentation_points))
+                print(segmented)
+                chart = TimeseriesChart("Hardware Fault (Switch): The Wave")
+                chart.add_clock_difference(segmented)
+                chart.annotate(chart.axes[0], f"Number Faults = {len(segmentation_points)}")
+                chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"hardware_fault_switch_wave_{vendor}_{machine.id}.png"))
 
     def test_hardware_fault(self):
         self.skipTest("Unupdated")
