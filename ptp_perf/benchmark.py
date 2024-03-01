@@ -1,48 +1,38 @@
-import asyncio
 import logging
-from asyncio import CancelledError
 from datetime import datetime, timedelta
 
 import util
 from adapters.fault_generators import SoftwareFaultGenerator
 from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
 from constants import PTPPERF_REPOSITORY_ROOT
-from invoke.invocation import Invocation
-from machine import Machine
-from profiles.base_profile import BaseProfile
+from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.machine import Machine
+from ptp_perf.models import PTPProfile, PTPEndpoint
 from util import async_wait_for_condition, setup_logging
 from utilities.multi_task_controller import MultiTaskController
 from vendor.registry import VendorDB
 
 
-async def prompt_repeatedly(fault_tolerance_prompt_interval: timedelta, fault_tolerance_prompt_downtime: timedelta):
-    # We do this until we are cancelled
-    # Do some math so that we actually trigger at each interval
-    actual_interval = fault_tolerance_prompt_interval - fault_tolerance_prompt_downtime
+async def benchmark(profile_id: int, machine_id: str):
+    profile: PTPProfile = PTPProfile.objects.get(id=profile_id)
+
     try:
-        await asyncio.sleep(fault_tolerance_prompt_downtime.total_seconds())
-        while True:
-            await asyncio.sleep(actual_interval.total_seconds())
-            logging.warning(f"======= Unplug the hardware NOW! ========")
-            await asyncio.sleep(fault_tolerance_prompt_downtime.total_seconds())
-            logging.warning(f"======= Replug the hardware NOW! ========")
-    except CancelledError:
-        pass
-
-
-async def benchmark(profile: BaseProfile):
+        endpoint: PTPEndpoint = PTPEndpoint.objects.filter(profile=profile, machine_id=machine_id).get()
+    except PTPEndpoint.DoesNotExist:
+        endpoint = PTPEndpoint(profile=profile, machine_id=machine_id)
+        endpoint.save()
 
     configuration = profile.configuration
-    profile.machine_id = configuration.machine.id
     background_tasks = MultiTaskController()
 
+    # TODO: Capture log to database
     profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
     profile_log.parent.mkdir(exist_ok=True)
 
     setup_logging(log_file=str(profile_log))
 
     try:
-        profile.vendor.create_configuration_file(profile)
+        profile.vendor.create_configuration_file(endpoint)
 
         await synchronize_time_ntp(configuration.machine)
 
@@ -56,14 +46,6 @@ async def benchmark(profile: BaseProfile):
             # Start Stress_ng
             artificial_cpu_load = CPUPerformanceDegrader(profile)
             background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
-
-
-        # Launch background hardware prompts if necessary. We only do this on the ptp_master
-        if profile.benchmark.fault_tolerance_prompt_interval is not None and configuration.machine.ptp_master:
-            logging.warning(f"Will prompt repeatedly every {profile.benchmark.fault_tolerance_prompt_interval} so that you can manually power cycle the hardware.")
-            background_tasks.add_coroutine(
-                prompt_repeatedly(profile.benchmark.fault_tolerance_prompt_interval, profile.benchmark.fault_tolerance_prompt_downtime)
-            )
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == profile.configuration.machine.id:

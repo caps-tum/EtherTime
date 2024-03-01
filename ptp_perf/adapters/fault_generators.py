@@ -5,7 +5,7 @@ from ptp_perf.adapters.adapter import Adapter
 
 
 class SoftwareFaultGenerator(Adapter):
-    raw_data_log_key: str = "software_fault_log"
+    log_source: str = "software_fault_log"
 
     async def run(self):
         vendor = self.profile.vendor

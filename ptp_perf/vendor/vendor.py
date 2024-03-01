@@ -8,6 +8,7 @@ from ptp_perf.constants import LOCAL_DIR, PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
+    from ptp_perf.models import PTPEndpoint
     from ptp_perf.profiles.base_profile import BaseProfile
 
 
@@ -25,7 +26,7 @@ class Vendor:
     def running(self):
         raise NotImplementedError()
 
-    async def run(self, profile: "BaseProfile"):
+    async def run(self, endpoint: "PTPEndpoint"):
         raise NotImplementedError()
 
     async def restart(self, kill: bool = True):
@@ -70,10 +71,10 @@ class Vendor:
         return LOCAL_DIR.joinpath("ptp-config.txt")
 
 
-    def create_configuration_file(self, profile: "BaseProfile") -> Path:
+    def create_configuration_file(self, endpoint: "PTPEndpoint") -> Path:
         # Render the configuration template file to a temporary file and return it
         template = PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config").joinpath(f"{self.id}_template.conf").read_text()
-        output = template.format(ptp_config=profile.benchmark.ptp_config)
+        output = template.format(ptp_config=endpoint.benchmark.ptp_config)
         output_file = self.config_file_path
         output_file.write_text(output)
         return output_file

@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Optional
 
-from machine import Cluster, Machine, PluginSettings
-from util import ImmediateException, str_join
+from ptp_perf.machine import Cluster, Machine, PluginSettings
+from ptp_perf.util import ImmediateException, str_join
 
 RASPBERRY_PI_PTP_SETTINGS = {
     'ptp_interface': 'eth0',

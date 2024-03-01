@@ -8,7 +8,7 @@ from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
-    from ptp_perf.profiles.base_profile import BaseProfile
+    from ptp_perf.models import PTPEndpoint
 
 @dataclass
 class SystemDNTPVendor(Vendor):
@@ -19,7 +19,7 @@ class SystemDNTPVendor(Vendor):
     def running(self):
         return 'NTP service: active' in subprocess.check_output("timedatectl").decode()
 
-    async def run(self, profile: "BaseProfile"):
+    async def run(self, endpoint: "PTPEndpoint"):
         await self.toggle_ntp_service(active=True)
         try:
             while True:

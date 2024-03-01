@@ -1,13 +1,18 @@
+from datetime import datetime
+
 from django.db import models
 from django.db.models import CASCADE
 
+from ptp_perf import config
+from ptp_perf.machine import Machine
 from ptp_perf.models.profile import PTPProfile
+from ptp_perf.profiles.benchmark import Benchmark
 
 
 class PTPEndpoint(models.Model):
     id = models.AutoField(primary_key=True)
 
-    profile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
+    profile: PTPProfile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
     machine_id = models.CharField(max_length=255)
 
     # Summary statistics
@@ -20,3 +25,22 @@ class PTPEndpoint(models.Model):
     convergence_max_offset = models.FloatField(null=True, editable=False)
     convergence_rate = models.FloatField(null=True, editable=False)
 
+
+    def log(self, message: str, source: str, timestamp: datetime = None,):
+        from ptp_perf.models import LogRecord
+        record = LogRecord(
+            message=message,
+            timestamp=timestamp,
+            source=source,
+            profile=self,
+        )
+        record.save()
+
+    @property
+    def benchmark(self) -> Benchmark:
+        from ptp_perf.registry.benchmark_db import BenchmarkDB
+        return BenchmarkDB.get(self.profile.benchmark_id)
+
+    @property
+    def machine(self) -> Machine:
+        return config.machines.get(self.machine_id)

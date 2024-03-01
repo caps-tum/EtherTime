@@ -11,7 +11,7 @@ from charts.comparison_chart import ComparisonChart
 from charts.timeseries_chart import TimeseriesChart
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from config import MACHINE_RPI08, MACHINE_RPI07
-from machine import Machine
+from ptp_perf.machine import Machine
 from profiles.base_profile import BaseProfile
 from profiles.benchmark import Benchmark
 from registry import resolve

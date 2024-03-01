@@ -1,16 +1,16 @@
 import logging
 from datetime import datetime
 
-import config
-import constants
-import util
-from profiles.aggregated_profile import AggregatedProfile
-from profiles.base_profile import ProfileType, BaseProfile
-from registry import resolve
-from registry.benchmark_db import BenchmarkDB
-from registry.resolve import ProfileDB
-from util import str_join
-from vendor.registry import VendorDB
+from ptp_perf import config
+from ptp_perf import constants
+from ptp_perf import util
+from ptp_perf.profiles.aggregated_profile import AggregatedProfile
+from ptp_perf.profiles.base_profile import ProfileType, BaseProfile
+from ptp_perf.registry import resolve
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.registry.resolve import ProfileDB
+from ptp_perf.util import str_join
+from ptp_perf.vendor.registry import VendorDB
 
 
 def analyze():

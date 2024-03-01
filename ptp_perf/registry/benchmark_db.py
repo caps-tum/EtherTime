@@ -2,6 +2,7 @@ from datetime import timedelta
 from enum import Enum
 from typing import List
 
+from ptp_perf import config
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark, PTPConfig
 from ptp_perf.registry.base_registry import BaseRegistry

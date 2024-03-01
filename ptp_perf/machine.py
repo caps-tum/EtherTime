@@ -6,7 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional, List, Union
 
-from rpc.rpc_target import RPCTarget
+from ptp_perf.rpc.rpc_target import RPCTarget
 
 
 @dataclass

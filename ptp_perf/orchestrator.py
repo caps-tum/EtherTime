@@ -1,44 +1,49 @@
 import asyncio
 import copy
 import logging
+import os
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
-from typing import List
 
-import config
-from adapters.device_control import DeviceControl
-from analyze import convert_profile
-from config import Configuration
-import util
-from cluster_restart import restart_cluster
-from profiles.base_profile import BaseProfile, ProfileType
-from profiles.benchmark import Benchmark
-from registry.benchmark_db import BenchmarkDB
-from rpc.server import RPCServer
-from rpc.server_service import RPCServerService
-from util import StackTraceGuard, str_join
-from utilities.multi_task_controller import MultiTaskController
-from vendor.registry import VendorDB
-from vendor.vendor import Vendor
+from ptp_perf import config
+from ptp_perf import util
+from ptp_perf.adapters.device_control import DeviceControl
+from ptp_perf.analyze import convert_profile
+from ptp_perf.cluster_restart import restart_cluster
+from ptp_perf.config import Configuration
+from ptp_perf.profiles.benchmark import Benchmark
+from ptp_perf.models import PTPProfile, PTPEndpoint
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.rpc.server import RPCServer
+from ptp_perf.rpc.server_service import RPCServerService
+from ptp_perf.util import StackTraceGuard, str_join
+from ptp_perf.utilities.multi_task_controller import MultiTaskController
+from ptp_perf.vendor.registry import VendorDB
+from ptp_perf.vendor.vendor import Vendor
 
 
-async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> List[BaseProfile]:
+async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
+
     profile_timestamp = datetime.now()
-    profile_template = BaseProfile(
-        id=f"{BaseProfile.format_id_timestamp(timestamp=profile_timestamp)}",
-        benchmark=benchmark,
-        machine_id=None,
-        profile_type=ProfileType.RAW,
+    profile = PTPProfile(
+        benchmark_id=benchmark.id,
         vendor_id=vendor.id,
+        state=PTPProfile.ProfileState.RUNNING,
         start_time=profile_timestamp,
-        configuration=configuration,
+        stop_time=profile_timestamp + benchmark.duration
+    )
+    profile.save()
+
+    orchestrator_endpoint = PTPEndpoint(
+        profile=profile,
+        machine_id="orchestrator",
     )
 
     controller = MultiTaskController()
 
     try:
         if benchmark.fault_tolerance_hardware_fault_interval is not None:
-            device_controller = DeviceControl(profile_template)
+            device_controller = DeviceControl(orchestrator_endpoint)
             controller.add_coroutine(
                 device_controller.run()
             )
@@ -59,23 +64,13 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
     finally:
         await controller.cancel_pending_tasks()
 
-        profiles = []
-        for json in controller.results(only_successful=True):
-            profile = BaseProfile.load_str(json)
+        profile.state = PTPProfile.ProfileState.VALID
+        profile.save()
 
-            # Merge raw_data on orchestrator into raw_data on client
-            profile.raw_data.update(profile_template.raw_data)
-
-            print(f"Saving profile to {profile.file_path_relative}")
-            profile.save()
-            profiles.append(profile)
-
-        return profiles
-
+    return profile
 
 async def run_orchestration(benchmark_id: str, vendor_id: str,
                             duration_override: timedelta = None, test_mode: bool = False, analyze: bool = False):
-
     benchmark = BenchmarkDB.get(benchmark_id)
     vendor = VendorDB.get(vendor_id)
 
@@ -119,41 +114,3 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
         util.log_exception(e)
     finally:
         await rpc_server.stop_rpc_server()
-
-
-if __name__ == '__main__':
-    util.setup_logging()
-
-    parser = ArgumentParser(description="Program to run PTP-Perf benchmarks")
-    parser.add_argument(
-        "--benchmark", choices=BenchmarkDB.all_by_id().keys(), required=True,
-        help="Specify which benchmark to run, by benchmark id."
-    )
-    parser.add_argument(
-        "--vendor", choices=[vendor.id for vendor in VendorDB.all()], required=True,
-        help="Specify which vendor to benchmark, by vendor id."
-    )
-    parser.add_argument(
-        "--duration", type=int, default=None, help="Duration override (in minutes)",
-    )
-    parser.add_argument(
-        "--test", action="store_true", default=False, help="Run this benchmark in test mode (1 minute, no restart)"
-    )
-    parser.add_argument(
-        "--analyze", action='store_true', default=False, help="Analyze the benchmark profile after running the benchmark."
-    )
-
-    result = parser.parse_args()
-
-    duration_override = None
-    if result.duration is not None:
-        duration_override = timedelta(minutes=result.duration)
-
-    test_mode = result.test
-
-    with StackTraceGuard():
-        asyncio.run(run_orchestration(
-            benchmark_id=result.benchmark, vendor_id=result.vendor,
-            duration_override=duration_override, test_mode=test_mode,
-            analyze=result.analyze,
-        ))

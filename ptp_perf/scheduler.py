@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from constants import LOCAL_DIR, ensure_directory_exists
-from invoke.invocation import Invocation, InvocationFailedException
+from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
 from registry.benchmark_db import BenchmarkDB
 from util import PathOrStr, setup_logging, StackTraceGuard
 from utilities.pydantic import pydantic_save_model, pydantic_load_model

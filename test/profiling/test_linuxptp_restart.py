@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import config
 from config import current_configuration
-from machine import Machine
+from ptp_perf.machine import Machine
 from util import setup_logging
 from utilities.multi_task_controller import MultiTaskController
 from vendor.linuxptp import LinuxPTPVendor

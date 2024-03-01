@@ -2,7 +2,7 @@ import asyncio
 from asyncio import CancelledError
 from unittest import IsolatedAsyncioTestCase
 
-from invoke.invocation import Invocation
+from ptp_perf.invoke.invocation import Invocation
 from util import setup_logging
 
 

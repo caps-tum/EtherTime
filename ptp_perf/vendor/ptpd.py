@@ -1,5 +1,6 @@
 import io
 import logging
+import typing
 from dataclasses import dataclass
 from typing import Optional
 
@@ -9,6 +10,9 @@ from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.profiles.base_profile import BaseProfile, ProfileType
 from ptp_perf.util import str_join
 from ptp_perf.vendor.vendor import Vendor
+
+if typing.TYPE_CHECKING:
+    from ptp_perf.models import PTPEndpoint
 
 
 @dataclass
@@ -32,15 +36,15 @@ class PTPDVendor(Vendor):
     def uninstall(self):
         self.invoke_package_manager("ptpd", action="purge")
 
-    async def run(self, profile: "BaseProfile"):
+    async def run(self, endpoint: "PTPEndpoint"):
 
         self._process = Invocation.of_command(
-            "ptpd", "-i", profile.configuration.machine.ptp_interface, "--verbose",
-            '--masteronly' if profile.configuration.machine.ptp_master else '--slaveonly',
+            "ptpd", "-i", endpoint.machine.ptp_interface, "--verbose",
+            '--masteronly' if endpoint.machine.ptp_master else '--slaveonly',
             "--config-file", str(self.config_file_path),
         ).as_privileged()
-        self._process.keep_alive = profile.benchmark.ptp_keepalive
-        self._process.restart_delay = profile.benchmark.ptp_restart_delay
+        self._process.keep_alive = endpoint.benchmark.ptp_keepalive
+        self._process.restart_delay = endpoint.benchmark.ptp_restart_delay
 
         await self._process.run()
 

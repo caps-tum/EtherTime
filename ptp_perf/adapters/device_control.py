@@ -3,6 +3,7 @@ import asyncio
 from tinytuya import OutletDevice
 
 from ptp_perf.adapters.adapter import Adapter
+from ptp_perf.models import PTPEndpoint
 from ptp_perf.profiles.base_profile import BaseProfile
 
 
@@ -21,8 +22,8 @@ class DeviceControl(Adapter):
 
     power_strip: OutletDevice
 
-    def __init__(self, profile: BaseProfile):
-        super().__init__(profile)
+    def __init__(self, endpoint: PTPEndpoint):
+        super().__init__(endpoint)
         self.power_strip = OutletDevice(
             dev_id=self.id,
             address=self.ip,
@@ -39,8 +40,8 @@ class DeviceControl(Adapter):
 
 
     async def run(self):
-        machine_id = self.profile.benchmark.fault_tolerance_hardware_fault_machine
-        interval = self.profile.benchmark.fault_tolerance_hardware_fault_interval
+        machine_id = self.endpoint.benchmark.fault_tolerance_hardware_fault_machine
+        interval = self.endpoint.benchmark.fault_tolerance_hardware_fault_interval
 
         self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
         try:

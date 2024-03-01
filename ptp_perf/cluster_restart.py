@@ -1,9 +1,9 @@
 import asyncio
 import logging
 
-from invoke.invocation import Invocation, InvocationFailedException
-from machine import Machine, Cluster
-from util import setup_logging, async_gather_with_progress
+from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
+from ptp_perf.machine import Machine, Cluster
+from ptp_perf.util import setup_logging, async_gather_with_progress
 
 
 async def restart_node(machine: Machine):
