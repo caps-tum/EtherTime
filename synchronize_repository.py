@@ -1,8 +1,8 @@
 import asyncio
 from argparse import ArgumentParser
 
-import util
-from config import get_configuration_by_cluster_name
+from ptp_perf import util
+from ptp_perf.config import get_configuration_by_cluster_name
 
 if __name__ == '__main__':
     util.setup_logging()

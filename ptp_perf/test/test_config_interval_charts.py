@@ -1,7 +1,7 @@
 import math
 from unittest import TestCase
 
-import constants
+from ptp_perf import constants
 from charts.comparison_chart import ComparisonChart
 from profiles.base_profile import ProfileTags
 from registry import resolve

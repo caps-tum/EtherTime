@@ -1,14 +1,14 @@
 from pathlib import Path
 from unittest import TestCase
 
-import constants
+from ptp_perf import constants
 from charts.timeseries_chart import TimeseriesChart
 from charts.distribution_comparison_chart import DistributionComparisonChart
 from charts.timeseries_chart_versus import TimeSeriesChartVersus
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
-from vendor.registry import VendorDB
+from ptp_perf.vendor.registry import VendorDB
 
 
 class TestTimeseriesChart(TestCase):

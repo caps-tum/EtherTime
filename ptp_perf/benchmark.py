@@ -1,40 +1,32 @@
 import logging
 from datetime import datetime, timedelta
 
-import util
-from adapters.fault_generators import SoftwareFaultGenerator
-from adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
-from constants import PTPPERF_REPOSITORY_ROOT
+from ptp_perf import util
+from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator
+from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
+from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.machine import Machine
 from ptp_perf.models import PTPProfile, PTPEndpoint
-from util import async_wait_for_condition, setup_logging
-from utilities.multi_task_controller import MultiTaskController
-from vendor.registry import VendorDB
+from ptp_perf.util import async_wait_for_condition
+from ptp_perf.utilities.logging import LogToDBLogRecordHandler
+from ptp_perf.utilities.multi_task_controller import MultiTaskController
+from ptp_perf.vendor.registry import VendorDB
 
 
-async def benchmark(profile_id: int, machine_id: str):
-    profile: PTPProfile = PTPProfile.objects.get(id=profile_id)
+async def benchmark(endpoint_id: str):
+    endpoint: PTPEndpoint = await PTPEndpoint.objects.aget(id=endpoint_id)
+    profile: PTPProfile = endpoint.profile
 
-    try:
-        endpoint: PTPEndpoint = PTPEndpoint.objects.filter(profile=profile, machine_id=machine_id).get()
-    except PTPEndpoint.DoesNotExist:
-        endpoint = PTPEndpoint(profile=profile, machine_id=machine_id)
-        endpoint.save()
+    handler = LogToDBLogRecordHandler(endpoint)
+    handler.install()
 
-    configuration = profile.configuration
     background_tasks = MultiTaskController()
-
-    # TODO: Capture log to database
-    profile_log = PTPPERF_REPOSITORY_ROOT.joinpath("data").joinpath("logs").joinpath(f"profile_{profile.id}.log")
-    profile_log.parent.mkdir(exist_ok=True)
-
-    setup_logging(log_file=str(profile_log))
 
     try:
         profile.vendor.create_configuration_file(endpoint)
 
-        await synchronize_time_ntp(configuration.machine)
+        await synchronize_time_ntp(endpoint.machine)
 
         # Actually start the benchmark
 
@@ -48,7 +40,7 @@ async def benchmark(profile_id: int, machine_id: str):
             background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
 
         # Launch background "crashes" of vendor if necessary
-        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == profile.configuration.machine.id:
+        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == endpoint.machine_id:
             fault_generator = SoftwareFaultGenerator(profile)
             background_tasks.add_coroutine(fault_generator.run())
 
@@ -76,7 +68,8 @@ async def benchmark(profile_id: int, machine_id: str):
         util.log_exception(e, force_traceback=True)
     finally:
         profile.vendor.collect_data(profile)
-        profile.log = profile_log.read_text()
+
+    handler.uninstall()
 
     return profile
 

@@ -2,7 +2,7 @@ import asyncio
 from datetime import timedelta
 from unittest import IsolatedAsyncioTestCase
 
-from utilities.multi_task_controller import MultiTaskController
+from ptp_perf.utilities.multi_task_controller import MultiTaskController
 
 
 class TestMultiTaskController(IsolatedAsyncioTestCase):

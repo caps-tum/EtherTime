@@ -3,7 +3,7 @@ import copy
 import logging
 import os
 from argparse import ArgumentParser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ptp_perf import config
 from ptp_perf import util
@@ -11,6 +11,7 @@ from ptp_perf.adapters.device_control import DeviceControl
 from ptp_perf.analyze import convert_profile
 from ptp_perf.cluster_restart import restart_cluster
 from ptp_perf.config import Configuration
+from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.models import PTPProfile, PTPEndpoint
 from ptp_perf.registry.benchmark_db import BenchmarkDB
@@ -22,9 +23,9 @@ from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
 
 
-async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
+async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
 
-    profile_timestamp = datetime.now()
+    profile_timestamp = datetime.now(timezone.utc)
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,
@@ -32,7 +33,7 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
         start_time=profile_timestamp,
         stop_time=profile_timestamp + benchmark.duration
     )
-    profile.save()
+    await profile.asave()
 
     orchestrator_endpoint = PTPEndpoint(
         profile=profile,
@@ -49,11 +50,19 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
             )
 
         for machine in configuration.cluster.machines:
+            machine_endpoint = PTPEndpoint(
+                profile=profile,
+                machine_id=machine.id,
+            )
+            await machine_endpoint.asave()
+
             controller.add_coroutine(
-                rpc_server.remote_function_run_as_async(
-                    rpc_server.get_remote_service(machine.id).benchmark,
-                    profile_template.dump()
-                )
+                Invocation.of_command(
+                    "ssh", machine.address,
+                    "-o", "ServerAliveInterval=300",
+                    f"cd '{machine.remote_root}/' && "
+                    f"python3 run_worker.py --endpoint-id {machine_endpoint.id}"
+                ).run()
             )
 
         # Wait until the first exit, then give some more time for others to exit.
@@ -65,7 +74,7 @@ async def do_benchmark(rpc_server: RPCServer, configuration: Configuration, benc
         await controller.cancel_pending_tasks()
 
         profile.state = PTPProfile.ProfileState.VALID
-        profile.save()
+        await profile.asave()
 
     return profile
 
@@ -89,11 +98,7 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
         logging.info(f"Applying duration override of {duration_override} due to test mode.")
 
     RPCServer.service_type = RPCServerService
-    rpc_server = RPCServer()
     try:
-        rpc_server.start_rpc_server()
-        await rpc_server.start_remote_clients(configuration.cluster.machines)
-        await rpc_server.wait_for_clients_connected()
 
         if duration_override:
             benchmark = copy.deepcopy(benchmark)
@@ -102,7 +107,7 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
 
         logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor_id}")
         profiles = await do_benchmark(
-            rpc_server, configuration,
+            configuration,
             benchmark=benchmark, vendor=vendor
         )
 
@@ -112,5 +117,3 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
                 convert_profile(profile)
     except Exception as e:
         util.log_exception(e)
-    finally:
-        await rpc_server.stop_rpc_server()

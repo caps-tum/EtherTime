@@ -4,10 +4,10 @@ import pandas as pd
 from bokeh import plotting
 
 from charts.interactive_timeseries_chart import InteractiveTimeseriesChart
-from constants import CHARTS_DIR
+from ptp_perf.constants import CHARTS_DIR
 from registry import resolve
 from registry.resolve import ProfileDB
-from utilities import units
+from ptp_perf.utilities import units
 
 
 class TestOutputCSV(TestCase):

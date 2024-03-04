@@ -3,7 +3,7 @@ from asyncio import CancelledError
 from unittest import IsolatedAsyncioTestCase
 
 from ptp_perf.invoke.invocation import Invocation
-from util import setup_logging
+from ptp_perf.util import setup_logging
 
 
 class TestInvocation(IsolatedAsyncioTestCase):

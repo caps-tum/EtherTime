@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from constants import LOCAL_DIR
+from ptp_perf.constants import LOCAL_DIR
 from profiles.data_cache import DataCache
 
 

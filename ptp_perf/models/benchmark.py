@@ -4,7 +4,7 @@
 # from django.db import models
 #
 # import constants
-# from constants import DEFAULT_BENCHMARK_DURATION
+# from ptp_perf.constants import DEFAULT_BENCHMARK_DURATION
 # from models.tag import Tag
 #
 #

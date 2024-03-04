@@ -4,10 +4,10 @@ from unittest import TestCase
 import config
 from config import current_configuration
 from ptp_perf.machine import Machine
-from util import setup_logging
-from utilities.multi_task_controller import MultiTaskController
-from vendor.linuxptp import LinuxPTPVendor
-from vendor.vendor import Vendor
+from ptp_perf.util import setup_logging
+from ptp_perf.utilities.multi_task_controller import MultiTaskController
+from ptp_perf.vendor.linuxptp import LinuxPTPVendor
+from ptp_perf.vendor.vendor import Vendor
 
 
 class TestLinuxPTPRest(TestCase):

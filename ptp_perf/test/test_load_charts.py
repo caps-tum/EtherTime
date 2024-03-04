@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-import constants
+from ptp_perf import constants
 
 LOAD_CHART_DIRECTORY = constants.CHARTS_DIR.joinpath("load")
 from charts.comparison_chart import ComparisonChart
@@ -10,7 +10,7 @@ from profiles.base_profile import ProfileTags
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB, ResourceContentionType, ResourceContentionComponent
 from registry.resolve import ProfileDB
-from vendor.registry import VendorDB
+from ptp_perf.vendor.registry import VendorDB
 
 
 class TestLoadCharts(TestCase):

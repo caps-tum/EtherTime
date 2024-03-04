@@ -18,7 +18,7 @@ from ptp_perf.profiles.data_container import SummaryStatistics, Timeseries, COLU
 from ptp_perf.util import PathOrStr
 
 if typing.TYPE_CHECKING:
-    from vendor.vendor import Vendor
+    from ptp_perf.vendor.vendor import Vendor
 
 
 class ProfileType:
@@ -140,7 +140,7 @@ class BaseProfile:
 
     @property
     def vendor(self) -> "Vendor":
-        from vendor.registry import VendorDB
+        from ptp_perf.vendor.registry import VendorDB
         return VendorDB.get(self.vendor_id)
 
     @staticmethod

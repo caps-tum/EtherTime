@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 from profiles.base_profile import BaseProfile
-from util import StackTraceGuard
+from ptp_perf.util import StackTraceGuard
 
 if __name__ == '__main__':
     parser = ArgumentParser("Dump raw data from a profile.")

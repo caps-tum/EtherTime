@@ -5,7 +5,7 @@ import pandas
 import pandas as pd
 from natsort import natsorted, natsort_keygen
 
-from constants import CHARTS_DIR
+from ptp_perf.constants import CHARTS_DIR
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB

@@ -17,9 +17,9 @@ from profiles.benchmark import Benchmark
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
-from util import unpack_one_value
-from vendor.registry import VendorDB
-from vendor.vendor import Vendor
+from ptp_perf.util import unpack_one_value
+from ptp_perf.vendor.registry import VendorDB
+from ptp_perf.vendor.vendor import Vendor
 
 SOFTWARE_FAULT_CHART_DIRECTORY = BenchmarkDB.SOFTWARE_FAULT.storage_base_path
 

@@ -6,8 +6,8 @@ from profiles.aggregated_profile import AggregatedProfile
 from registry import resolve
 from registry.benchmark_db import BenchmarkDB
 from registry.resolve import ProfileDB
-from util import setup_logging, TimerUtil
-from vendor.registry import VendorDB
+from ptp_perf.util import setup_logging, TimerUtil
+from ptp_perf.vendor.registry import VendorDB
 
 
 class TestBase(TestCase):
