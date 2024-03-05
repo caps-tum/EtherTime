@@ -48,6 +48,8 @@ class ProfileTags:
 
     # Fault locations
     FAULT_LOCATION_SWITCH = "fault_location_switch"
+    FAULT_LOCATION_SLAVE = "fault_location_slave"
+    FAULT_LOCATION_MASTER = "fault_location_master"
 
     # Configuration Settings
     CONFIGURATION_INTERVAL = "configuration_interval"

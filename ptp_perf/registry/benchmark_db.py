@@ -50,6 +50,21 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         fault_tolerance_hardware_fault_machine='switch',
     )
 
+    HARDWARE_FAULT_SLAVE = Benchmark(
+        "fault/hardware_fault_slave", "Hardware Fault (Slave)",
+        tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_machine='rpi07',
+    )
+
+    HARDWARE_FAULT_MASTER = Benchmark(
+        "fault/hardware_fault_master", "Hardware Fault (Master)",
+        tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_machine='rpi06',
+    )
+
+
     @staticmethod
     def resource_contention(component: ResourceContentionComponent, type: ResourceContentionType, load_level: int):
         """Create a network contention benchmark for a target bandwidth.
@@ -135,7 +150,8 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT, BenchmarkDB.HARDWARE_FAULT_SWITCH,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT,
+    BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.NO_SWITCH,
 )
 
