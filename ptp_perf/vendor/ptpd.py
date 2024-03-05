@@ -51,10 +51,6 @@ class PTPDVendor(Vendor):
     async def restart(self, kill: bool = True):
         await self._process.restart(kill, ignore_return_code=True)
 
-    def collect_data(self, profile: "BaseProfile"):
-        profile.raw_data.update(
-            log=self._process.output if self._process is not None else None,
-        )
 
     @classmethod
     def convert_profile(cls, raw_profile: "BaseProfile") -> Optional[BaseProfile]:

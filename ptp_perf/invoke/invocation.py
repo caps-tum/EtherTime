@@ -36,6 +36,7 @@ class Invocation:
 
     _process: Optional[subprocess.Process] = None
     _monitor_task: Optional[Task] = None
+    _logger: Optional[logging.Logger] = None
     _should_restart_process: Optional[bool] = False
 
     return_code: Optional[int] = None
@@ -96,6 +97,8 @@ class Invocation:
     async def _start(self) -> Self:
         """Actually launches the process. This should not be invoked directly."""
         # The actually launched command can differ (e.g. sudo)
+        self._logger = logging.getLogger(self.command_short_name)
+
         actual_command = self.command.copy()
 
         if self.privileged:
@@ -108,7 +111,7 @@ class Invocation:
                 raise InvocationFailedException("Invocation requested privileges but no privilege escalation configured.")
 
         if self.log_invocation:
-            logging.info(f'{Path(self.working_directory).name} > {self.get_shell_invocation()}')
+            self._logger.info(f'{Path(self.working_directory).name} > {self.get_shell_invocation()}')
 
         common_invocation_arguments={
             'stdout': subprocess.PIPE,
@@ -146,9 +149,9 @@ class Invocation:
                 if self.log_output:
                     # We don't want the extra newline if it exists
                     if line[-1] == '\n':
-                        logging.info(f'| {line[:-1]}')
+                        self._logger.info(f'| {line[:-1]}')
                     else:
-                        logging.info(f'| {line}')
+                        self._logger.info(f'| {line}')
 
                 if self.capture_output:
                     self.output += line
@@ -169,7 +172,7 @@ class Invocation:
                 # Wait for process to exit while handling IO
                 try:
                     if self.log_output or self.dump_output_on_failure:
-                        logging.info(f"Terminating {self.command[0]}...")
+                        self._logger.info(f"Terminating {self.command_short_name}...")
                     self._process.terminate()
 
                     await asyncio.wait_for(self._communicate(), timeout=timeout)
@@ -179,7 +182,7 @@ class Invocation:
                 finally:
                     # If process still has not exited, kill
                     if self._process.returncode is None:
-                        logging.info(f"Killing {self.command[0]} (shutdown timeout {timeout}s exceeded)")
+                        self._logger.info(f"Killing {self.command_short_name} (shutdown timeout {timeout}s exceeded)")
                         self._process.kill()
 
                 # Waits until exit code is available
@@ -187,7 +190,7 @@ class Invocation:
                     await asyncio.wait_for(self._communicate(), timeout=timeout)
                     await asyncio.wait_for(self._process.wait(), timeout=1)
                 except TimeoutError:
-                    logging.warning(f"Process exit code still not valid {timeout}s after process kill.")
+                    self._logger.warning(f"Process exit code still not valid {timeout}s after process kill.")
                     pass
 
         finally:
@@ -197,10 +200,10 @@ class Invocation:
             if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
                 if self.dump_output_on_failure:
                     for line in self.output.splitlines():
-                        logging.info(f"| {line}")
+                        self._logger.info(f"| {line}")
 
                 if self.log_output or self.dump_output_on_failure:
-                    logging.error(f"The process {self} returned with unexpected return code {self.return_code}")
+                    self._logger.error(f"The process {self} returned with unexpected return code {self.return_code}")
 
                 raise InvocationFailedException(
                     f"The process {self} returned with unexpected return code {self.return_code}"
@@ -216,7 +219,7 @@ class Invocation:
         if self._process is not None:
             if self._process.returncode is None:
                 try:
-                    logging.info(f"Killing {self.command[0]}")
+                    self._logger.info(f"Killing {self.command_short_name}")
                     self._process.kill()
                 except ProcessLookupError:
                     pass # The process has already exited.
@@ -256,8 +259,15 @@ class Invocation:
         return not self._monitor_task.done()
 
     def run_as_task(self) -> Task:
-        self._monitor_task = asyncio.create_task(self._run(), name=f"Run invocation {self.command[0]}")
+        self._monitor_task = asyncio.create_task(self._run(), name=f"Run invocation {self.command_short_name}")
         return self._monitor_task
+
+    @property
+    def command_short_name(self):
+        if self.shell:
+            return self.command[0].split(' ')[0]
+        else:
+            return self.command[0]
 
     async def wait(self, terminate_after = None):
         try:

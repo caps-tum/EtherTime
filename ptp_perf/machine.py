@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, List, Union
 
 from ptp_perf.rpc.rpc_target import RPCTarget
+from ptp_perf.util import async_gather_with_progress
 
 
 @dataclass
@@ -109,3 +110,9 @@ class Machine(RPCTarget):
 class Cluster:
     id: str
     machines: List[Machine]
+
+    async def synchronize_repositories(self):
+        await async_gather_with_progress(
+            *[machine.synchronize_repository() for machine in self.machines],
+            label="Synchronizing repositories",
+        )

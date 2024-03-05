@@ -25,6 +25,8 @@ dependencies = [
     "natsort==8.4.0",
     "tinytuya==1.13.2",
     "django==5.0.2",
+    "psycopg==3.1.18",
+    "psycopg_binary==3.1.18"
 ]
 
 [project.urls]

@@ -49,9 +49,6 @@ class Vendor:
     def __str__(self):
         return self.name
 
-    def collect_data(self, profile: "BaseProfile"):
-        raise NotImplementedError()
-
     # These don't really belong here but for now it's ok
 
     @staticmethod

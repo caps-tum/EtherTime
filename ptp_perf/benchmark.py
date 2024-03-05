@@ -15,7 +15,7 @@ from ptp_perf.vendor.registry import VendorDB
 
 
 async def benchmark(endpoint_id: str):
-    endpoint: PTPEndpoint = await PTPEndpoint.objects.aget(id=endpoint_id)
+    endpoint: PTPEndpoint = await PTPEndpoint.objects.select_related('profile').aget(id=endpoint_id)
     profile: PTPProfile = endpoint.profile
 
     handler = LogToDBLogRecordHandler(endpoint)
@@ -32,21 +32,21 @@ async def benchmark(endpoint_id: str):
 
         if profile.benchmark.artificial_load_network > 0:
             # Start iPerf
-            artificial_network_load = NetworkPerformanceDegrader(profile)
+            artificial_network_load = NetworkPerformanceDegrader(endpoint)
             background_tasks.add_coroutine(artificial_network_load.run(), label="iPerf")
         if profile.benchmark.artificial_load_cpu > 0:
             # Start Stress_ng
-            artificial_cpu_load = CPUPerformanceDegrader(profile)
+            artificial_cpu_load = CPUPerformanceDegrader(endpoint)
             background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == endpoint.machine_id:
-            fault_generator = SoftwareFaultGenerator(profile)
+            fault_generator = SoftwareFaultGenerator(endpoint)
             background_tasks.add_coroutine(fault_generator.run())
 
         logging.info(f"Starting {profile.vendor}...")
         background_tasks.add_coroutine(
-            profile.vendor.run(profile), label=f"{profile.vendor.name}"
+            profile.vendor.run(endpoint), label=f"{profile.vendor.name}"
         )
         logging.info(f"Benchmarking for {profile.benchmark.duration}...")
         await background_tasks.run_for(profile.benchmark.duration)
@@ -66,8 +66,6 @@ async def benchmark(endpoint_id: str):
         profile.success = False
         logging.error(f"Benchmark {profile} failed: {e}")
         util.log_exception(e, force_traceback=True)
-    finally:
-        profile.vendor.collect_data(profile)
 
     handler.uninstall()
 

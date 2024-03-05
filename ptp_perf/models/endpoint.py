@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from django.db import models
@@ -26,15 +27,10 @@ class PTPEndpoint(models.Model):
     convergence_rate = models.FloatField(null=True, editable=False)
 
 
-    def log(self, message: str, source: str, timestamp: datetime = None,):
-        from ptp_perf.models import LogRecord
-        record = LogRecord(
-            message=message,
-            timestamp=timestamp,
-            source=source,
-            profile=self,
-        )
-        record.save()
+    def log(self, message: str, source: str):
+        """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and
+        saved as a log record."""
+        logging.getLogger(source).info(message)
 
     @property
     def benchmark(self) -> Benchmark:

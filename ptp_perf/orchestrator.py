@@ -18,6 +18,7 @@ from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.rpc.server import RPCServer
 from ptp_perf.rpc.server_service import RPCServerService
 from ptp_perf.util import StackTraceGuard, str_join
+from ptp_perf.utilities.logging import LogToDBLogRecordHandler
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
@@ -40,6 +41,9 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         machine_id="orchestrator",
     )
 
+    logging_handler = LogToDBLogRecordHandler(orchestrator_endpoint)
+    logging_handler.install()
+
     controller = MultiTaskController()
 
     try:
@@ -61,7 +65,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
                     "ssh", machine.address,
                     "-o", "ServerAliveInterval=300",
                     f"cd '{machine.remote_root}/' && "
-                    f"python3 run_worker.py --endpoint-id {machine_endpoint.id}"
+                    f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}"
                 ).run()
             )
 
@@ -76,6 +80,8 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         profile.state = PTPProfile.ProfileState.VALID
         await profile.asave()
 
+    logging_handler.uninstall()
+
     return profile
 
 async def run_orchestration(benchmark_id: str, vendor_id: str,
@@ -87,6 +93,7 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
         config.get_configuration_by_cluster_name("Pi Cluster"),
         benchmark.num_machines,
     )
+    await configuration.cluster.synchronize_repositories()
 
     if not test_mode:
         await restart_cluster(configuration.cluster)
@@ -97,7 +104,6 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
         duration_override = timedelta(minutes=1)
         logging.info(f"Applying duration override of {duration_override} due to test mode.")
 
-    RPCServer.service_type = RPCServerService
     try:
 
         if duration_override:
