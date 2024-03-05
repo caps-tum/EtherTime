@@ -3,11 +3,14 @@ import asyncio
 from tinytuya import OutletDevice
 
 from ptp_perf.adapters.adapter import Adapter
+from ptp_perf.config import Configuration
 from ptp_perf.models import PTPEndpoint
 from ptp_perf.profiles.base_profile import BaseProfile
 
 
 class DeviceControl(Adapter):
+    log_source = "fault-generator"
+
     id = "ebb88e5f6700fa300acvqr"
     ip = "192.168.1.200"
     key = "Ow/wW6UPpqT2%N5u"
@@ -21,9 +24,11 @@ class DeviceControl(Adapter):
     }
 
     power_strip: OutletDevice
+    configuration: Configuration
 
-    def __init__(self, endpoint: PTPEndpoint):
+    def __init__(self, endpoint: PTPEndpoint, configuration: Configuration):
         super().__init__(endpoint)
+        self.configuration = configuration
         self.power_strip = OutletDevice(
             dev_id=self.id,
             address=self.ip,
@@ -44,13 +49,18 @@ class DeviceControl(Adapter):
         interval = self.endpoint.benchmark.fault_tolerance_hardware_fault_interval
 
         self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
+        self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
+        self.log(f"SSH session now on keep-alive")
+
         try:
             while True:
                 self.toggle_machine(machine_id, True)
                 await asyncio.sleep(interval.total_seconds())
+                # self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
                 self.log(f"Scheduled hardware fault imminent on {machine_id}.")
                 self.toggle_machine(machine_id, False)
                 await asyncio.sleep(delay=5)
                 self.log(f"Scheduled hardware fault resolved on {machine_id}.")
+                # self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = False
         finally:
             self.toggle_machine(machine_id, True)

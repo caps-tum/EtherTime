@@ -26,7 +26,7 @@ from ptp_perf.vendor.vendor import Vendor
 
 async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
 
-    profile_timestamp = datetime.now(timezone.utc)
+    profile_timestamp = datetime.now().astimezone()
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,
@@ -48,11 +48,6 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     controller = MultiTaskController()
 
     try:
-        if benchmark.fault_tolerance_hardware_fault_interval is not None:
-            device_controller = DeviceControl(orchestrator_endpoint)
-            controller.add_coroutine(
-                device_controller.run()
-            )
 
         for machine in configuration.cluster.machines:
             machine_endpoint = PTPEndpoint(
@@ -61,14 +56,21 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
             )
             await machine_endpoint.asave()
 
-            controller.add_coroutine(
-                Invocation.of_command(
-                    "ssh", machine.address,
-                    "-o", "ServerAliveInterval=300",
-                    f"cd '{machine.remote_root}/' && "
-                    f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}"
-                ).run()
+            machine._ssh_session = Invocation.of_command(
+                "ssh", machine.address,
+                "-o", "ServerAliveInterval=3", "-o", "ServerAliveCountMax=3",
+                "-o", "ConnectTimeout=5", "-o", "ConnectionAttempts=1",
+                f"cd '{machine.remote_root}/' && "
+                f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}"
             )
+            controller.add_coroutine(
+                machine._ssh_session.run(), label=f"Orchestrator remote session {machine_endpoint.machine_id}"
+            )
+
+        if benchmark.fault_tolerance_hardware_fault_interval is not None:
+            device_controller = DeviceControl(orchestrator_endpoint, configuration)
+            controller.add_coroutine(device_controller.run(), label="Hardware Fault Controller")
+
 
         # Wait until the first exit, then give some more time for others to exit.
         # If the others don't exit in time, they will be cancelled

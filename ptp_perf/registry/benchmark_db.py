@@ -46,6 +46,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     HARDWARE_FAULT_SWITCH = Benchmark(
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
+        num_machines=3,
         fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
         fault_tolerance_hardware_fault_machine='switch',
     )
@@ -53,6 +54,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     HARDWARE_FAULT_SLAVE = Benchmark(
         "fault/hardware_fault_slave", "Hardware Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
+        num_machines=3,
         fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
         fault_tolerance_hardware_fault_machine='rpi07',
     )
@@ -60,6 +62,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     HARDWARE_FAULT_MASTER = Benchmark(
         "fault/hardware_fault_master", "Hardware Fault (Master)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
+        num_machines=3,
         fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
         fault_tolerance_hardware_fault_machine='rpi06',
     )

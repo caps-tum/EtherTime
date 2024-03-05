@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
+from django.db import connection
+
 from ptp_perf import util
 from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator
 from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
@@ -14,9 +16,20 @@ from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.registry import VendorDB
 
 
+def get_server_datetime():
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT NOW()")
+        return cursor.fetchone()[0]
+
+
 async def benchmark(endpoint_id: str):
     endpoint: PTPEndpoint = await PTPEndpoint.objects.select_related('profile').aget(id=endpoint_id)
     profile: PTPProfile = endpoint.profile
+
+    is_first_startup = endpoint.restart_count == 0
+    endpoint.restart_count += 1
+    await endpoint.asave()
+
 
     handler = LogToDBLogRecordHandler(endpoint)
     handler.install()
@@ -26,7 +39,11 @@ async def benchmark(endpoint_id: str):
     try:
         profile.vendor.create_configuration_file(endpoint)
 
-        await synchronize_time_ntp(endpoint.machine)
+        if is_first_startup:
+            # First time we set a predictable clock offset at the beginning of the benchmark
+            # When restarting (due to e.g. hardware fault), we leave the clock at its default
+            await synchronize_time_ntp(endpoint.machine)
+            await clock_jump(endpoint.machine)
 
         # Actually start the benchmark
 
@@ -48,8 +65,10 @@ async def benchmark(endpoint_id: str):
         background_tasks.add_coroutine(
             profile.vendor.run(endpoint), label=f"{profile.vendor.name}"
         )
-        logging.info(f"Benchmarking for {profile.benchmark.duration}...")
-        await background_tasks.run_for(profile.benchmark.duration)
+
+        remaining_time = profile.stop_time - get_server_datetime()
+        logging.info(f"Benchmarking for {remaining_time}...")
+        await background_tasks.run_for(remaining_time)
 
         profile.success = True
     except Exception as e:
@@ -82,6 +101,7 @@ async def synchronize_time_ntp(local_machine: Machine, use_initial_clock_offset:
     )
     await systemd_ntp_vendor.toggle_ntp_service(active=False)
 
+async def clock_jump(local_machine: Machine, use_initial_clock_offset: bool = True):
     # Step the clock using PPSi tool
     target_clock_offset = local_machine.initial_clock_offset if use_initial_clock_offset else None
     if target_clock_offset is not None:

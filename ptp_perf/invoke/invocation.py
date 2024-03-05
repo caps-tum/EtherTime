@@ -197,6 +197,9 @@ class Invocation:
             # Verify the exit code, raise error if necessary
             self.return_code = self._process.returncode
 
+            if self.log_invocation:
+                self._logger.info(f"Process {self.command_short_name} exited with return code {self.return_code}.")
+
             if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
                 if self.dump_output_on_failure:
                     for line in self.output.splitlines():
@@ -235,10 +238,12 @@ class Invocation:
 
         while self._should_restart_process:
             await self._start()
-            self._should_restart_process = self.keep_alive
             try:
                 await self._communicate()
             finally:
+                # Check if keep alive value has changed
+                self._should_restart_process = self.keep_alive
+
                 # Don't check exit code if we are restarting the process.
                 await self._terminate(timeout=5, skip_verify_return_code=self._should_restart_process)
 

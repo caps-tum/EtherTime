@@ -15,6 +15,7 @@ class PTPEndpoint(models.Model):
 
     profile: PTPProfile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
     machine_id = models.CharField(max_length=255)
+    restart_count = models.IntegerField(default=0)
 
     # Summary statistics
     clock_diff_median = models.FloatField(null=True, editable=False)

@@ -6,8 +6,9 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional, List, Union
 
+from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.rpc.rpc_target import RPCTarget
-from ptp_perf.util import async_gather_with_progress
+from ptp_perf.util import async_gather_with_progress, unpack_one_value
 
 
 @dataclass
@@ -102,6 +103,8 @@ class Machine(RPCTarget):
 
     plugin_settings: Optional[PluginSettings] = None
 
+    _ssh_session: Optional[Invocation] = None
+
     def __str__(self):
         return self.id
 
@@ -116,3 +119,6 @@ class Cluster:
             *[machine.synchronize_repository() for machine in self.machines],
             label="Synchronizing repositories",
         )
+
+    def machine_by_id(self, id: str):
+        return unpack_one_value(machine for machine in self.machines if machine.id == id)
