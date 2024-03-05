@@ -15,7 +15,6 @@ class Adapter:
 
     def log(self, message: str):
         self.endpoint.log(message, self.log_source)
-        logging.info(message)
 
     def run(self):
         raise NotImplementedError()
