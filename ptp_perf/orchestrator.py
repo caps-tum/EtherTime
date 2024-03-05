@@ -40,6 +40,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         profile=profile,
         machine_id="orchestrator",
     )
+    await orchestrator_endpoint.asave()
 
     logging_handler = LogToDBLogRecordHandler(orchestrator_endpoint)
     logging_handler.install()
