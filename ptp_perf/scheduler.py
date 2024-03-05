@@ -9,7 +9,7 @@ from typing import Optional
 
 from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
 from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
-from registry.benchmark_db import BenchmarkDB
+from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import PathOrStr, setup_logging, StackTraceGuard
 from ptp_perf.utilities.pydantic import pydantic_save_model, pydantic_load_model
 from ptp_perf.vendor.registry import VendorDB
@@ -177,7 +177,7 @@ def queue_benchmarks(result):
 
     for benchmark in benchmarks:
         for vendor in vendors:
-            command = f"LOG_EXCEPTIONS=1 python3 orchestrator.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
+            command = f"LOG_EXCEPTIONS=1 python3 run_orchestration.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
 
             if duration_override is None:
                 duration = benchmark.duration
@@ -209,41 +209,3 @@ def pause_queue(result):
     print(
         (f"Paused" if queue.paused else "Unpaused") + f" the queue ({len(queue.pending_task_paths())} tasks pending).")
 
-
-if __name__ == '__main__':
-    setup_logging()
-    parser = ArgumentParser(description="Batch processing for PTP-Perf.")
-    subparsers = parser.add_subparsers(required=True)
-
-    run_command = subparsers.add_parser("run", help="Run the batch processing queue.")
-    run_command.set_defaults(action=run_scheduler)
-
-    queue_command = subparsers.add_parser("queue", help="Add a task to the task queue.")
-    queue_command.set_defaults(action=queue_task)
-    queue_command.add_argument("--name", type=str, required=True, help="A name for the task.")
-    queue_command.add_argument("--command", type=str, required=True, help="The command to run.")
-    queue_command.add_argument("--time", type=int, default=None, help="The estimated task time in minutes. A slack time of 5 minutes is added as a timeout.")
-
-    queue_benchmarks_command = subparsers.add_parser("queue-benchmarks",
-                                                     help="Queue benchmarks by filtering with regex")
-    queue_benchmarks_command.set_defaults(action=queue_benchmarks)
-    queue_benchmarks_command.add_argument("--benchmark-regex", type=str, required=True,
-                                          help="RegEx for filtering benchmark ids.")
-    queue_benchmarks_command.add_argument("--vendor", action='append', default=[],
-                                          help="Vendors to benchmark (default all). Can be specified multiple times.")
-    queue_benchmarks_command.add_argument("--duration", type=int, default=None, help="Duration override (in minutes)")
-    queue_benchmarks_command.add_argument("--test", action="store_true", default=False, help="Run this benchmark in test mode.")
-    queue_benchmarks_command.add_argument("--analyze", action="store_true", default=False, help="Analyze the profile after benchmarking.")
-
-    info_command = subparsers.add_parser("info", help="Retrieve queue status.")
-    info_command.set_defaults(action=info)
-
-    pause_command = subparsers.add_parser("pause", help="Pause or unpause the processing of the queue.")
-    pause_command.set_defaults(action=pause_queue)
-    pause_command.add_argument("--unpause", action='store_true', default=False,
-                               help="Unpause the queue rather than pausing it.")
-
-    result = parser.parse_args()
-
-    with StackTraceGuard():
-        result.action(result)
