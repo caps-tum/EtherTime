@@ -113,10 +113,6 @@ class BaseProfile:
         return f"{self.filename_base}.json"
 
     @property
-    def filename_base(self) -> str:
-        return f"{self.machine_id}"
-
-    @property
     def file_path(self):
         return self.get_file_path()
 
@@ -133,14 +129,6 @@ class BaseProfile:
         return self.file_path.relative_to(constants.MEASUREMENTS_DIR)
 
     @property
-    def storage_base_path(self) -> Path:
-        return self.benchmark.storage_base_path.joinpath(self.vendor.id).joinpath(self.id)
-
-    def get_chart_timeseries_path(self, convergence_included: bool = False) -> Path:
-        suffix = "" if not convergence_included else "-convergence"
-        return self.storage_base_path.joinpath("timeseries").joinpath(f"{self.filename_base}{suffix}.png")
-
-    @property
     def vendor(self) -> "Vendor":
         from ptp_perf.vendor.registry import VendorDB
         return VendorDB.get(self.vendor_id)
@@ -151,116 +139,6 @@ class BaseProfile:
 
     def get_title(self, extra_info: str = None):
         return f"{self.benchmark.name} ({self.vendor.name}" + (f", {extra_info})" if extra_info is not None else ")")
-
-    def process_timeseries_data(self, timestamps: pd.Series, clock_offsets: pd.Series, path_delays: pd.Series, resample: timedelta = None) -> Self:
-        if self.time_series is not None:
-            raise RuntimeError("Tried to insert time series data into profile by profile already has time series data.")
-        if not (pd.api.types.is_datetime64_dtype(timestamps.dtype) or pd.api.types.is_timedelta64_dtype(timestamps.dtype)):
-            raise RuntimeError(f"Received a time series the is not a datetime64 (type: {timestamps.dtype}).")
-
-        # Basic sanity checks, no duplicate timestamps
-        if not timestamps.is_unique:
-            value_counts = timestamps.value_counts()
-            duplicate_timestamps = value_counts[value_counts != 1]
-            raise RuntimeError(f"Timestamps not unique:\n{duplicate_timestamps}")
-        if not timestamps.is_monotonic_increasing:
-            raise RuntimeError("Timestamps not monotonically increasing.")
-
-        # Normalize time: Move the origin to the epoch
-        timestamps = timestamps - timestamps.min()
-
-        result_frame = pd.DataFrame(
-            data={
-                COLUMN_CLOCK_DIFF: clock_offsets.reset_index(drop=True),
-                COLUMN_PATH_DELAY: path_delays.reset_index(drop=True)
-            }
-        )
-        result_frame.set_index(timestamps, drop=True, inplace=True)
-        result_frame.index.set_names(COLUMN_TIMESTAMP_INDEX, inplace=True)
-        entire_series = Timeseries.from_series(result_frame)
-        entire_series.validate(maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
-
-        # Do some data post-processing to improve quality.
-
-        # Step 1: Remove the first big clock step.
-
-        # Remove any beginning zero values (no clock_difference information yet) from start
-        # (first non-zero value makes cumulative sum >= 0)
-        crop_condition = (result_frame[COLUMN_CLOCK_DIFF] != 0).cumsum()
-        result_frame = result_frame[crop_condition != 0]
-
-
-        detected_clock_step = detect_clock_step(result_frame)
-        # Now crop after clock step
-        logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
-        result_frame = result_frame[result_frame.index > detected_clock_step.time]
-
-        # If we need to resample, do it now
-        # This needs to happen after determining the clock step as the "missing values" that occur because of the clock
-        # step will insert NaN into the series (even though they are not really missing)
-        if resample is not None:
-            result_frame = result_frame.resample(resample).mean()
-
-        series_with_convergence = Timeseries.from_series(result_frame)
-        series_with_convergence.validate()
-        self.time_series_unfiltered = series_with_convergence
-
-        minimum_convergence_time = timedelta(seconds=1)
-        detected_clock_convergence = detect_clock_convergence(series_with_convergence, minimum_convergence_time)
-
-        if detected_clock_convergence is not None:
-
-            remaining_benchmark_time = result_frame.index.max() - detected_clock_convergence.time
-            if remaining_benchmark_time < self.benchmark.duration * 0.75:
-                logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
-
-            # Create some convergence statistics
-            convergence_series = result_frame[result_frame.index <= detected_clock_convergence.time]
-            self.convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence, convergence_series)
-
-            # Now create the actual data
-            result_frame = result_frame[result_frame.index > detected_clock_convergence.time]
-            self.time_series = Timeseries.from_series(result_frame)
-            self.time_series.validate()
-            self.summary_statistics = self.time_series.summarize()
-
-        else:
-            # This profile is probably corrupt.
-            self.profile_type = ProfileType.PROCESSED_CORRUPT
-            logging.warning("Profile marked as corrupt.")
-
-        return self
-
-    def create_timeseries_charts(self, force_regeneration: bool = False):
-        from charts.timeseries_chart import TimeseriesChart
-
-        # We create multiple charts:
-        # one only showing the filtered data and one showing the entire convergence trajectory
-        if self.time_series is not None:
-            output_path = self.get_chart_timeseries_path()
-            if self.check_dependent_file_needs_update(output_path) or force_regeneration:
-                chart = TimeseriesChart(
-                    title=self.get_title(),
-                    summary_statistics=self.summary_statistics,
-                )
-                chart.add_path_delay(self.time_series)
-                chart.add_clock_difference(self.time_series)
-                chart.save(output_path, make_parent=True)
-
-        if self.time_series_unfiltered is not None:
-            output_path = self.get_chart_timeseries_path(convergence_included=True)
-            if self.check_dependent_file_needs_update(output_path) or force_regeneration:
-                chart_convergence = TimeseriesChart(
-                    title=self.get_title("with Convergence"),
-                    summary_statistics=self.convergence_statistics,
-                )
-                chart_convergence.add_path_delay(self.time_series_unfiltered)
-                chart_convergence.add_clock_difference(self.time_series_unfiltered)
-                if self.convergence_statistics is not None:
-                    chart_convergence.add_boundary(
-                        chart_convergence.axes[0], self.convergence_statistics.convergence_time
-                    )
-                chart_convergence.save(output_path, make_parent=True)
 
     def __str__(self):
         return self.id

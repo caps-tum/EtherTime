@@ -118,19 +118,19 @@ class ConvergenceStatistics:
 
     @staticmethod
     def from_convergence_series(detected_clock_convergence: "DetectedClockConvergence",
-                                convergence_series: pd.DataFrame) -> Optional["ConvergenceStatistics"]:
-        convergence_max_offset = convergence_series[COLUMN_CLOCK_DIFF].abs().max()
+                                convergence_series: pd.Series) -> Optional["ConvergenceStatistics"]:
+        convergence_max_offset = convergence_series.abs().max()
         if math.isnan(convergence_max_offset):
             logging.warning("No convergence data on profile, cannot calculate convergence statistics.")
             return None
 
-        if detected_clock_convergence.time.total_seconds() == 0:
+        if detected_clock_convergence.duration.total_seconds() == 0:
             raise RuntimeError("Invalid detected clock convergence of 0 seconds.")
 
         return ConvergenceStatistics(
-            convergence_time=detected_clock_convergence.time,
+            convergence_time=detected_clock_convergence.duration,
             convergence_max_offset=convergence_max_offset,
-            convergence_rate=convergence_max_offset / detected_clock_convergence.time.total_seconds()
+            convergence_rate=convergence_max_offset / detected_clock_convergence.duration.total_seconds()
         )
 
     def export(self, unit_multiplier: int = 1) -> Dict:
@@ -253,6 +253,35 @@ class Timeseries:
             # At least 10 minutes -> At least 600 samples
             if len(group) < 600:
                 logging.warning(f"Timeseries contains too few data points: {len(data_frame)}")
+
+    @staticmethod
+    def _validate_series(series: pd.Series, maximum_allowable_time_jump: timedelta = timedelta(seconds=5)):
+        # Validate shape of frame and properties
+        assert is_numeric_dtype(series)
+        assert series.index.is_unique, f"Series index is not unique:\n{series}"
+        assert COLUMN_TIMESTAMP_INDEX in series.index.names, f"Series index does not have a timestamp level\n{series}"
+        # Datetime64 with timezone is not so easy to detect.
+        assert isinstance(series.index.get_level_values(COLUMN_TIMESTAMP_INDEX).dtype, pd.DatetimeTZDtype), f"Series index level timestamps is not a series of datetime64+tz.\n{series}"
+
+        index_time_deltas = series.index.diff()
+
+        # Ensure that data is sorted chronologically.
+        min_time_jump = index_time_deltas.min()
+        if min_time_jump < timedelta(seconds=0):
+            raise RuntimeError(
+                f"Timeseries index is not monotonically increasing (minimum time difference is {min_time_jump}."
+            )
+        # Make sure there are no gaps in the data
+        time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
+        if not time_jumps.empty:
+            logging.warning(f"Timeseries contains {len(time_jumps)} holes "
+                            f"(largest hole: {time_jumps.max()}, "
+                            f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / index_time_deltas.sum():.0f}%)")
+        # Ensure we have sufficient data in general
+        # At least 10 minutes -> At least 600 samples
+        if len(series) < 600:
+            logging.warning(f"Timeseries contains too few data points: {len(series)}")
+
 
     @staticmethod
     def groupby_individual_timeseries(data_frame):

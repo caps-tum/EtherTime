@@ -13,3 +13,8 @@ class Sample(models.Model):
         FAULT = "FAULT"
 
     sample_type = models.CharField(choices=SampleType, null=False, max_length=255)
+
+    value = models.BigIntegerField(null=False)
+
+    def __str__(self):
+        return f"{self.timestamp}: {self.sample_type}={self.value}"

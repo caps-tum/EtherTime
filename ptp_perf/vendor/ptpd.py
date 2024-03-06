@@ -12,7 +12,7 @@ from ptp_perf.util import str_join
 from ptp_perf.vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
-    from ptp_perf.models import PTPEndpoint
+    from ptp_perf.models import PTPEndpoint, LogRecord, Sample
 
 
 @dataclass
@@ -53,22 +53,24 @@ class PTPDVendor(Vendor):
 
 
     @classmethod
-    def convert_profile(cls, raw_profile: "BaseProfile") -> Optional[BaseProfile]:
+    def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
         # In old profiles, statistics were in statistics while the regular log was in "log".
         # New profiles merge all data into log.
-        log = raw_profile.raw_data["statistics"] if "statistics" in raw_profile.raw_data.keys() else raw_profile.raw_data["log"]
+        # log = raw_profile.raw_data["statistics"] if "statistics" in raw_profile.raw_data.keys() else raw_profile.raw_data["log"]
+        #
+        # if log is None:
+        #     logging.warning("Profile without ptpd log, corrupted.")
 
-        if log is None:
-            logging.warning("Profile without ptpd log, corrupted.")
+        logs: typing.List[LogRecord] = endpoint.logrecord_set.filter(source="ptpd").all()
 
         # Keep only the CSV header and the statistics lines in the state "slave"
         # We are only interested in the first CSV header (when process is restarted there might be multiple)
-        csv_header_lines = [line for line in log.splitlines(keepends=True) if line.startswith("# Timestamp")]
+        csv_header_lines = [log.message for log in logs if log.message.startswith("# Timestamp")]
         filtered_log = csv_header_lines[0]
         # Actual data.
         filtered_log += str_join(
-            [line for line in log.splitlines(keepends=True) if ", slv, " in line],
-            separator=''
+            [log.message for log in logs if ", slv, " in log.message],
+            separator='\n'
         )
 
         frame = pd.read_csv(
@@ -77,14 +79,24 @@ class PTPDVendor(Vendor):
         # No longer necessary, the filtering is done above.
         # frame = frame[frame["State"] == "slv"]
 
-        if frame.empty:
-            return None
+        samples = []
+        for index, row in frame.iterrows():
+            samples.append(
+                Sample(
+                    endpoint=endpoint,
+                    timestamp=row["# Timestamp"],
+                    sample_type=Sample.SampleType.CLOCK_DIFF,
+                    value=row["Offset From Master"],
+                )
+            )
+            samples.append(
+                Sample(
+                    endpoint=endpoint,
+                    timestamp=row["# Timestamp"],
+                    sample_type=Sample.SampleType.PATH_DELAY,
+                    value=row["One Way Delay"],
+                )
+            )
 
-        timestamps = pd.to_datetime(frame["# Timestamp"])
-        clock_offsets = frame["Offset From Master"]
-        path_delays = frame["One Way Delay"]
-
-        return BaseProfile.template_from_existing(raw_profile, ProfileType.PROCESSED).process_timeseries_data(
-            timestamps, clock_offsets, path_delays, #resample=timedelta(seconds=1)
-            # Resampling doesn't work well with bootstrapping, it produces intermittent NaN values when there is a gap.
-        )
+        Sample.objects.bulk_create(samples)
+        return samples

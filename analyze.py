@@ -1,9 +1,14 @@
 import logging
 from datetime import datetime
 
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+
+bootstrap_django_environment()
+
 from ptp_perf import config
 from ptp_perf import constants
 from ptp_perf import util
+from ptp_perf.models import PTPEndpoint, PTPProfile
 from ptp_perf.profiles.aggregated_profile import AggregatedProfile
 from ptp_perf.profiles.base_profile import ProfileType, BaseProfile
 from ptp_perf.registry import resolve
@@ -14,43 +19,45 @@ from ptp_perf.vendor.registry import VendorDB
 
 
 def analyze():
-    profile_db = ProfileDB()
-
-    logging.info("Updating profile cache...")
-    start_time = datetime.now()
-    profile_db.update_cache()
-    logging.info(f"Updated profile cache in {datetime.now() - start_time}.")
-
-    for profile in profile_db.resolve_all(resolve.BY_TYPE(ProfileType.RAW)):
+    # profile_query = PTPProfile.objects.filter(is_processed=False).all()
+    profile_query = PTPProfile.objects.all()
+    for profile in profile_query:
         try:
-            if profile.check_dependent_file_needs_update(profile.get_file_path(ProfileType.PROCESSED, profile.machine_id)):
-                convert_profile(profile, profile_db)
+            convert_profile(profile)
         except Exception as e:
             logging.exception("Failed to convert profile!", exc_info=e)
 
 
-def convert_profile(profile: BaseProfile, profile_db: ProfileDB = None):
-    if profile_db is None:
-        profile_db = ProfileDB()
+def convert_profile(profile: PTPProfile):
 
-    logging.info(
-        f"Converting {profile.file_path_relative} "
-        f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
-        f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
-        f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
-    )
-    processed_profile = profile.vendor.convert_profile(profile)
-    if processed_profile is not None:
-        # Remove existing processed profiles (they may be in a different path)
-        processed_profile.get_file_path(ProfileType.PROCESSED).unlink(missing_ok=True)
-        processed_profile.get_file_path(ProfileType.PROCESSED_CORRUPT).unlink(missing_ok=True)
+    # logging.info(
+    #     f"Converting {profile.file_path_relative} "
+    #     f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
+    #     f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
+    #     f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
+    # )
 
-        processed_profile.save()
-        profile_db.get_cache().update(processed_profile)
+    for endpoint in profile.ptpendpoint_set.all():
+        # Remove existing data
+        endpoint.sample_set.all().delete()
+        parsed_samples = profile.vendor.parse_log_data(endpoint)
+        logging.info(f"{profile.benchmark.name} #{profile.id}:{endpoint.machine_id} converted {len(parsed_samples)} samples.")
 
-        processed_profile.create_timeseries_charts()
-    else:
-        logging.info("No profile generated.")
+        endpoint.process_timeseries_data()
+
+    profile.is_processed = True
+    profile.save()
+    # processed_profile = profile.vendor.convert_profile(profile)
+    # if processed_profile is not None:
+    #     # Remove existing processed profiles (they may be in a different path)
+    #     processed_profile.get_file_path(ProfileType.PROCESSED).unlink(missing_ok=True)
+    #     processed_profile.get_file_path(ProfileType.PROCESSED_CORRUPT).unlink(missing_ok=True)
+    #
+    #     processed_profile.save()
+    #
+    #     processed_profile.create_timeseries_charts()
+    # else:
+    #     logging.info("No profile generated.")
 
 
 def merge():
@@ -93,7 +100,7 @@ if __name__ == '__main__':
         start_time = datetime.now()
 
         analyze()
-        merge()
+        # merge()
 
         completion_time = datetime.now()
         logging.info(f"Analysis completed in {completion_time - start_time}.")

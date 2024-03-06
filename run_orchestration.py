@@ -6,7 +6,7 @@ from datetime import timedelta
 from ptp_perf import util
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import StackTraceGuard
-from ptp_perf.utilities.django import bootstrap_django_environment
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 from ptp_perf.vendor.registry import VendorDB
 
 if __name__ == '__main__':

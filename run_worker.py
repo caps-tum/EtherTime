@@ -2,7 +2,7 @@ import asyncio
 from argparse import ArgumentParser
 
 from ptp_perf import util
-from ptp_perf.utilities.django import bootstrap_django_environment
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 
 if __name__ == '__main__':
     util.setup_logging()

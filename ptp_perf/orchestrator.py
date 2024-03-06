@@ -30,7 +30,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,
-        state=PTPProfile.ProfileState.RUNNING,
+        is_running=True,
         start_time=profile_timestamp,
         stop_time=profile_timestamp + benchmark.duration
     )
@@ -80,7 +80,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     finally:
         await controller.cancel_pending_tasks()
 
-        profile.state = PTPProfile.ProfileState.VALID
+        profile.is_running = False
         await profile.asave()
 
     logging_handler.uninstall()

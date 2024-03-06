@@ -10,8 +10,7 @@ from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
-    from ptp_perf.models import PTPEndpoint
-    from ptp_perf.profiles.base_profile import BaseProfile, ProfileType
+    from ptp_perf.models import PTPEndpoint, Sample
 
 
 @dataclass
@@ -79,36 +78,45 @@ class LinuxPTPVendor(Vendor):
     def uninstall(self):
         self.invoke_package_manager("linuxptp", action="purge")
 
-    def convert_profile(self, profile: "BaseProfile"):
-        import pandas as pd
-        from ptp_perf.profiles.base_profile import BaseProfile, ProfileType
+    def parse_log_data(self, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
+        from ptp_perf.models.sample import Sample
 
-        if profile.raw_data["phc2sys_log"] is not None:
+        if endpoint.logrecord_set.filter(source="phc2sys").count() > 0:
             raise NotImplementedError("Cannot import phc2sys log for the moment.")
 
-        log = profile.raw_data["ptp4l_log"]
+        logs = endpoint.logrecord_set.filter(source="ptp4l").all()
 
-        if log is None:
-            logging.warning("Profile without a ptp4l_log, corrupted.")
-            return None
+        samples = []
+        for log in logs:
+            match = re.search(
+                pattern="ptp4l\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
+                string=log.message,
+            )
+            if match is None:
+                continue
 
-        timestamps = []
-        offsets = []
-        path_delays = []
-        for match in re.finditer(
-            pattern="ptp4l\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
-            string=log,
-        ):
-            timestamps.append(timedelta(seconds=float(match.group("timestamp"))))
-            offsets.append(int(match.group("master_offset")) * units.NANOSECONDS_TO_SECONDS)
-            path_delays.append(int(match.group("path_delay")) * units.NANOSECONDS_TO_SECONDS)
+            samples.append(
+                Sample(
+                    endpoint = endpoint,
+                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
+                    timestamp=log.timestamp,
+                    sample_type=Sample.SampleType.CLOCK_DIFF,
+                    value=int(match.group("master_offset")),
+                )
+            )
 
-        if len(timestamps) == 0:
-            return None
+            samples.append(
+                Sample(
+                    endpoint=endpoint,
+                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
+                    timestamp=log.timestamp,
+                    sample_type=Sample.SampleType.PATH_DELAY,
+                    value=int(match.group("path_delay")),
+                )
+            )
 
-        return BaseProfile.template_from_existing(profile, ProfileType.PROCESSED).process_timeseries_data(
-            pd.Series(timestamps), pd.Series(offsets), pd.Series(path_delays)
-        )
+        Sample.objects.bulk_create(samples)
+        return samples
 
     @property
     def running(self):

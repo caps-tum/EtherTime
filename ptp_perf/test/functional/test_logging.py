@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from ptp_perf.utilities.django import bootstrap_django_environment
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 bootstrap_django_environment()
 
 from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator

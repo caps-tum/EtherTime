@@ -12,11 +12,10 @@ class PTPProfile(models.Model):
     benchmark_id: str = models.CharField(max_length=255, null=False, blank=False)
     vendor_id: str = models.CharField(max_length=255, null=False, blank=False)
 
-    class ProfileState(models.TextChoices):
-        RUNNING = "running"
-        VALID = "valid"
-
-    state = models.CharField(choices=ProfileState, max_length=255)
+    is_running: bool = models.BooleanField(default=False)
+    is_successful: bool = models.BooleanField(default=False)
+    is_processed: bool = models.BooleanField(default=False)
+    is_corrupted: bool = models.BooleanField(default=False)
 
     start_time = models.DateTimeField()
     stop_time = models.DateTimeField()

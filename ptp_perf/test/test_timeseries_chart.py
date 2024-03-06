@@ -1,13 +1,15 @@
-from pathlib import Path
 from unittest import TestCase
 
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+bootstrap_django_environment()
+
 from ptp_perf import constants
-from charts.timeseries_chart import TimeseriesChart
-from charts.distribution_comparison_chart import DistributionComparisonChart
-from charts.timeseries_chart_versus import TimeSeriesChartVersus
-from registry import resolve
-from registry.benchmark_db import BenchmarkDB
-from registry.resolve import ProfileDB
+from ptp_perf.charts.distribution_comparison_chart import DistributionComparisonChart
+from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
+from ptp_perf.models import PTPProfile
+from ptp_perf.registry import resolve
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.registry.resolve import ProfileDB
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -19,13 +21,15 @@ class TestTimeseriesChart(TestCase):
     #     chart.save("test-series.png")
 
     def test_individual_charts(self):
-        profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
-        profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
-        profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
+        # profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
+        # profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
+        # profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
+        profiles = PTPProfile.objects.filter(is_processed=True).all()
 
         for profile in profiles:
             print(f"Processing {profile}")
-            profile.create_timeseries_charts()
+            for endpoint in profile.ptpendpoint_set.all():
+                endpoint.create_timeseries_charts()
 
 
     def test_comparison(self):

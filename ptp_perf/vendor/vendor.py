@@ -8,7 +8,7 @@ from ptp_perf.constants import LOCAL_DIR, PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
-    from ptp_perf.models import PTPEndpoint
+    from ptp_perf.models import PTPEndpoint, Sample
     from ptp_perf.profiles.base_profile import BaseProfile
 
 
@@ -61,6 +61,9 @@ class Vendor:
 
     def convert_profile(self, profile: "BaseProfile") -> Optional["BaseProfile"]:
         raise NotImplementedError(f"Cannot convert the profile for vendor {self.name}")
+
+    def parse_log_data(self, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
+        raise NotImplementedError(f"Cannot parse log data for vendor {self.name}")
 
 
     @property

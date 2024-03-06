@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "ptp_perf.django.app.apps.PTPPerfConfig",
+    "ptp_perf.django_data.app.apps.PTPPerfConfig",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'ptp_perf.django.site.urls'
+ROOT_URLCONF = 'ptp_perf.django_data.site.urls'
 
 TEMPLATES = [
     {
@@ -68,7 +68,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ptp_perf.django.site.wsgi.application'
+WSGI_APPLICATION = 'ptp_perf.django_data.site.wsgi.application'
 
 
 # Database

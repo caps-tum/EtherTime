@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ptp_perf.utilities.django import bootstrap_django_environment
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 
 bootstrap_django_environment()
 
