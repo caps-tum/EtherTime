@@ -1,23 +1,18 @@
-import asyncio
+import copy
 import copy
 import logging
-import os
-from argparse import ArgumentParser
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from ptp_perf import config
 from ptp_perf import util
 from ptp_perf.adapters.device_control import DeviceControl
-from ptp_perf.analyze import convert_profile
 from ptp_perf.cluster_restart import restart_cluster
 from ptp_perf.config import Configuration
 from ptp_perf.invoke.invocation import Invocation
-from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.models import PTPProfile, PTPEndpoint
+from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.rpc.server import RPCServer
-from ptp_perf.rpc.server_service import RPCServerService
-from ptp_perf.util import StackTraceGuard, str_join
+from ptp_perf.util import str_join
 from ptp_perf.utilities.logging import LogToDBLogRecordHandler
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.registry import VendorDB
@@ -120,9 +115,9 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
             benchmark=benchmark, vendor=vendor
         )
 
-        if analyze:
-            logging.info(f"Analyzing profiles: {str_join(profiles)}")
-            for profile in profiles:
-                convert_profile(profile)
+        # if analyze:
+        #     logging.info(f"Analyzing profiles: {str_join(profiles)}")
+        #     for profile in profiles:
+        #         convert_profile(profile)
     except Exception as e:
         util.log_exception(e)
