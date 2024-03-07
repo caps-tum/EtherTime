@@ -419,7 +419,7 @@ async def async_wait_for_condition(get_progress: Callable, target: int = 1, time
         if progress == target:
             break
         if timeout is not None and datetime.now() > start_time + timeout:
-            raise TimeoutError("Condition not reached within timeout.")
+            raise TimeoutError(f"Condition '{label}' not reached within timeout.")
         if not quiet:
             logging.info(f"{label} ({progress}/{target} completed)\033[A")
         await asyncio.sleep(0.5)
