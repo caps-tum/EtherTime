@@ -116,7 +116,7 @@ class PTPEndpoint(models.Model):
         crop_condition = (entire_series != 0).cumsum()
         frame_no_leading_zeros = entire_series[crop_condition != 0]
 
-        detected_clock_step = detect_clock_step(frame_no_leading_zeros)
+        detected_clock_step = detect_clock_step(frame_no_leading_zeros, self.benchmark.analyze_limit_permissible_clock_steps)
         self.clock_step_timestamp = detected_clock_step.time
         self.clock_step_magnitude = detected_clock_step.magnitude
 

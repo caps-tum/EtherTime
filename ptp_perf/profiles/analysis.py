@@ -14,11 +14,11 @@ class DetectedClockStep:
     time: datetime
     magnitude: float
 
-def detect_clock_step(clock_diff_series: pd.Series) -> DetectedClockStep:
+def detect_clock_step(clock_diff_series: pd.Series, max_permissible_clock_steps=1) -> DetectedClockStep:
     # First, detect the clock step (difference >= 1 second).
     first_difference = clock_diff_series.diff().abs()
     clock_steps = first_difference[first_difference >= 1]
-    if len(clock_steps) > 1:
+    if max_permissible_clock_steps is not None and len(clock_steps) > max_permissible_clock_steps:
         raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
     elif len(clock_steps) == 0:
         logging.warning(f"No clock step found in profile of length {len(clock_diff_series)}.")
