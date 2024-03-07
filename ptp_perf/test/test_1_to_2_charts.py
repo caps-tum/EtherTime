@@ -101,16 +101,19 @@ class Test1To2Charts(TestCase):
 
                         fault_location = benchmark.fault_tolerance_hardware_fault_machine if benchmark.fault_tolerance_hardware_fault_machine is not None else benchmark.fault_tolerance_software_fault_machine
                         fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False)
-                        faults = fault_query.run(Sample.SampleType.FAULT)
+                        fault_records = fault_query.run(Sample.SampleType.FAULT)
 
-                        rising_flanks = faults.index.get_level_values("timestamp")[faults == 1]
+                        faults = fault_records.index.get_level_values("timestamp")[fault_records == 1]
 
-                        aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(minutes=2))
+                        aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(faults, wrap=timedelta(minutes=2))
                         # aligned_data.index = aligned_data.index.droplevel("endpoint_id")
                         aligned_data.index = aligned_data.index.droplevel("cut_index")
                         aligned_data.sort_index(inplace=True)
 
-                        chart = TimeseriesChart(title=f"{benchmark}: The Wave", ylimit_top=constants.RPI_CHART_DISPLAY_LIMIT)
+                        chart = TimeseriesChart(
+                            title=f"{benchmark}: {'Faulty Client' if machine.id == fault_location else 'Faultless Client'} ({machine})",
+                            # ylimit_top=constants.RPI_CHART_DISPLAY_LIMIT
+                        )
                         chart.add_clock_difference(aligned_data)
 
                         bound_left_side = aligned_data[aligned_data.index < timedelta(0)].abs().quantile(0.99)
@@ -146,7 +149,7 @@ class Test1To2Charts(TestCase):
                         )
 
                         chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
-                        chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"))
+                        chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"), make_parent=True)
                     except NoDataError:
                         logging.warning("Missing data, skipping.")
 
