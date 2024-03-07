@@ -33,3 +33,8 @@ class PTPProfile(models.Model):
 
     def __str__(self):
         return f"{self.benchmark} (#{self.id}, {self.vendor}, {self.start_time})"
+
+
+    class Meta:
+        app_label = 'app'
+        db_table = "ptp_perf_ptpprofile"

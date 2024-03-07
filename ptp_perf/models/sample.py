@@ -18,3 +18,7 @@ class Sample(models.Model):
 
     def __str__(self):
         return f"{self.timestamp}: {self.sample_type}={self.value}"
+
+    class Meta:
+        app_label = 'app'
+        db_table = "ptp_perf_sample"

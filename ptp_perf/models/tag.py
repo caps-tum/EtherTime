@@ -9,3 +9,8 @@ class Tag(models.Model):
         MACHINE = 'machine'
 
     category = models.CharField(choices=TagCategory, max_length=255, null=False, blank=False)
+
+
+    class Meta:
+        app_label = 'app'
+        db_table = "ptp_perf_tag"

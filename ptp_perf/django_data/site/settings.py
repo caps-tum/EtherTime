@@ -25,13 +25,13 @@ SECRET_KEY = 'django-insecure-kr8nnv^is8dr)k!7yi6(26kh3#u1l#5$er47d)44q)v&uldvit
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    "ptp_perf.django_data.app.apps.PTPPerfConfig",
+    "ptp_perf.django_data.app",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

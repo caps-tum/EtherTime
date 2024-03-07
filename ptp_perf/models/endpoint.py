@@ -255,3 +255,8 @@ class PTPEndpoint(models.Model):
 
     def __str__(self):
         return f"{self.machine_id} (#{self.id}, {self.profile})"
+
+
+    class Meta:
+        app_label = 'app'
+        db_table = "ptp_perf_ptpendpoint"
