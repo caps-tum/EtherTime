@@ -8,6 +8,7 @@ from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag
 @admin.register(PTPProfile)
 class PTPProfileAdmin(admin.ModelAdmin):
     list_display = ['id', 'benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
+    list_filter = ['benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
