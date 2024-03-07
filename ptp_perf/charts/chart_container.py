@@ -57,14 +57,9 @@ class ChartContainer:
     def plot_decorate_xaxis_timeseries(ax: plt.Axes):
 
         def format_time(value: float, _) -> str:
-            delta = timedelta(microseconds=value * units.NANOSECONDS_TO_MICROSECOND)
-            return str(delta)
-            # value *= units.NANOSECONDS_TO_SECONDS
-            # if value >= 3600:
-            #     return str(value / 3600) + "h"
-            # if value >= 60:
-            #     return str(value / 60) + "m"
-            # return str(value) + "s"
+            delta = timedelta(microseconds=abs(value) * units.NANOSECONDS_TO_MICROSECOND)
+            formatted_duration = str(delta)
+            return formatted_duration if value >= 0 else f"-{formatted_duration}"
 
         locator = matplotlib.ticker.MaxNLocator(
             nbins=6,
