@@ -100,7 +100,8 @@ class Test1To2Charts(TestCase):
                         clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
 
                         fault_location = benchmark.fault_tolerance_hardware_fault_machine if benchmark.fault_tolerance_hardware_fault_machine is not None else benchmark.fault_tolerance_software_fault_machine
-                        fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False)
+                        # On master failure, there is no convergence time to query.
+                        fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False, converged_only=False, remove_clock_step=False)
                         fault_records = fault_query.run(Sample.SampleType.FAULT)
 
                         faults = fault_records.index.get_level_values("timestamp")[fault_records == 1]
@@ -150,8 +151,8 @@ class Test1To2Charts(TestCase):
 
                         chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
                         chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"), make_parent=True)
-                    except NoDataError:
-                        logging.warning("Missing data, skipping.")
+                    except NoDataError as e:
+                        logging.warning(f"Missing data ({benchmark}, {vendor}, {machine}: {e}), skipping.")
 
     # TODO: Code duplication
     def test_hardware_fault_wave(self):
