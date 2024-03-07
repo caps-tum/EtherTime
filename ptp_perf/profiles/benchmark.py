@@ -39,6 +39,7 @@ class Benchmark:
     artificial_load_cpu_scheduler: Optional[str] = None
     artificial_load_cpu_restrict_cores: Optional[bool] = False
 
+    fault_tolerance_ssh_keepalive: bool = False
     fault_tolerance_software_fault_interval: Optional[timedelta] = None
     fault_tolerance_software_fault_machine: Optional[str] = None
     fault_tolerance_hardware_fault_interval: Optional[timedelta] = None

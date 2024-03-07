@@ -58,6 +58,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
         fault_tolerance_hardware_fault_machine='rpi07',
+        fault_tolerance_ssh_keepalive=True,
     )
 
     HARDWARE_FAULT_MASTER = Benchmark(
@@ -66,6 +67,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
         fault_tolerance_hardware_fault_machine='rpi06',
+        fault_tolerance_ssh_keepalive=True,
     )
 
 

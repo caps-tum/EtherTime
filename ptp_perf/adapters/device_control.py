@@ -49,8 +49,12 @@ class DeviceControl(Adapter):
         interval = self.endpoint.benchmark.fault_tolerance_hardware_fault_interval
 
         self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
-        self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
-        self.log(f"SSH session now on keep-alive")
+
+        if self.endpoint.benchmark.fault_tolerance_ssh_keepalive:
+            self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
+            self.log(f"SSH session now on keep-alive")
+        else:
+            self.log(f"Not engaging SSH session keep-alive")
 
         try:
             while True:
