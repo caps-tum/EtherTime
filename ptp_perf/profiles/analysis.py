@@ -11,7 +11,7 @@ from ptp_perf.profiles.data_container import COLUMN_CLOCK_DIFF, Timeseries
 
 @dataclass
 class DetectedClockStep:
-    time: timedelta
+    time: datetime
     magnitude: float
 
 def detect_clock_step(clock_diff_series: pd.Series) -> DetectedClockStep:
@@ -22,7 +22,8 @@ def detect_clock_step(clock_diff_series: pd.Series) -> DetectedClockStep:
         raise RuntimeError(f"Found more than one clock step in timeseries profile: {clock_steps}")
     elif len(clock_steps) == 0:
         logging.warning(f"No clock step found in profile of length {len(clock_diff_series)}.")
-        clock_step_time = timedelta()
+        # Just set it close to the benchmark starting time.
+        clock_step_time = first_difference.index.min() - timedelta(seconds=1)
         clock_step_magnitude = 0
     else:
         clock_step_time = clock_steps.index[0]

@@ -1,4 +1,5 @@
 import logging
+import re
 import typing
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -19,6 +20,7 @@ from ptp_perf.utilities import units
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
+
 
 class PTPEndpoint(models.Model):
     id = models.AutoField(primary_key=True)
@@ -42,12 +44,14 @@ class PTPEndpoint(models.Model):
     clock_step_timestamp = models.DateTimeField(null=True, editable=False)
     clock_step_magnitude = models.FloatField(null=True, editable=False)
 
-    def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True, remove_clock_step: bool = True, normalize_time: bool = False) -> Optional[pd.Series]:
+    def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
+                               remove_clock_step: bool = True, normalize_time: bool = False) -> Optional[pd.Series]:
+        from ptp_perf.models import Sample
         sample_set = self.sample_set.filter(sample_type=sample_type)
 
         if converged_only:
             if self.convergence_timestamp is None:
-                raise RuntimeError("Requested converged data but no convergence time is present.")
+                raise RuntimeError(f"Requested converged data but no convergence time is present: {self}.")
             sample_set = sample_set.filter(timestamp__gte=self.convergence_timestamp)
 
         if remove_clock_step:
@@ -65,7 +69,9 @@ class PTPEndpoint(models.Model):
 
         # frame["timestamp"] = frame["timestamp"].dt.tz_localize(None)
         series = frame.set_index("timestamp")["value"]
-        series *= units.NANOSECONDS_TO_SECONDS
+
+        if sample_type == Sample.SampleType.CLOCK_DIFF or sample_type == Sample.SampleType.PATH_DELAY:
+            series *= units.NANOSECONDS_TO_SECONDS
 
         if normalize_time:
             series.index -= self.convergence_timestamp
@@ -75,7 +81,8 @@ class PTPEndpoint(models.Model):
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
 
-        entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False, remove_clock_step=False)
+        entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
+                                                    remove_clock_step=False)
         if entire_series is None:
             return
 
@@ -90,7 +97,8 @@ class PTPEndpoint(models.Model):
             raise RuntimeError(f"Timestamps not unique:\n{duplicate_timestamps}")
         if not timestamps.is_monotonic_increasing:
             time_index_diff = entire_series.index.diff()
-            raise RuntimeError(f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}")
+            raise RuntimeError(
+                f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}")
 
         # We don't normalize time automatically anymore.
         # Normalize time: Move the origin to the epoch
@@ -106,7 +114,6 @@ class PTPEndpoint(models.Model):
         # (first non-zero value makes cumulative sum >= 0)
         crop_condition = (entire_series != 0).cumsum()
         frame_no_leading_zeros = entire_series[crop_condition != 0]
-
 
         detected_clock_step = detect_clock_step(frame_no_leading_zeros)
         self.clock_step_timestamp = detected_clock_step.time
@@ -125,11 +132,13 @@ class PTPEndpoint(models.Model):
 
             remaining_benchmark_time = frame_no_clock_step.index.max() - detected_clock_convergence.timestamp
             if remaining_benchmark_time < self.benchmark.duration * 0.75:
-                logging.warning(f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+                logging.warning(
+                    f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
 
             # Create some convergence statistics
             convergence_series = frame_no_clock_step[frame_no_clock_step.index <= detected_clock_convergence.timestamp]
-            convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence, convergence_series)
+            convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence,
+                                                                                   convergence_series)
             self.convergence_timestamp = detected_clock_convergence.timestamp
             self.convergence_duration = detected_clock_convergence.duration
             self.convergence_rate = convergence_statistics.convergence_rate
@@ -154,7 +163,6 @@ class PTPEndpoint(models.Model):
         self.save()
         return self
 
-
     def create_timeseries_charts(self, force_regeneration: bool = False):
         from ptp_perf.charts.timeseries_chart import TimeseriesChart
         from ptp_perf.models.sample import Sample
@@ -176,8 +184,10 @@ class PTPEndpoint(models.Model):
             chart.save(output_path, make_parent=True)
 
         if self.clock_step_timestamp is not None:
-            clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False, normalize_time=True)
-            path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False, normalize_time=True)
+            clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
+                                                     normalize_time=True)
+            path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False,
+                                                     normalize_time=True)
             output_path = self.get_chart_timeseries_path(convergence_included=True)
             # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
             chart_convergence = TimeseriesChart(
@@ -192,7 +202,26 @@ class PTPEndpoint(models.Model):
                 )
             chart_convergence.save(output_path, make_parent=True)
 
-
+    def process_fault_data(self):
+        from ptp_perf.models import LogRecord, Sample
+        records = LogRecord.objects.filter(source="fault-generator", endpoint__profile=self.profile).all()
+        parsed_faults = 0
+        for record in records:
+            match = re.search(
+                f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on {self.machine_id}.",
+                record.message
+            )
+            if match is not None:
+                sample = Sample(
+                    endpoint=self,
+                    timestamp=record.timestamp,
+                    sample_type=Sample.SampleType.FAULT,
+                    value=1 if match.group("status") == "imminent" else 0
+                )
+                sample.save()
+                parsed_faults += 1
+        if parsed_faults > 0:
+            logging.info(f"{self} parsed {parsed_faults} fault status records.")
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and
@@ -221,4 +250,8 @@ class PTPEndpoint(models.Model):
         return self.storage_base_path.joinpath(f"{self.filename_base}{suffix}.png")
 
     def get_title(self, extra_info: str = None):
-        return f"{self.benchmark.name} ({self.profile.vendor.name}" + (f", {extra_info})" if extra_info is not None else ")")
+        return f"{self.benchmark.name} ({self.profile.vendor.name}" + (
+            f", {extra_info})" if extra_info is not None else ")")
+
+    def __str__(self):
+        return f"{self.machine_id} (#{self.id}, {self.profile})"

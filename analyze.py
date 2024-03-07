@@ -41,9 +41,11 @@ def convert_profile(profile: PTPProfile):
         # Remove existing data
         endpoint.sample_set.all().delete()
         parsed_samples = profile.vendor.parse_log_data(endpoint)
-        logging.info(f"{profile.benchmark.name} #{profile.id}:{endpoint.machine_id} converted {len(parsed_samples)} samples.")
+        logging.info(f"{endpoint} converted {len(parsed_samples)} samples.")
 
         endpoint.process_timeseries_data()
+
+        endpoint.process_fault_data()
 
     profile.is_processed = True
     profile.save()

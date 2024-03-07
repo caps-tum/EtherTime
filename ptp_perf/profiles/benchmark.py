@@ -50,3 +50,6 @@ class Benchmark:
     @property
     def storage_base_path(self):
         return constants.MEASUREMENTS_DIR.joinpath(self.id)
+
+    def __str__(self):
+        return f"{self.name}"

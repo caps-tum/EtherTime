@@ -6,17 +6,24 @@ from unittest import TestCase
 
 import pandas as pd
 
-import config
-from charts.comparison_chart import ComparisonChart
-from charts.timeseries_chart import TimeseriesChart
-from charts.timeseries_chart_versus import TimeSeriesChartVersus
-from config import MACHINE_RPI08, MACHINE_RPI07
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+
+bootstrap_django_environment()
+
+from ptp_perf import config
+from ptp_perf.charts.comparison_chart import ComparisonChart
+from ptp_perf.charts.timeseries_chart import TimeseriesChart
+from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
+from ptp_perf.config import MACHINE_RPI08, MACHINE_RPI07
 from ptp_perf.machine import Machine
-from profiles.base_profile import BaseProfile
-from profiles.benchmark import Benchmark
-from registry import resolve
-from registry.benchmark_db import BenchmarkDB
-from registry.resolve import ProfileDB
+from ptp_perf.models.sample_query import SampleQuery, QueryPostProcessor, NoDataError
+from ptp_perf.profiles.base_profile import BaseProfile
+from ptp_perf.profiles.benchmark import Benchmark
+from ptp_perf.registry import resolve
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.registry.resolve import ProfileDB
+
+from ptp_perf.models import PTPEndpoint, Sample
 from ptp_perf.util import unpack_one_value
 from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
@@ -44,14 +51,6 @@ class Test1To2Charts(TestCase):
                 *self.resolve_1_to_2(BenchmarkDB.BASE_TWO_CLIENTS, config.MACHINE_RPI08, vendor),
                 *self.resolve_1_to_2(BenchmarkDB.BASE_TWO_CLIENTS, config.MACHINE_RPI07, vendor),
             ]
-            profiles_software_fault_clients = [
-                self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, config.MACHINE_RPI08, vendor),
-                self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, config.MACHINE_RPI07, vendor),
-            ]
-            profiles_hardware_fault_clients = [
-                self.resolve_1_to_2(BenchmarkDB.HARDWARE_FAULT_SWITCH, config.MACHINE_RPI08, vendor),
-                self.resolve_1_to_2(BenchmarkDB.HARDWARE_FAULT_SWITCH, config.MACHINE_RPI07, vendor),
-            ]
 
             if None not in profiles_1_to_2_clients:
                 chart_profiles = [*baselines, *profiles_1_to_2_clients]
@@ -70,6 +69,10 @@ class Test1To2Charts(TestCase):
         for vendor in VendorDB.ANALYZED_VENDORS:
             # Software Fault
             try:
+                query = SampleQuery(benchmark=BenchmarkDB.SOFTWARE_FAULT, machine=MACHINE_RPI08, vendor=vendor)
+                result = query.run(Sample.SampleType.CLOCK_DIFF)
+                print(result)
+
                 non_fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI08, vendor, aggregated=True))
                 fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI07, vendor, aggregated=True))
             except ValueError:
@@ -89,24 +92,23 @@ class Test1To2Charts(TestCase):
     def test_software_fault_wave(self):
         for vendor in VendorDB.ANALYZED_VENDORS:
             for machine in [MACHINE_RPI07, MACHINE_RPI08]:
-                fault_client_profile = self.profile_db.resolve_most_recent(
-                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.SOFTWARE_FAULT, vendor), resolve.BY_MACHINE(machine)
-                )
-                if fault_client_profile is None:
-                    continue
+                try:
+                    query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT, vendor, machine, normalize_time=False, timestamp_merge_append=False)
+                    clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
+                    faults = query.run(Sample.SampleType.FAULT)
+                    rising_flanks = faults.index.get_level_values("timestamp")[faults == 1]
 
-                segmentation_points = [
-                    timedelta(seconds=x) for x in range(
-                        math.floor(fault_client_profile.time_series.time_index.min().total_seconds()),
-                        math.ceil(fault_client_profile.time_series.time_index.max().total_seconds()) + 60,
-                        60,
-                    )]
-                segmented = fault_client_profile.time_series.segment(align=pd.Series(segmentation_points))
-                print(segmented)
-                chart = TimeseriesChart("Software Fault: The Wave")
-                chart.add_clock_difference(segmented)
-                chart.annotate(chart.axes[0], f"Number Faults = {len(segmentation_points)}")
-                chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_wave_{vendor}_{machine.id}.png"))
+                    aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(seconds=60))
+                    # aligned_data.index = aligned_data.index.droplevel("endpoint_id")
+                    aligned_data.index = aligned_data.index.droplevel("cut_index")
+                    aligned_data.sort_index(inplace=True)
+
+                    chart = TimeseriesChart("Software Fault: The Wave")
+                    chart.add_clock_difference(aligned_data)
+                    chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}")
+                    chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_wave_{vendor}_{machine.id}.png"))
+                except NoDataError:
+                    logging.warning("Missing data, skipping.")
 
     # TODO: Code duplication
     def test_hardware_fault_wave(self):

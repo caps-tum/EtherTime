@@ -1,13 +1,10 @@
 import io
-import logging
 import typing
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 
 from ptp_perf.invoke.invocation import Invocation
-from ptp_perf.profiles.base_profile import BaseProfile, ProfileType
 from ptp_perf.util import str_join
 from ptp_perf.vendor.vendor import Vendor
 
@@ -54,30 +51,35 @@ class PTPDVendor(Vendor):
 
     @classmethod
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
-        # In old profiles, statistics were in statistics while the regular log was in "log".
-        # New profiles merge all data into log.
-        # log = raw_profile.raw_data["statistics"] if "statistics" in raw_profile.raw_data.keys() else raw_profile.raw_data["log"]
-        #
-        # if log is None:
-        #     logging.warning("Profile without ptpd log, corrupted.")
+        from ptp_perf.models.sample import Sample
 
         logs: typing.List[LogRecord] = endpoint.logrecord_set.filter(source="ptpd").all()
 
         # Keep only the CSV header and the statistics lines in the state "slave"
         # We are only interested in the first CSV header (when process is restarted there might be multiple)
-        csv_header_lines = [log.message for log in logs if log.message.startswith("# Timestamp")]
-        filtered_log = csv_header_lines[0]
+        csv_header_lines = [log for log in logs if log.message.lstrip("| ").startswith("# Timestamp")]
+
+        if len(csv_header_lines) == 0:
+            # Probably master node or other node without data.
+            return []
+
+        filtered_log = csv_header_lines[0].message.lstrip("| ")
+        timezone = csv_header_lines[0].timestamp.tzinfo
         # Actual data.
         filtered_log += str_join(
-            [log.message for log in logs if ", slv, " in log.message],
+            [log.message.lstrip("| ") for log in logs if ", slv, " in log.message],
             separator='\n'
         )
 
         frame = pd.read_csv(
             io.StringIO(filtered_log), delimiter=",", skipinitialspace=True, parse_dates=True
         )
+        frame["# Timestamp"] = frame["# Timestamp"].astype('datetime64[ns]').dt.tz_localize(timezone)
         # No longer necessary, the filtering is done above.
         # frame = frame[frame["State"] == "slv"]
+
+        # | # Timestamp, State, Clock ID, One Way Delay, Offset From Master, Slave to Master, Master to Slave, Observed Drift, Last packet Received, One Way Delay Mean, One Way Delay Std Dev, Offset From Master Mean, Offset From Master Std Dev, Observed Drift Mean, Observed Drift Std Dev, raw delayMS, raw delaySM
+        # | 2024-03-06 19:32:49.655021, slv, dca632fffecdcf52(unknown)/1,  0.000062474, -0.000028681,  0.000092819,  0.000028279, -6677.771000000, D, 0.000061376, 221, -0.000044591, 10390, -5282, 392,  0.000028279,  0.000092819
 
         samples = []
         for index, row in frame.iterrows():

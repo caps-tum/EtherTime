@@ -10,3 +10,7 @@ class LogRecord(models.Model):
     source = models.CharField(max_length=255, null=False, blank=False)
 
     message = models.TextField(null=False)
+
+
+    class Meta:
+        ordering = ('id',)

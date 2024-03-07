@@ -30,3 +30,6 @@ class PTPProfile(models.Model):
     def vendor(self) -> "Vendor":
         from ptp_perf.vendor.registry import VendorDB
         return VendorDB.get(self.vendor_id)
+
+    def __str__(self):
+        return f"{self.benchmark} (#{self.id}, {self.vendor}, {self.start_time})"

@@ -32,7 +32,7 @@ class TestTimeseries(TestCase):
         data = Timeseries.from_series(TestTimeseries.sampleFrame)
 
         # Basic segmentation
-        segments = data.segment(
+        segments = data.segment_and_align(
             align=pd.Series([timedelta(seconds=1.5), timedelta(seconds=3.5)])
         )
 
