@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Union, Iterable
 
 BITS_IN_BYTE = 8
@@ -29,5 +30,16 @@ def convert_all_units(factor: Union[float, int], iterable: Iterable):
 
 def format_time_offset(value: float, unit: str = "s", places: int =  0):
     import matplotlib.ticker
+    if value >= 60:
+        unit = "m"
+        value /= 60
+    if value >= 60:
+        unit = "h"
+        value /= 60
     formatter = matplotlib.ticker.EngFormatter(unit=unit, places=places, usetex=False)
     return formatter.format_data(value)
+
+def format_time_delta(value: float):
+    delta = timedelta(microseconds=abs(value) * NANOSECONDS_TO_MICROSECOND)
+    formatted_duration = str(delta)
+    return formatted_duration if value >= 0 else f"-{formatted_duration}"

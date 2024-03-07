@@ -54,28 +54,27 @@ class ChartContainer:
 
     @staticmethod
     def plot_decorate_yaxis(ax: plt.Axes, ylabel: str):
-        from matplotlib.ticker import EngFormatter
-
-        time_offset_formatter = EngFormatter(unit='s')
-        ax.yaxis.set_major_formatter(time_offset_formatter)
+        ax.yaxis.set_major_formatter(
+            matplotlib.ticker.FuncFormatter(
+                lambda value, _: units.format_time_offset(value)
+            )
+        )
         ax.yaxis.set_label_text(ylabel)
 
 
     @staticmethod
     def plot_decorate_xaxis_timeseries(ax: plt.Axes):
 
-        def format_time(value: float, _) -> str:
-            delta = timedelta(microseconds=abs(value) * units.NANOSECONDS_TO_MICROSECOND)
-            formatted_duration = str(delta)
-            return formatted_duration if value >= 0 else f"-{formatted_duration}"
-
         locator = matplotlib.ticker.MaxNLocator(
             nbins=6,
             steps=[1, 3, 6, 10],
         )
         ax.xaxis.set_major_locator(locator)
-        formatter = matplotlib.ticker.FuncFormatter(format_time)
-        ax.xaxis.set_major_formatter(formatter)
+        ax.xaxis.set_major_formatter(
+            matplotlib.ticker.FuncFormatter(
+                lambda value, _: units.format_time_delta(value)
+            )
+        )
         ax.xaxis.set_label_text("Timestamp")
 
 
