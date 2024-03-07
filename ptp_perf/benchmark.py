@@ -1,8 +1,6 @@
 import logging
 from datetime import datetime, timedelta
 
-from django.db import connection
-
 from ptp_perf import util
 from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator
 from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
@@ -11,15 +9,10 @@ from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.machine import Machine
 from ptp_perf.models import PTPProfile, PTPEndpoint
 from ptp_perf.util import async_wait_for_condition
+from ptp_perf.utilities.django_utilities import get_server_datetime
 from ptp_perf.utilities.logging import LogToDBLogRecordHandler
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.registry import VendorDB
-
-
-def get_server_datetime():
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT NOW()")
-        return cursor.fetchone()[0]
 
 
 async def benchmark(endpoint_id: str):

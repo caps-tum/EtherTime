@@ -2,6 +2,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from ptp_perf.utilities import units
+
 
 def get_repository_root() -> Path:
     repository_location = Path(os.path.realpath(__file__)).parent.parent
@@ -23,3 +25,6 @@ CONFIG_DIR = ensure_directory_exists(DATA_DIR.joinpath("config"))
 LOCAL_DIR = ensure_directory_exists(PTPPERF_REPOSITORY_ROOT.joinpath("local"))
 
 DEFAULT_BENCHMARK_DURATION = timedelta(minutes=20)
+
+
+RPI_CHART_DISPLAY_LIMIT = 50000 * units.NANOSECONDS_TO_SECONDS

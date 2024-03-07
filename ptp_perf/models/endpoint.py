@@ -98,7 +98,8 @@ class PTPEndpoint(models.Model):
         if not timestamps.is_monotonic_increasing:
             time_index_diff = entire_series.index.diff()
             raise RuntimeError(
-                f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}")
+                f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}"
+            )
 
         # We don't normalize time automatically anymore.
         # Normalize time: Move the origin to the epoch

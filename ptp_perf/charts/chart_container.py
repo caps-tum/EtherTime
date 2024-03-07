@@ -1,9 +1,13 @@
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from typing import Optional
 
 import matplotlib.ticker
 import pandas as pd
 from matplotlib import pyplot as plt, patheffects
+from matplotlib.ticker import EngFormatter
+from pandas.core.dtypes.common import is_datetime64_dtype, is_timedelta64_dtype
 
 from ptp_perf.profiles.data_container import ANNOTATION_BBOX_PROPS
 from ptp_perf.util import PathOrStr
@@ -18,8 +22,12 @@ class YAxisLabelType:
     OFFSET_GENERIC = "Offset"
 
 
+@dataclass(kw_only=True)
 class ChartContainer:
-    figure: plt.Figure
+    figure: plt.Figure = None
+
+    ylimit_top: Optional[float] = None
+    ylimit_top_use_always: bool = False
 
 
     def save(self, path: PathOrStr, make_parent: bool = False, include_yzero: bool = True):
@@ -90,15 +98,36 @@ class ChartContainer:
         if abs:
             data = data.abs()
 
+        data_max = data.max()
+        data_max_timestamp = data.index[data.argmax()]
+        assert isinstance(data_max_timestamp, timedelta)
+
+        if self.ylimit_top:
+            if not abs:
+                raise ValueError("Unsupported combination of ylimit_top with abs=False")
+            scatter_data = data[data <= self.ylimit_top]
+            out_of_bounds_data = data[data > self.ylimit_top]
+        else:
+            scatter_data = data
+            out_of_bounds_data = None
+
         base_color = seaborn.color_palette()[palette_index]
 
         if points:
             seaborn.scatterplot(
                 ax=ax,
-                data=data,
+                data=scatter_data,
                 color=(*base_color, 0.3),
                 edgecolors=(*base_color, 0.7),
             )
+
+            if out_of_bounds_data is not None:
+                seaborn.scatterplot(
+                    ax=ax,
+                    data=out_of_bounds_data.clip(upper=self.ylimit_top),
+                    color=(*base_color, 0.7),
+                    marker='x',
+                )
 
         if moving_average:
             averages = data.rolling(
@@ -116,6 +145,20 @@ class ChartContainer:
         self.plot_decorate_yaxis(ax=ax, ylabel=YAxisLabelType.CLOCK_DIFF_ABS if abs else YAxisLabelType.CLOCK_DIFF)
         self.plot_decorate_xaxis_timeseries(ax)
         self.plot_decorate_title(ax, title)
+
+        if self.ylimit_top:
+            if self.ylimit_top_use_always or data_max > self.ylimit_top:
+                ax.set_ylim(top=self.ylimit_top)
+            if data_max > self.ylimit_top:
+                ax.annotate(
+                    f"Max: {EngFormatter(unit='s', places=0).format_data(data_max)}",
+                    # xy=(data_max_timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND, data_max),
+                    xy=(data_max_timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND, self.ylimit_top),
+                    xytext=(0, 2), textcoords='offset fontsize',
+                    horizontalalignment='center',
+                    arrowprops=dict(arrowstyle='->'),
+                )
+
 
     def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
                                      hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0,
@@ -184,10 +227,10 @@ class ChartContainer:
             # ax.update_datalim(((0, 0),), updatex=False)
 
 
-    def annotate(self, ax: plt.Axes, annotation: str, position=(0.95, 0.95)):
+    def annotate(self, ax: plt.Axes, annotation: str, position=(0.95, 0.95), horizontalalignment: str ="right", verticalalignment: str = 'top'):
         ax.annotate(
             annotation,
             xy=position, xycoords='axes fraction',
-            verticalalignment='top', horizontalalignment='right',
+            verticalalignment=verticalalignment, horizontalalignment=horizontalalignment,
             bbox=ANNOTATION_BBOX_PROPS,
         )

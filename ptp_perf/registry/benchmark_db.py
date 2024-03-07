@@ -34,12 +34,13 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
     # Software crash, once every 30 seconds
     # ALERT: RPI7 does not have a time shift so that the logs will not jump backward in time for this benchmark!
-    SOFTWARE_FAULT = Benchmark(
-        "fault/software_fault", "Software Fault", tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE],
+    SOFTWARE_FAULT_SLAVE = Benchmark(
+        "fault/software_fault_slave", "Software Fault (Slave)",
+        tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         ptp_keepalive=True,
         ptp_restart_delay=timedelta(seconds=5),
-        fault_tolerance_software_fault_interval=timedelta(minutes=1),
+        fault_tolerance_software_fault_interval=timedelta(minutes=2),
         fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
     )
 
@@ -47,7 +48,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
         fault_tolerance_hardware_fault_machine='switch',
     )
 
@@ -55,7 +56,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_slave", "Hardware Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
         fault_tolerance_hardware_fault_machine='rpi07',
     )
 
@@ -63,7 +64,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_master", "Hardware Fault (Master)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=1),
+        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
         fault_tolerance_hardware_fault_machine='rpi06',
     )
 
@@ -153,7 +154,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.NO_SWITCH,
 )

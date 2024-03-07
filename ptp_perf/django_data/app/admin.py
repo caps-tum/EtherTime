@@ -16,11 +16,13 @@ class PTPEndpointAdmin(admin.ModelAdmin):
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'source', 'timestamp', 'message']
+    list_filter = ['endpoint__profile', 'endpoint', 'source']
 
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'endpoint', "sample_type", 'value']
+    list_filter = ['endpoint__profile', 'endpoint', "sample_type"]
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):

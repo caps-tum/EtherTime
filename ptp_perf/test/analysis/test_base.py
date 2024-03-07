@@ -26,7 +26,7 @@ class TestBase(TestCase):
 
     def test_analyze(self):
         profile = ProfileDB().resolve_most_recent(
-            resolve.BY_TYPE(ProfileType.RAW), resolve.BY_BENCHMARK(BenchmarkDB.SOFTWARE_FAULT),
+            resolve.BY_TYPE(ProfileType.RAW), resolve.BY_BENCHMARK(BenchmarkDB.SOFTWARE_FAULT_SLAVE),
             resolve.BY_VENDOR(VendorDB.LINUXPTP),
             resolve.BY_MACHINE(MACHINE_RPI07),
         )

@@ -37,6 +37,7 @@ def convert_profile(profile: PTPProfile):
     #     f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
     # )
 
+    total_samples = 0
     for endpoint in profile.ptpendpoint_set.all():
         # Remove existing data
         endpoint.sample_set.all().delete()
@@ -47,6 +48,11 @@ def convert_profile(profile: PTPProfile):
 
         endpoint.process_fault_data()
 
+        total_samples += len(parsed_samples)
+
+    if total_samples == 0:
+        logging.warning("No samples on entire profile, corrupt.")
+        profile.is_corrupted = True
     profile.is_processed = True
     profile.save()
     # processed_profile = profile.vendor.convert_profile(profile)

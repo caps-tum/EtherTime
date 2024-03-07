@@ -135,7 +135,7 @@ class ComparisonChart(ChartContainer):
             relative_range = 100 * (range / abs(data['y'].median()))
             self.annotate(
                 axis,
-                f"Range: {units.format(range)} = {relative_range:.0f}%"
+                f"Range: {units.format_time_offset(range)} = {relative_range:.0f}%"
             )
 
         self.plot_decorate_yaxis(axis, ylabel=y_axis_label_type)

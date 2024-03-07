@@ -5,12 +5,14 @@ from typing import List
 from unittest import TestCase
 
 import pandas as pd
+from matplotlib.patches import FancyArrowPatch
 
+from ptp_perf.utilities import units
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 
 bootstrap_django_environment()
 
-from ptp_perf import config
+from ptp_perf import config, constants
 from ptp_perf.charts.comparison_chart import ComparisonChart
 from ptp_perf.charts.timeseries_chart import TimeseriesChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
@@ -28,7 +30,7 @@ from ptp_perf.util import unpack_one_value
 from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
 
-SOFTWARE_FAULT_CHART_DIRECTORY = BenchmarkDB.SOFTWARE_FAULT.storage_base_path
+SOFTWARE_FAULT_CHART_DIRECTORY = BenchmarkDB.SOFTWARE_FAULT_SLAVE.storage_base_path
 
 class Test1To2Charts(TestCase):
     profile_db = ProfileDB()
@@ -69,12 +71,12 @@ class Test1To2Charts(TestCase):
         for vendor in VendorDB.ANALYZED_VENDORS:
             # Software Fault
             try:
-                query = SampleQuery(benchmark=BenchmarkDB.SOFTWARE_FAULT, machine=MACHINE_RPI08, vendor=vendor)
+                query = SampleQuery(benchmark=BenchmarkDB.SOFTWARE_FAULT_SLAVE, machine=MACHINE_RPI08, vendor=vendor)
                 result = query.run(Sample.SampleType.CLOCK_DIFF)
                 print(result)
 
-                non_fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI08, vendor, aggregated=True))
-                fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT, MACHINE_RPI07, vendor, aggregated=True))
+                non_fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT_SLAVE, MACHINE_RPI08, vendor, aggregated=True))
+                fault_client_profile = unpack_one_value(self.resolve_1_to_2(BenchmarkDB.SOFTWARE_FAULT_SLAVE, MACHINE_RPI07, vendor, aggregated=True))
             except ValueError:
                 logging.warning(f"Missing profiles for {vendor}")
                 continue
@@ -93,20 +95,54 @@ class Test1To2Charts(TestCase):
         for vendor in VendorDB.ANALYZED_VENDORS:
             for machine in [MACHINE_RPI07, MACHINE_RPI08]:
                 try:
-                    query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT, vendor, machine, normalize_time=False, timestamp_merge_append=False)
+                    query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT_SLAVE, vendor, machine, normalize_time=False, timestamp_merge_append=False)
                     clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
-                    faults = query.run(Sample.SampleType.FAULT)
+                    fault_query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT_SLAVE, vendor, MACHINE_RPI07, normalize_time=False, timestamp_merge_append=False)
+                    faults = fault_query.run(Sample.SampleType.FAULT)
                     rising_flanks = faults.index.get_level_values("timestamp")[faults == 1]
 
-                    aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(seconds=60))
+                    aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(minutes=2))
                     # aligned_data.index = aligned_data.index.droplevel("endpoint_id")
                     aligned_data.index = aligned_data.index.droplevel("cut_index")
                     aligned_data.sort_index(inplace=True)
 
-                    chart = TimeseriesChart("Software Fault: The Wave")
+                    chart = TimeseriesChart(title="Software Fault: The Wave", ylimit_top=constants.RPI_CHART_DISPLAY_LIMIT)
                     chart.add_clock_difference(aligned_data)
-                    chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}")
-                    chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_wave_{vendor}_{machine.id}.png"))
+
+                    bound_left_side = aligned_data[aligned_data.index < timedelta(0)].abs().quantile(0.99)
+                    bound_right_side = aligned_data[aligned_data.index >= timedelta(0)].abs().quantile(0.99)
+
+                    arrow = FancyArrowPatch(
+                        (5 * units.NANOSECONDS_IN_SECOND, bound_left_side),
+                        (5 * units.NANOSECONDS_IN_SECOND, bound_right_side),
+                        arrowstyle='<->'
+                    )
+                    chart.axes[0].add_patch(arrow)
+                    # chart.axes[0].annotate(
+                    #     f"$P_{{99}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
+                    #     xy=(0.5, 0.5), xycoords=arrow,
+                    #     horizontalalignment='center', verticalalignment='center',
+                    #     rotation=90,
+                    # )
+                    top_annotation = chart.axes[0].annotate(
+                        f"{units.format_time_offset(bound_right_side)} $\\rightarrow$",
+                        xy=(0.5, 1), xycoords=arrow,
+                        horizontalalignment='center', verticalalignment='bottom',
+                    )
+                    chart.axes[0].annotate(
+                        f"$\mathbf{{P_{{99}}}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
+                        xy=(0.5, 1), xycoords=top_annotation,
+                        horizontalalignment='center', verticalalignment='bottom',
+                        fontweight='bold',
+                    )
+                    chart.axes[0].annotate(
+                        f"$\\leftarrow$ {units.format_time_offset(bound_left_side)}",
+                        xy=(0.5, 0), xycoords=arrow,
+                        horizontalalignment='center', verticalalignment='top',
+                    )
+
+                    chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
+                    chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_slave_wave_{vendor}_{machine.id}.png"))
                 except NoDataError:
                     logging.warning("Missing data, skipping.")
 

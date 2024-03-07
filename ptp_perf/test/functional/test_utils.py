@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment, get_server_datetime
 
 bootstrap_django_environment()
 
-from ptp_perf.benchmark import get_server_datetime
 from django.test import TestCase
 
 

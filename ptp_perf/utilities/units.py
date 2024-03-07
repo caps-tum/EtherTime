@@ -27,7 +27,7 @@ def convert_all_units(factor: Union[float, int], iterable: Iterable):
     return [value * factor for value in iterable]
 
 
-def format(value: float, unit: str = "s", places: int =  0):
+def format_time_offset(value: float, unit: str = "s", places: int =  0):
     import matplotlib.ticker
     formatter = matplotlib.ticker.EngFormatter(unit=unit, places=places, usetex=False)
     return formatter.format_data(value)

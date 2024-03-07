@@ -1,10 +1,10 @@
 import logging
 import os
 from queue import Queue
-from datetime import datetime
 from threading import Thread
 
 from ptp_perf.models import PTPEndpoint, LogRecord
+from ptp_perf.utilities.django_utilities import get_server_datetime
 
 
 class LogToDBLogRecordHandler(logging.Handler):
@@ -22,12 +22,11 @@ class LogToDBLogRecordHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         db_record = LogRecord(
-            timestamp=datetime.fromtimestamp(record.created),
+            timestamp=get_server_datetime(),
             endpoint=self.endpoint,
             source=record.name,
             message=self.format(record)
         )
-        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
         db_record.save()
 
 
@@ -38,6 +37,10 @@ class LogToDBLogRecordHandler(logging.Handler):
 
 
     def install(self):
+        """Sets allow unsafe async for this to work :/"""
+
+        # Cannot run save/time query from synchronous function within asynchronous context if this is unset :/
+        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
         logging.root.addHandler(self)
 
     def uninstall(self):

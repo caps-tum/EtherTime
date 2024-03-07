@@ -44,6 +44,10 @@ class SampleQuery:
         if len(data) == 0:
             raise NoDataError("No data found for query.")
 
+        # Cannot use None in data
+        if any(data_series is None for data_series in data):
+            raise NoDataError("Endpoint in query returned no data.")
+
         result = pd.concat(data, keys=[endpoint.id for endpoint in endpoints], names=["endpoint_id"])
 
         if self.timestamp_merge_append:
@@ -92,7 +96,7 @@ class QueryPostProcessor:
             wrap_ns = int(wrap.total_seconds() * units.NANOSECONDS_IN_SECOND)
             wrap_half_interval = (wrap_ns // 2)
             # Move values from [-half_interval, half_interval] to [0, interval], apply modulo, move back.
-            new_timestamps = (np.fmod(new_timestamps.astype(np.int64) + wrap_half_interval, wrap_ns) - wrap_half_interval).astype("timedelta64[ns]")
+            new_timestamps = (np.mod(new_timestamps.astype(np.int64) + wrap_half_interval, wrap_ns) - wrap_half_interval).astype("timedelta64[ns]")
 
         cut_index = np.searchsorted(timestamps, closest_cut)
         new_data = new_data.set_axis(MultiIndex.from_arrays((cut_index, new_timestamps), names=("cut_index", "timestamp")))
