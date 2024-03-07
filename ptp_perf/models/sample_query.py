@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,7 @@ class NoDataError(Exception):
 class SampleQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
-    machine: Optional[Machine] = None
+    machine: Optional[Union[Machine, str]] = None
 
     converged_only: bool = True
     remove_clock_step: bool = True
@@ -72,7 +72,7 @@ class SampleQuery:
         if self.vendor is not None:
             endpoint_query = endpoint_query.filter(profile__vendor_id=self.vendor.id)
         if self.machine is not None:
-            endpoint_query = endpoint_query.filter(machine_id=self.machine.id)
+            endpoint_query = endpoint_query.filter(machine_id=self.machine.id if isinstance(self.machine, Machine) else self.machine)
         return endpoint_query
 
 @dataclass

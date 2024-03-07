@@ -92,59 +92,63 @@ class Test1To2Charts(TestCase):
 
 
     def test_software_fault_wave(self):
-        for vendor in VendorDB.ANALYZED_VENDORS:
-            for machine in [MACHINE_RPI07, MACHINE_RPI08]:
-                try:
-                    query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT_SLAVE, vendor, machine, normalize_time=False, timestamp_merge_append=False)
-                    clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
-                    fault_query = SampleQuery(BenchmarkDB.SOFTWARE_FAULT_SLAVE, vendor, MACHINE_RPI07, normalize_time=False, timestamp_merge_append=False)
-                    faults = fault_query.run(Sample.SampleType.FAULT)
-                    rising_flanks = faults.index.get_level_values("timestamp")[faults == 1]
+        for benchmark in [BenchmarkDB.SOFTWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER, BenchmarkDB.HARDWARE_FAULT_SWITCH]:
+            for vendor in VendorDB.ANALYZED_VENDORS:
+                for machine in [MACHINE_RPI07, MACHINE_RPI08]:
+                    try:
+                        query = SampleQuery(benchmark, vendor, machine, normalize_time=False, timestamp_merge_append=False)
+                        clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
 
-                    aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(minutes=2))
-                    # aligned_data.index = aligned_data.index.droplevel("endpoint_id")
-                    aligned_data.index = aligned_data.index.droplevel("cut_index")
-                    aligned_data.sort_index(inplace=True)
+                        fault_location = benchmark.fault_tolerance_hardware_fault_machine if benchmark.fault_tolerance_hardware_fault_machine is not None else benchmark.fault_tolerance_software_fault_machine
+                        fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False)
+                        faults = fault_query.run(Sample.SampleType.FAULT)
 
-                    chart = TimeseriesChart(title="Software Fault: The Wave", ylimit_top=constants.RPI_CHART_DISPLAY_LIMIT)
-                    chart.add_clock_difference(aligned_data)
+                        rising_flanks = faults.index.get_level_values("timestamp")[faults == 1]
 
-                    bound_left_side = aligned_data[aligned_data.index < timedelta(0)].abs().quantile(0.99)
-                    bound_right_side = aligned_data[aligned_data.index >= timedelta(0)].abs().quantile(0.99)
+                        aligned_data = QueryPostProcessor(clock_diffs).segment_and_align(rising_flanks, wrap=timedelta(minutes=2))
+                        # aligned_data.index = aligned_data.index.droplevel("endpoint_id")
+                        aligned_data.index = aligned_data.index.droplevel("cut_index")
+                        aligned_data.sort_index(inplace=True)
 
-                    arrow = FancyArrowPatch(
-                        (5 * units.NANOSECONDS_IN_SECOND, bound_left_side),
-                        (5 * units.NANOSECONDS_IN_SECOND, bound_right_side),
-                        arrowstyle='<->'
-                    )
-                    chart.axes[0].add_patch(arrow)
-                    # chart.axes[0].annotate(
-                    #     f"$P_{{99}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
-                    #     xy=(0.5, 0.5), xycoords=arrow,
-                    #     horizontalalignment='center', verticalalignment='center',
-                    #     rotation=90,
-                    # )
-                    top_annotation = chart.axes[0].annotate(
-                        f"{units.format_time_offset(bound_right_side)} $\\rightarrow$",
-                        xy=(0.5, 1), xycoords=arrow,
-                        horizontalalignment='center', verticalalignment='bottom',
-                    )
-                    chart.axes[0].annotate(
-                        f"$\mathbf{{P_{{99}}}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
-                        xy=(0.5, 1), xycoords=top_annotation,
-                        horizontalalignment='center', verticalalignment='bottom',
-                        fontweight='bold',
-                    )
-                    chart.axes[0].annotate(
-                        f"$\\leftarrow$ {units.format_time_offset(bound_left_side)}",
-                        xy=(0.5, 0), xycoords=arrow,
-                        horizontalalignment='center', verticalalignment='top',
-                    )
+                        chart = TimeseriesChart(title=f"{benchmark}: The Wave", ylimit_top=constants.RPI_CHART_DISPLAY_LIMIT)
+                        chart.add_clock_difference(aligned_data)
 
-                    chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
-                    chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"software_fault_slave_wave_{vendor}_{machine.id}.png"))
-                except NoDataError:
-                    logging.warning("Missing data, skipping.")
+                        bound_left_side = aligned_data[aligned_data.index < timedelta(0)].abs().quantile(0.99)
+                        bound_right_side = aligned_data[aligned_data.index >= timedelta(0)].abs().quantile(0.99)
+
+                        arrow = FancyArrowPatch(
+                            (5 * units.NANOSECONDS_IN_SECOND, bound_left_side),
+                            (5 * units.NANOSECONDS_IN_SECOND, bound_right_side),
+                            arrowstyle='<->'
+                        )
+                        chart.axes[0].add_patch(arrow)
+                        # chart.axes[0].annotate(
+                        #     f"$P_{{99}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
+                        #     xy=(0.5, 0.5), xycoords=arrow,
+                        #     horizontalalignment='center', verticalalignment='center',
+                        #     rotation=90,
+                        # )
+                        top_annotation = chart.axes[0].annotate(
+                            f"{units.format_time_offset(bound_right_side)} $\\rightarrow$",
+                            xy=(0.5, 1), xycoords=arrow,
+                            horizontalalignment='center', verticalalignment='bottom',
+                        )
+                        chart.axes[0].annotate(
+                            f"$\mathbf{{P_{{99}}}}$\n{bound_right_side / bound_left_side * 100 - 100:.0f}% difference",
+                            xy=(0.5, 1), xycoords=top_annotation,
+                            horizontalalignment='center', verticalalignment='bottom',
+                            fontweight='bold',
+                        )
+                        chart.axes[0].annotate(
+                            f"$\\leftarrow$ {units.format_time_offset(bound_left_side)}",
+                            xy=(0.5, 0), xycoords=arrow,
+                            horizontalalignment='center', verticalalignment='top',
+                        )
+
+                        chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
+                        chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"))
+                    except NoDataError:
+                        logging.warning("Missing data, skipping.")
 
     # TODO: Code duplication
     def test_hardware_fault_wave(self):
