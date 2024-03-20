@@ -62,7 +62,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
                 machine._ssh_session.run(), label=f"Orchestrator remote session {machine_endpoint.machine_id}"
             )
 
-        if benchmark.fault_tolerance_hardware_fault_interval is not None:
+        if benchmark.fault_hardware:
             device_controller = DeviceControl(orchestrator_endpoint, configuration)
             controller.add_coroutine(device_controller.run(), label="Hardware Fault Controller")
 

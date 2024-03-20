@@ -1,6 +1,7 @@
 import io
 import typing
 from dataclasses import dataclass
+from datetime import timedelta
 
 import pandas as pd
 
@@ -41,12 +42,11 @@ class PTPDVendor(Vendor):
             "--config-file", str(self.config_file_path),
         ).as_privileged()
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
-        self._process.restart_delay = endpoint.benchmark.ptp_restart_delay
 
         await self._process.run()
 
-    async def restart(self, kill: bool = True):
-        await self._process.restart(kill, ignore_return_code=True)
+    async def restart(self, kill: bool = True, restart_delay: timedelta = timedelta(seconds=1)):
+        await self._process.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
 
 
     @classmethod

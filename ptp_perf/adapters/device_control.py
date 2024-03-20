@@ -45,12 +45,13 @@ class DeviceControl(Adapter):
 
 
     async def run(self):
-        machine_id = self.endpoint.benchmark.fault_tolerance_hardware_fault_machine
-        interval = self.endpoint.benchmark.fault_tolerance_hardware_fault_interval
+        machine_id = self.endpoint.benchmark.fault_machine
+        interval = self.endpoint.benchmark.fault_interval
+        duration = self.endpoint.benchmark.duration
 
         self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
 
-        if self.endpoint.benchmark.fault_tolerance_ssh_keepalive:
+        if self.endpoint.benchmark.fault_ssh_keepalive:
             self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
             self.log(f"SSH session now on keep-alive")
         else:
@@ -63,7 +64,7 @@ class DeviceControl(Adapter):
                 # self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = True
                 self.log(f"Scheduled hardware fault imminent on {machine_id}.")
                 self.toggle_machine(machine_id, False)
-                await asyncio.sleep(delay=5)
+                await asyncio.sleep(delay=duration.total_seconds())
                 self.log(f"Scheduled hardware fault resolved on {machine_id}.")
                 # self.configuration.cluster.machine_by_id(machine_id)._ssh_session.keep_alive = False
         finally:

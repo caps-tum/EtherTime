@@ -30,7 +30,6 @@ class Benchmark:
 
     ptp_config: Optional[PTPConfig] = field(default_factory=PTPConfig)
     ptp_keepalive: bool = False
-    ptp_restart_delay: Optional[timedelta] = None
 
     analyze_limit_permissible_clock_steps: Optional[int] = 1
 
@@ -41,14 +40,12 @@ class Benchmark:
     artificial_load_cpu_scheduler: Optional[str] = None
     artificial_load_cpu_restrict_cores: Optional[bool] = False
 
-    fault_tolerance_ssh_keepalive: bool = False
-    fault_tolerance_software_fault_interval: Optional[timedelta] = None
-    fault_tolerance_software_fault_machine: Optional[str] = None
-    fault_tolerance_hardware_fault_interval: Optional[timedelta] = None
-    fault_tolerance_hardware_fault_machine: Optional[str] = None
-
-    fault_tolerance_prompt_interval: Optional[timedelta] = None
-    fault_tolerance_prompt_downtime: Optional[timedelta] = None
+    fault_ssh_keepalive: bool = False
+    fault_software: bool = False
+    fault_hardware: bool = False
+    fault_interval: Optional[timedelta] = None
+    fault_duration: Optional[timedelta] = None
+    fault_machine: Optional[str] = None
 
     @property
     def storage_base_path(self):

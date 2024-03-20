@@ -1,6 +1,7 @@
 import shutil
 import typing
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -29,7 +30,7 @@ class Vendor:
     async def run(self, endpoint: "PTPEndpoint"):
         raise NotImplementedError()
 
-    async def restart(self, kill: bool = True):
+    async def restart(self, kill: bool = True, restart_delay: timedelta = timedelta(seconds=1)):
         raise NotImplementedError()
 
 

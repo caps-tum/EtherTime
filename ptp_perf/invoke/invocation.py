@@ -212,12 +212,13 @@ class Invocation:
                     f"The process {self} returned with unexpected return code {self.return_code}"
                 )
 
-    async def restart(self, kill: bool = False, ignore_return_code: bool = False):
+    async def restart(self, kill: bool = False, ignore_return_code: bool = False, restart_delay: timedelta = timedelta(seconds=1)):
         if not kill or not ignore_return_code:
             raise NotImplementedError("Unsupported options for process restart.")
 
         # Signal the monitor task that we wish to restart the process
         self._should_restart_process = True
+        self.restart_delay = restart_delay
 
         if self._process is not None:
             if self._process.returncode is None:

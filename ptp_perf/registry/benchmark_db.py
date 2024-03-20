@@ -39,26 +39,31 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         ptp_keepalive=True,
-        ptp_restart_delay=timedelta(seconds=5),
-        fault_tolerance_software_fault_interval=timedelta(minutes=2),
-        fault_tolerance_software_fault_machine=config.MACHINE_RPI07.id,
+        fault_software=True,
+        fault_interval=timedelta(minutes=2),
+        fault_duration=timedelta(seconds=5),
+        fault_machine=config.MACHINE_RPI07.id,
     )
 
     HARDWARE_FAULT_SWITCH = Benchmark(
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
-        fault_tolerance_hardware_fault_machine='switch',
+        fault_hardware=True,
+        fault_interval=timedelta(minutes=2),
+        fault_duration=timedelta(seconds=5),
+        fault_machine='switch',
     )
 
     HARDWARE_FAULT_SLAVE = Benchmark(
         "fault/hardware_fault_slave", "Hardware Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
-        fault_tolerance_hardware_fault_machine='rpi07',
-        fault_tolerance_ssh_keepalive=True,
+        fault_hardware=True,
+        fault_interval=timedelta(minutes=2),
+        fault_duration=timedelta(seconds=5),
+        fault_machine='rpi07',
+        fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
     )
 
@@ -66,9 +71,21 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_master", "Hardware Fault (Master)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
-        fault_tolerance_hardware_fault_interval=timedelta(minutes=2),
-        fault_tolerance_hardware_fault_machine='rpi06',
-        fault_tolerance_ssh_keepalive=True,
+        fault_hardware=True,
+        fault_interval=timedelta(minutes=2),
+        fault_machine='rpi06',
+        fault_ssh_keepalive=True,
+        analyze_limit_permissible_clock_steps=None,
+    )
+
+    HARDWARE_FAULT_MASTER_FAILOVER = Benchmark(
+        "fault/hardware_fault_master", "Hardware Fault (Master)",
+        tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
+        num_machines=3,
+        fault_hardware=True,
+        fault_interval=timedelta(minutes=2),
+        fault_machine='rpi06',
+        fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
     )
 

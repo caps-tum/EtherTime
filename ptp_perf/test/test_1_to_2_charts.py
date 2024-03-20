@@ -99,7 +99,7 @@ class Test1To2Charts(TestCase):
                         query = SampleQuery(benchmark, vendor, machine, normalize_time=False, timestamp_merge_append=False)
                         clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
 
-                        fault_location = benchmark.fault_tolerance_hardware_fault_machine if benchmark.fault_tolerance_hardware_fault_machine is not None else benchmark.fault_tolerance_software_fault_machine
+                        fault_location = benchmark.fault_machine
                         # On master failure, there is no convergence time to query.
                         fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False, converged_only=False, remove_clock_step=False)
                         fault_records = fault_query.run(Sample.SampleType.FAULT)

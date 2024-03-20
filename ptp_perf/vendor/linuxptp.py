@@ -43,7 +43,6 @@ class LinuxPTPVendor(Vendor):
             "-S", condition=machine.ptp_software_timestamping
         ).as_privileged()
         self._process_ptp4l.keep_alive = endpoint.benchmark.ptp_keepalive
-        self._process_ptp4l.restart_delay = endpoint.benchmark.ptp_restart_delay
         background_tasks.add_task(self._process_ptp4l.run_as_task())
 
         if machine.ptp_use_phc2sys:
@@ -55,17 +54,16 @@ class LinuxPTPVendor(Vendor):
                 "-r", condition=machine.ptp_master,
             ).as_privileged()
             self._process_phc2sys.keep_alive = endpoint.benchmark.ptp_keepalive
-            self._process_ptp4l.restart_delay = endpoint.benchmark.ptp_restart_delay
             background_tasks.add_task(self._process_phc2sys.run_as_task())
         try:
             await background_tasks.run_for()
         finally:
             await background_tasks.cancel_pending_tasks()
 
-    async def restart(self, kill: bool = True):
-        await self._process_ptp4l.restart(kill, ignore_return_code=True)
+    async def restart(self, kill: bool = True, restart_delay: timedelta = timedelta(seconds=1)):
+        await self._process_ptp4l.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
         if self._process_phc2sys is not None:
-            await self._process_phc2sys.restart(kill, ignore_return_code=True)
+            await self._process_phc2sys.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
 
 
     @property

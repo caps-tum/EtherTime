@@ -50,7 +50,7 @@ async def benchmark(endpoint_id: str):
             background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
 
         # Launch background "crashes" of vendor if necessary
-        if profile.benchmark.fault_tolerance_software_fault_interval is not None and profile.benchmark.fault_tolerance_software_fault_machine == endpoint.machine_id:
+        if profile.benchmark.fault_software and profile.benchmark.fault_machine == endpoint.machine_id:
             fault_generator = SoftwareFaultGenerator(endpoint)
             background_tasks.add_coroutine(fault_generator.run())
 
