@@ -1,0 +1,29 @@
+
+\section{Methodology}
+
+\subsection{Testbed -- Hardware and Software}
+
+\subsection{PTP Lifecycle}
+
+\begin{figure*}
+    \begin{tikzpicture}[
+        start chain=stages going right,
+        stage/.style={
+            draw, on chain=stages,
+            every on chain/.style={join}, every join/.style={-Stealth}
+        },
+        text depth=0cm,
+        ]
+        \node[stage] {Discovery};
+        \node[stage] {Best Master Clock Algorithm};
+        \node[stage] (calibrate) {Calibration};
+        \node[stage] (step) {Clock Step};
+        \node[stage] (slew) {Clock Slew};
+        \node[stage] {Maintain};
+
+        \draw[Bar-Bar] ([yshift=-0.25cm]step.south west) -- ([yshift=-0.25cm]slew.south east) node[midway, below] {Convergence};
+    \end{tikzpicture}
+    \caption{Different stages in the PTP lifecycle that a PTP client traverses while synchronizing its clock. }
+\end{figure*}
+
+PTP clients traverse multiple stages in a lifecycle to synchronize their clock.

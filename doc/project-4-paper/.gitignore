@@ -1,0 +1,18 @@
+project-*-paper.pdf
+
+# Latex Stuff
+*.aux
+*.log
+*.synctex.gz
+*.out
+*.vrb
+*.snm
+*.soc
+*.toc
+*.loc
+*.nav
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.auxlock

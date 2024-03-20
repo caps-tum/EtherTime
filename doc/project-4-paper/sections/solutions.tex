@@ -1,0 +1,99 @@
+
+\section{Time Synchronization \& PTP}
+
+Over the years, many different algorithms and solutions to time synchronization across computer networks have been explored [cite]. In today's most widely deployed network stack for general purpose computing, IP, two protocols have established themselves as standard for time synchronization: the Network Time Protocol (NTP) for Wide Area Networks (WANs) and the Precision Time Protocol (PTP) for Local Area Networks (LANs) that require a greater degree of time synchronization precision. Both protocols are standardized and each have multiple implementations available at the time of writing. Alternatives also include SPTP, a simplified version of PTP developed by Meta that claims to offer comparable performance to PTP while reducing resource consumption [cite].
+
+Because we are interested in evaluating time synchronization for dependable systems, we will focus on PTP as it is designed to be deployed in controlled environments such as a fault-tolerant control network. PTP has wide-spread adoption and also serves as a foundation for technologies such as IEEE Time Sensitive Networking (TSN).
+
+
+\subsection{PTP -- Background and Architecture}
+
+PTP operates across a network and has two types of endpoints: master nodes and slave nodes. A PTP master provides synchronization signals to the slaves (Figure \ref{fig:ptp-architecture}), which each use the synchronization signal in combination with a path delay estimate to determine an estimate of the local clock offset to the master clock, which is subsequently used to discipline the local clock to keep it synchronized with the master's clock. While the actual protocol is slightly more complex and includes additional messages for synchronization leases and state management, the two core message types are sufficient in principle to synchronize the system clocks. Note that it is assumed that the PTP master already has a high-quality clock source for the current time -- preferably an external source like an atomic clock or a GPS signal, but the master clock can also be obtained from e.g. a different PTP domain.
+
+\begin{figure}
+    \begin{tikzpicture}[client/.style={draw}, message/.style={midway, above, sloped, inner sep=0mm}, on grid]
+        \node[client] (master) {PTP Master};
+        \node[client, above=of master] (clock) {\faClock[regular]};
+        \draw[thick, dotted] (master) -- (clock);
+
+        \node[client, right=1.75cm of master] (switch) {\faNetworkWired};
+        \draw[-Stealth] (master) -- (switch);
+
+        \foreach \i in {1,...,3}{
+            \node[client] (slave-\i) at (3.5, \i - 2) {PTP Slave};
+            \draw[-Stealth] (switch) -- (slave-\i.west);
+        }
+
+        \begin{scope}[xshift=5.5cm, yshift=2cm]
+            \node (master) at (0,0) {Master};
+            \node (slave) at (2,0) {Slave};
+
+            \draw[-] (master) -- ++(0, -3.75);
+            \draw[-] (slave) -- ++(0, -3.75);
+
+            \foreach \i in {0.5, 1, 1.5}{
+                \draw[-Stealth] (0, -\i) -- ++(2, -0.5) node[message] {Sync};
+            }
+
+            \draw[-Stealth] (2, -2.5) -- ++(-2, -0.5) node[message] {Delay Req.} -- ++(2, -0.5) node[message, below, inner sep=0.5mm] {Delay Resp.};
+        \end{scope}
+    \end{tikzpicture}
+    \caption{
+        A PTP master provides a synchronization signal to a number of slaves so that they can keep their local clock synchronized to the master's clock (left). The clock synchronization relies on two types of signals (right): a periodic synchronization signal to distribute the current master time and the delay request/response to estimate the propagation delay.
+    }
+    \label{fig:ptp-architecture}
+\end{figure}
+
+\subsection{PTP Profiles}
+PTP is built to be configurable, settings include anything from the underlying transport (unicast/multicast), the delay mechanism to use (end-to-end or peer-to-peer), message frequencies and leases, as well as rules to discipline the clock. To reduce the complexity of configuring PTP, several so-called profiles are available that provide default settings for the specific use-case. \todo{Provide example profiles} To conduct our evaluation, we use each vendor's default profile, as this profile is the one that runs on general purpose deployments without special configuration, and is therefore the one that most users will come in contact with.
+
+\subsection{Synchronization Performance}
+It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance [cite]. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation to try and compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects such as asymmetric latencies caused by uneven loads that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
+
+\subsection{Hardware Acceleration}
+
+\begin{figure}
+    \newcommand{\timestampClock}[1][100]{\textcolor{black!#1}{\faClock[regular]}}
+
+    \begin{tikzpicture}[
+        start chain=components going below,
+        start chain=components2 going below,
+        component block/.style={draw, minimum height=0.75cm},
+        node distance=0cm,
+    ]
+
+            \begin{scope}[name prefix=stack1-, component/.style={component block, text width=3.5cm}]
+                \node[on chain=components, component] at (0, 0) (PTP) {PTP Client \hfill \rotatebox{45}{\faStamp{}} \timestampClock{} \faEnvelope[regular]};
+                \node[on chain=components, component] (Kernel) {Kernel \hfill \timestampClock[60] \faEnvelope[regular]};
+                \node[on chain=components, component] (IP-Stack) {IP Stack \hfill \timestampClock[40] \faEnvelope[regular]};
+                \node[on chain=components, component] (Hardware Queue) {Hardware Queue \hfill \timestampClock[30] \faEnvelope[regular]};
+                \node[on chain=components, component] (NIC) {NIC \faEthernet \hfill \timestampClock[20] \faEnvelope[regular]};
+
+                \node[above=of PTP] (title) {Software PTP};
+            \end{scope}
+
+            \begin{scope}[name prefix=stack2-, component/.style={component block, text width=3.5cm}]
+                \node[on chain=components2, component] at (5.5, 0) (PTP) {\faEnvelope[regular] \hfill PTP Client};
+                \node[on chain=components2, component] (Kernel) {\faEnvelope[regular] \hfill Kernel};
+                \node[on chain=components2, component] (IP-Stack) {\faEnvelope[regular] \hfill IP Stack };
+                \node[on chain=components2, component] (Hardware Queue) {\faEnvelope[regular] \hfill Hardware Queue};
+                \node[on chain=components2, component] (NIC) {\faEnvelope[regular] \faClock[regular] \rotatebox{-45}{\faStamp{}}  \hfill \faEthernet{} NIC};
+
+                \node[above=of PTP] (title) {Hardware PTP};
+            \end{scope}
+
+            \draw[Stealth-Stealth, very thick] (stack1-NIC) -- (stack2-NIC) node[midway, draw, fill=white] (network) {\faNetworkWired};
+
+            \node[draw, dashed, below=0.25cm of network] (network-annotation) {\faClock[regular] $\rightarrow$ \faHistory{}\,\textsuperscript{\textbf{*}}};
+            \draw[dotted] (network.south west) -- (network-annotation.north west);
+            \draw[dotted] (network.south east) -- (network-annotation.north east);
+
+    \end{tikzpicture}
+    \caption{
+        Timestamping for PTP messages when using software timestamping (left) and hardware timestamping (right). For software timestamping, the timestamp is generated inside the PTP client and traverses many layers in both egress and ingress, causing additional path delay and delay variation. With hardware timestamping, a timestamp is only added to the message just before it is written to wire by the NIC, thus ensuring a more up-to-date timestamp is sent to the network.\\
+        \textsuperscript{\textbf{*}}Network hardware (switches, routers, etc.) also introduces queuing delays. Special PTP-aware hardware can compensate for its own delays to further improve timestamping quality.
+    }
+    \label{fig:ptp-sw-hw}
+\end{figure}
+
+Since delay variation is a primary concern, hardware techniques have been developed to reduce the variability. While PTP can run entirely in software, the path that packets need to traverse between two PTP clients not only includes several hardware components but also some software layers (Figure~\ref{fig:ptp-sw-hw} left). Each component along the path introduces latency and packet delay variation, deteriorating the signal quality. With the appropriate hardware support, message timestamps can instead be generated directly by the NIC driver/hardware (Figure~\ref{fig:ptp-sw-hw} right), which ensures that the timestamp is not affected by the layers above it. This increases the clock synchronization's resilience against interference from adverse conditions, such as high network-, CPU- or kernel load.
