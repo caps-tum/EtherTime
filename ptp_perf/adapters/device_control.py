@@ -47,7 +47,7 @@ class DeviceControl(Adapter):
     async def run(self):
         machine_id = self.endpoint.benchmark.fault_machine
         interval = self.endpoint.benchmark.fault_interval
-        duration = self.endpoint.benchmark.duration
+        duration = self.endpoint.benchmark.fault_duration
 
         self.log(f"Scheduling hardware faults every {interval} on {machine_id}")
 
