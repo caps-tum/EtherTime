@@ -44,7 +44,7 @@ class PTPDVendor(Vendor):
         ).append_arg_if_present(
             '--masteronly', endpoint.machine.ptp_force_master
         ).append_arg_if_present(
-            '--slaveonly', endpoint.machine.ptp_force_slave_effective(endpoint.machine.ptp_failover_master)
+            '--slaveonly', endpoint.machine.ptp_force_slave_effective(endpoint.benchmark.fault_failover)
         ).as_privileged()
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
 

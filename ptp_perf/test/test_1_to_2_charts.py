@@ -92,7 +92,7 @@ class Test1To2Charts(TestCase):
 
 
     def test_software_fault_wave(self):
-        for benchmark in [BenchmarkDB.SOFTWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER, BenchmarkDB.HARDWARE_FAULT_SWITCH]:
+        for benchmark in [BenchmarkDB.SOFTWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER, BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, BenchmarkDB.HARDWARE_FAULT_SWITCH]:
             for vendor in VendorDB.ANALYZED_VENDORS:
                 for machine in [MACHINE_RPI07, MACHINE_RPI08]:
                     try:
@@ -153,29 +153,6 @@ class Test1To2Charts(TestCase):
                         chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"), make_parent=True)
                     except NoDataError as e:
                         logging.warning(f"Missing data ({benchmark}, {vendor}, {machine}: {e}), skipping.")
-
-    # TODO: Code duplication
-    def test_hardware_fault_wave(self):
-        for vendor in VendorDB.ANALYZED_VENDORS:
-            for machine in [MACHINE_RPI07, MACHINE_RPI08]:
-                fault_client_profile = self.profile_db.resolve_most_recent(
-                    resolve.BY_VALID_BENCHMARK_AND_VENDOR(BenchmarkDB.HARDWARE_FAULT_SWITCH, vendor), resolve.BY_MACHINE(machine)
-                )
-                if fault_client_profile is None:
-                    continue
-
-                segmentation_points = [
-                    timedelta(seconds=x) for x in range(
-                        math.floor(fault_client_profile.time_series.time_index.min().total_seconds()),
-                        math.ceil(fault_client_profile.time_series.time_index.max().total_seconds()) + 60,
-                        60,
-                    )]
-                segmented = fault_client_profile.time_series.segment(align=pd.Series(segmentation_points))
-                print(segmented)
-                chart = TimeseriesChart("Hardware Fault (Switch): The Wave")
-                chart.add_clock_difference(segmented)
-                chart.annotate(chart.axes[0], f"Number Faults = {len(segmentation_points)}")
-                chart.save(SOFTWARE_FAULT_CHART_DIRECTORY.joinpath(f"hardware_fault_switch_wave_{vendor}_{machine.id}.png"))
 
     def test_hardware_fault(self):
         self.skipTest("Unupdated")

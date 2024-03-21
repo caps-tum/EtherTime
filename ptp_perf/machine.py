@@ -111,7 +111,12 @@ class Machine(RPCTarget):
     _ssh_session: Optional[Invocation] = None
 
     def ptp_force_slave_effective(self, failover_active: bool = False):
-        return self.ptp_force_slave if not failover_active else not self.ptp_failover_master
+        if not failover_active:
+            return self.ptp_force_slave
+
+        # Check whether master or failover master
+        # This is not really a nice way of handling it
+        return not self.ptp_force_master and not self.ptp_failover_master
 
     def __str__(self):
         return self.id

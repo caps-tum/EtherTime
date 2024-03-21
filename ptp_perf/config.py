@@ -14,6 +14,7 @@ RASPBERRY_PI_PTP_SETTINGS = {
 
 PTP_SLAVE_SETTINGS = {
     'ptp_force_master': False,
+    'ptp_force_slave': True,
     'initial_clock_offset': timedelta(minutes=-1),
 }
 
@@ -21,6 +22,7 @@ MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
     ptp_force_master=True,
     **RASPBERRY_PI_PTP_SETTINGS,
+    ptp_priority_1=1,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.6", iperf_secondary_address="192.168.1.106",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -29,6 +31,7 @@ MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
     **RASPBERRY_PI_PTP_SETTINGS,
+    ptp_priority_1=255,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -38,7 +41,7 @@ MACHINE_RPI07 = Machine(
     **PTP_SLAVE_SETTINGS,
     **RASPBERRY_PI_PTP_SETTINGS,
     ptp_failover_master=True,
-    ptp_priority_1=254,
+    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
