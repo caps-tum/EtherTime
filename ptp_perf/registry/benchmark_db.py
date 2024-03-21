@@ -83,6 +83,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
         fault_hardware=True,
+        fault_failover=True,
         fault_interval=timedelta(minutes=5),
         fault_duration=timedelta(minutes=2.5),
         fault_machine='rpi06',
