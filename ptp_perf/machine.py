@@ -96,14 +96,22 @@ class PluginSettings:
 class Machine(RPCTarget):
     id: str
     ptp_interface: str
-    ptp_master: bool = False
+    ptp_force_master: bool = False
+    ptp_failover_master: bool = False
+    ptp_force_slave: bool = False
     ptp_software_timestamping: bool = False
     ptp_use_phc2sys: bool = True
+    ptp_priority_1: int = 128
+    """Clock BMCA priority, lower is better. https://blog.meinbergglobal.com/2013/11/14/makes-master-best/"""
+
     initial_clock_offset: Optional[timedelta] = None
 
     plugin_settings: Optional[PluginSettings] = None
 
     _ssh_session: Optional[Invocation] = None
+
+    def ptp_force_slave_effective(self, failover_active: bool = False):
+        return self.ptp_force_slave if not failover_active else not self.ptp_failover_master
 
     def __str__(self):
         return self.id

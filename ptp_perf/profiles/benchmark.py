@@ -46,6 +46,7 @@ class Benchmark:
     fault_interval: Optional[timedelta] = None
     fault_duration: Optional[timedelta] = None
     fault_machine: Optional[str] = None
+    fault_failover: Optional[bool] = False
 
     @property
     def storage_base_path(self):

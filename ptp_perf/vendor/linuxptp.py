@@ -38,7 +38,7 @@ class LinuxPTPVendor(Vendor):
             "ptp4l", "-i", machine.ptp_interface, "-m",
             "-f", str(self.config_file_path), # Config file
         ).append_arg_if_present(
-            "-s", condition=not machine.ptp_master,
+            "-s", condition=machine.ptp_force_slave_effective(endpoint.benchmark.fault_failover),
         ).append_arg_if_present(
             "-S", condition=machine.ptp_software_timestamping
         ).as_privileged()
@@ -51,7 +51,7 @@ class LinuxPTPVendor(Vendor):
             ).append_arg_if_present(
                 # We append -r a *second* time on master.
                 # This allows not only phc --> sys but also sys --> phc, which we want on the master.
-                "-r", condition=machine.ptp_master,
+                "-r", condition=machine.ptp_force_master,
             ).as_privileged()
             self._process_phc2sys.keep_alive = endpoint.benchmark.ptp_keepalive
             background_tasks.add_task(self._process_phc2sys.run_as_task())

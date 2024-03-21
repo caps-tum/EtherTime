@@ -37,9 +37,14 @@ class PTPDVendor(Vendor):
     async def run(self, endpoint: "PTPEndpoint"):
 
         self._process = Invocation.of_command(
-            "ptpd", "-i", endpoint.machine.ptp_interface, "--verbose",
-            '--masteronly' if endpoint.machine.ptp_master else '--slaveonly',
+            "ptpd",
+            "-i", endpoint.machine.ptp_interface,
+            "--verbose",
             "--config-file", str(self.config_file_path),
+        ).append_arg_if_present(
+            '--masteronly', endpoint.machine.ptp_force_master
+        ).append_arg_if_present(
+            '--slaveonly', endpoint.machine.ptp_force_slave_effective(endpoint.machine.ptp_failover_master)
         ).as_privileged()
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
 

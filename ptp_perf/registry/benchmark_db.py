@@ -79,11 +79,12 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     HARDWARE_FAULT_MASTER_FAILOVER = Benchmark(
-        "fault/hardware_fault_master", "Hardware Fault (Master)",
+        "fault/hardware_fault_master_failover", "Hardware Fault (Failover)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
         fault_hardware=True,
-        fault_interval=timedelta(minutes=2),
+        fault_interval=timedelta(minutes=5),
+        fault_duration=timedelta(minutes=2.5),
         fault_machine='rpi06',
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
@@ -177,6 +178,7 @@ BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
     BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
+    BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,
     BenchmarkDB.NO_SWITCH,
 )
 
