@@ -41,7 +41,10 @@ class ScheduleTask(models.Model):
     @property
     def estimated_time_remaining(self) -> timedelta:
         """Estimated task time remaining, based off of whether the task is started."""
-        return self.estimated_time if not self.running else max(timedelta(minutes=0), self.estimated_time - (datetime.now() - self.start_time))
+        if not self.running:
+            return self.estimated_time
+
+        return max(timedelta(minutes=0), self.estimated_time - (datetime.now().astimezone() - self.start_time))
 
     @property
     def running(self) -> bool:
