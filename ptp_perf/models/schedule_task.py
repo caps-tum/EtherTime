@@ -20,7 +20,7 @@ class ScheduleTask(models.Model):
     completion_time: Optional[datetime] = models.DateTimeField(null=True)
 
     def run(self):
-        self.start_time = datetime.now()
+        self.start_time = datetime.now().astimezone()
         self.save()
         try:
             invocation = Invocation.of_shell(command=self.command)
@@ -29,7 +29,7 @@ class ScheduleTask(models.Model):
         except InvocationFailedException as e:
             logging.exception("Failed to run task", exc_info=e)
             self.success = False
-        self.completion_time = datetime.now()
+        self.completion_time = datetime.now().astimezone()
         logging.info(f"Task {self.id} completed at {self.completion_time} (success: {self.success}).")
 
         self.save()
