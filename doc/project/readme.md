@@ -78,3 +78,18 @@ OpenPTP (https://github.com/stefanct/openptp) is an Open-Source implementation r
 PPSi (https://ohwr.org/project/ppsi) is an implementation of PTP by CERN and targets not only Linux but also embedded scenarios. Compared to OpenPTP, PPSi is in a much more mature state, with maintainers still active at the time of writing (2023). Aside from the PTP client itself, PPSi also ships with useful tools that PTP-Perf leverages for benchmark orchestration. Unfortunately, PPSi has also proven unusable in our evaluation, with the client crashing consistently due to buffer-overruns on our testbed. A bug report has been filed and is now pending.
 
 Timebeat (https://www.timebeat.app) is the most recent addition among our surveyed vendors. While it is not open-source, the binaries are readily-available and a license is comparatively simple to obtain. However, Timebeat also relies on heavy-weight infrastructure (elasticsearch), without which it does not appear to function. Since we do not have an elasticsearch instance available on our testbed, Timebeat had to be excluded from the evaluation.
+
+
+## Potential Hardware
+
+The following hardware could be useful as a second evaluation platform:
+
+**Systems on Chip**
+
+| Name                         | HW Timestamp                          | RTC               | Unit Cost | Notes                                                                                                                                        |
+|------------------------------|---------------------------------------|-------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Jetson-TK1                   | ❌ RTL8111GS<br>(probably unsupported) | ✔️                | -         | Board is slightly dated (2014)<br>https://developer.download.nvidia.com/embedded/jetson/TK1/docs/3_HWDesignDev/JTK1_DevKit_Specification.pdf |
+| Jetson Nano                  | ✔️(?) RTL81119ICG (?)                 | ?                 | USD 99    |                                                                                                                                              |
+| Raspberry Pi 5               | ✔️ RP1                                | ✔️                | CAD 84    | RTC requires battery<br>❓ Might be too similar to RPI-4<br>https://www.pishop.ca/product/raspberry-pi-5-4gb/                                 |
+| ODROID-M1S                   | ❌ RTL8211F<br>(probably unsupported)  | ✔️                | USD 49    | https://www.hardkernel.com/shop/odroid-m1s-with-4gbyte-ram/                                                                                  |
+| Beagleboard Black Industrial | ✔️ (confirm)                          | ❌ (DIY available) | CAD 93    | https://www.digikey.ca/en/products/detail/beagleboard-by-seeed-studio/102110423/12342853?s=N4IgTCBcDaIIwFYCcB2AtHADGOWAsYAzGgHIAiIAugL5A     |
