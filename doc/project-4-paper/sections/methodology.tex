@@ -5,7 +5,15 @@
 
 \subsection{PTP Lifecycle}
 
+
 \begin{figure*}
+    \newcommand{\intervalAnnotation}[4]{
+        \draw[Bar-Bar] ([yshift=#3, xshift=-0.1cm]#1.south west) -- ([yshift=#3, xshift=0.1cm]#2.south east) node[midway, below] {#4};
+    }
+    \newcommand{\intervalAnnotationAbove}[4]{
+            \draw[Bar-Bar] ([yshift=#3, xshift=-0.1cm]#1.north west) -- ([yshift=#3, xshift=0.1cm]#2.north east) node[midway, above] {#4};
+    }
+
     \begin{tikzpicture}[
         start chain=stages going right,
         stage/.style={
@@ -14,16 +22,30 @@
         },
         text depth=0cm,
         ]
-        \node[stage] {Discovery};
-        \node[stage] {Best Master Clock Algorithm};
+        \node[stage] (discovery) {Discovery};
+        \node[stage] (bmca) {Best Master Clock Algorithm};
         \node[stage] (calibrate) {Calibration};
         \node[stage] (step) {Clock Step};
         \node[stage] (slew) {Clock Slew};
-        \node[stage] {Maintain};
+        \node[stage] (maintain) {Stable};
 
-        \draw[Bar-Bar] ([yshift=-0.25cm]step.south west) -- ([yshift=-0.25cm]slew.south east) node[midway, below] {Convergence};
+        \intervalAnnotation{step}{slew}{-0.25cm}{Converging}
+        \intervalAnnotation{maintain}{maintain}{-0.25cm}{Synchronized}
+        \intervalAnnotationAbove{calibrate}{maintain}{0.25cm}{Slave bound to Grandmaster}
+        \intervalAnnotationAbove{discovery}{bmca}{0.25cm}{Peer}
+
     \end{tikzpicture}
-    \caption{Different stages in the PTP lifecycle that a PTP client traverses while synchronizing its clock. }
+    \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. }
+    \label{fig:ptp-lifecycle}
 \end{figure*}
 
-PTP clients traverse multiple stages in a lifecycle to synchronize their clock.
+PTP clients traverse multiple stages in a lifecycle to synchronize their clock (Figure~\ref{fig:ptp-lifecycle}). At any point, unexpected conditions such as loss of connectivity can lead PTP to return to an earlier stage in the lifecycle, potentially changing the operating conditions.
+
+\begin{enumerate}[label=S\arabic*.]
+    \item \textbf{Discovery} is the stage where remote clocks are identified, usually via periodic multicast announcements. Discovered clients are collected into a PTP domain.
+    \item \textbf{Best Master Clock Algorithm (BMCA)} is the predefined algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties. By the end of this phase, each peer will become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
+    \item \textbf{Calibration} is a brief phase where no local clock modifications are made yet to allow the estimate of the offset to increase in precision through multiple synchronization intervals and path delay estimates.
+    \item \textbf{Clock Step} Having arrived at a reasonably precise estimate of the offset, an attempt is made to immediately rectify the offset by directly resetting the slave's local time. Since this is a direct violation of invariants I2 and potentially I1 and since this is expected to break applications, it is only done when the offset is large (e.g.~$>1$~second) and PTP profiles usually allow this to happen only once during the initial synchronization where only using clock-slew would take too long.
+    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune the clocks position, thus further reducing offset. The rate of change is usually limited via software and configuration parameters, e.g. the Linux kernel limits the rate of change to 500 parts per million, equivalent to 0.05\%~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- the 0.05\% limit implies that correcting 1 second of offset takes at least 33 minutes.
+    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to lack of offset estimation precision, but at this point the clock signal is the most stable and most useful.
+\end{enumerate}

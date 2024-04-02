@@ -1,0 +1,128 @@
+@manual{adjtimex,
+%author = {author},
+%ALTeditor = {editor},
+title = {adjtimex(2) System Calls Manual},
+date = {2023-02-10},
+%OPTsubtitle = {subtitle},
+%OPTtitleaddon = {titleaddon},
+%OPTlanguage = {language},
+%OPTedition = {edition},
+%OPTtype = {type},
+series = {Linux man-pages 6.03},
+%OPTnumber = {number},
+%OPTversion = {version},
+%OPTnote = {note},
+%OPTorganization = {organization},
+%OPTpublisher = {publisher},
+%OPTlocation = {location},
+%OPTisbn = {isbn},
+%OPTchapter = {chapter},
+%OPTpages = {pages},
+%OPTpagetotal = {pagetotal},
+%OPTaddendum = {addendum},
+%OPTpubstate = {pubstate},
+%OPTdoi = {doi},
+%OPTeprint = {eprint},
+%OPTeprintclass = {eprintclass},
+%OPTeprinttype = {eprinttype},
+url = {https://www.man7.org/linux/man-pages/man2/adjtimex.2.html},
+urldate = {2024-03-22},
+}
+
+@INPROCEEDINGS{sptp,
+  author={Obleukhov, Oleg and Bulimov, Alexander and Byagowi, Ahmad},
+  booktitle={2023 IEEE International Symposium on Precision Clock Synchronization for Measurement, Control, and Communication (ISPCS)},
+  title={Simple Precision Time Protocol (SPTP)},
+  year={2023},
+  volume={},
+  number={},
+  pages={1-6},
+  keywords={Data centers;Protocols;Unicast;Authentication;Time measurement;Complexity theory;Synchronization;SPTP;PTP41;Unicast;Open Time Server;Data center;Time Card;PTPv2;UDP},
+  doi={10.1109/ISPCS59528.2023.10296989}}
+
+
+@INPROCEEDINGS{linuxptp,
+  author={Cochran, Richard and Marinescu, Cristian},
+  booktitle={2010 IEEE International Symposium on Precision Clock Synchronization for Measurement, Control and Communication},
+  title={Design and implementation of a PTP clock infrastructure for the Linux kernel},
+  year={2010},
+  volume={},
+  number={},
+  pages={116-121},
+  keywords={Clocks;Synchronization;Linux;Driver circuits;Hardware;Kernel;IEEE 1588;PTP;Linux;kernel;synchronization},
+  doi={10.1109/ISPCS.2010.5609786}}
+
+
+@INPROCEEDINGS{ptp-failures,
+  author={Ferencz, Bálint and Kovácsházy, Tamás},
+  booktitle={2017 IEEE International Instrumentation and Measurement Technology Conference (I2MTC)},
+  title={Effects of runtime failures in IEEE 1588 clock networks},
+  year={2017},
+  volume={},
+  number={},
+  pages={1-6},
+  keywords={Clocks;Synchronization;Random access memory;Circuit faults;Hardware;Software;Runtime},
+  doi={10.1109/I2MTC.2017.7969975}}
+
+@inproceedings{byzantine-ptp,
+author = {Shi, Shanghao and Xiao, Yang and Du, Changlai and Shahriar, Md Hasan and Li, Ao and Zhang, Ning and Hou, Y. Thomas and Lou, Wenjing},
+title = {MS-PTP: Protecting Network Timing from Byzantine Attacks},
+year = {2023},
+isbn = {9781450398596},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3558482.3590184},
+doi = {10.1145/3558482.3590184},
+booktitle = {Proceedings of the 16th ACM Conference on Security and Privacy in Wireless and Mobile Networks},
+pages = {61–71},
+numpages = {11},
+keywords = {byzantine resilience, network time synchronization, precision time protocol (ptp), service security and reliability.},
+location = {Guildford, United Kingdom},
+series = {WiSec '23}
+}
+
+@article{ptp-internal-attacks,
+  title={An Analysis of Internal Attacks on PTP-based Time Synchronization Networks},
+  author={Alghamdi, Waleed and Schukat, M},
+  journal={NUI Galway},
+  year={2022}
+}
+
+
+@inproceedings{ptp-redundancy,
+  title={How to Effectively Enhance PTP Redundancy Using Dual Ports},
+  author={Ker{\"o}, Nikolaus and Kernen, Thomas},
+  booktitle={SMPTE 2023 Media Technology Summit},
+  pages={20--22},
+  year={2023},
+  organization={SMPTE}
+}
+
+@rfc{ntpv4-spec,
+author = {Mills, D. and Martin, J. and Burbank, J. and Kasch, W.},
+title = {RFC 5905: Network Time Protocol Version 4: Protocol and Algorithms Specification},
+year = {2010},
+publisher = {RFC Editor},
+address = {USA},
+abstract = {The Network Time Protocol (NTP) is widely used to synchronize computer clocks in the Internet.  This document describes NTP version 4 (NTPv4), which is backwards compatible with NTP version 3 (NTPv3), described in RFC 1305, as well as previous versions of the protocol.  NTPv4 includes a modified protocol header to accommodate the Internet Protocol version 6 address family.  NTPv4 includes fundamental improvements in the mitigation and discipline algorithms that extend the potential accuracy to the tens of microseconds with modern workstations and fast LANs.  It includes a dynamic server discovery scheme, so that in many cases, specific server configuration is not required.  It corrects certain errors in the NTPv3 design and implementation and includes an optional extension mechanism. [STANDARDS-TRACK]}
+}
+
+@rfc{sntp-spec,
+author = {Mills, D.},
+title = {RFC 4330: Simple Network Time Protocol (SNTP) Version 4 for IPv4, IPv6 and OSI},
+year = {2006},
+publisher = {RFC Editor},
+address = {USA},
+abstract = {This memorandum describes the Simple Network Time Protocol Version 4 (SNTPv4), which is a subset of the Network Time Protocol (NTP) used to synchronize computer clocks in the Internet. SNTPv4 can be used when the ultimate performance of a full NTP implementation based on RFC 1305 is neither needed nor justified. When operating with current and previous NTP and SNTP versions, SNTPv4 requires no changes to the specifications or known implementations, but rather clarifies certain design features that allow operation in a simple, stateless remote-procedure call (RPC) mode with accuracy and reliability expectations similar to the UDP/TIME protocol described in RFC 868. This memorandum obsoletes RFC 1769, which describes SNTP Version 3 (SNTPv3), and RFC 2030, which describes SNTPv4. Its purpose is to correct certain inconsistencies in the previous documents and to clarify header formats and protocol operations for NTPv3 (IPv4) and SNTPv4 (IPv4, IPv6, and OSI), which are also used for SNTP. A further purpose is to provide guidance for home and business client implementations for routers and other consumer devices to protect the server population from abuse. A working knowledge of the NTPv3 specification, RFC 1305, is not required for an implementation of SNTP. This memo provides information for the Internet community.}
+}
+
+@INPROCEEDINGS{ntp-vs-ptp,
+  author={Neagoe, Teodor and Cristea, Valentin and Banica, Logica},
+  booktitle={2006 IEEE International Symposium on Industrial Electronics},
+  title={NTP versus PTP in Computer Networks Clock Synchronization},
+  year={2006},
+  volume={1},
+  number={},
+  pages={317-362},
+  keywords={Clocks;Synchronization;Protocols;Computer networks;IP networks;Electronic mail;Application software;Ethernet networks;Manufacturing;Time measurement},
+  doi={10.1109/ISIE.2006.295613}}

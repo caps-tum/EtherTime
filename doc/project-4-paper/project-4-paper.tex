@@ -1,7 +1,10 @@
+% !TeX document-id = {50f0f04c-d5f8-4417-bb49-0e71ddd7bfde}
+% !TeX TXS-program:bibliography = txs:///biber
+
 \documentclass[conference]{IEEEtran}
 %\IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
-\usepackage{cite}
+%\usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
@@ -11,6 +14,20 @@
 \usetikzlibrary{arrows.meta}
 \usetikzlibrary{chains}
 \usepackage{fontawesome5}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[%
+  bibstyle=ieee,
+  citestyle=numeric,
+  isbn=true,
+  doi=false,
+  sorting=none,
+  url=true,
+  defernumbers=true,
+  bibencoding=utf8,
+  backend=biber
+]{biblatex}
+\addbibresource{bibliography.bib}
 
 %% TODONOTES
 \paperwidth=\dimexpr \paperwidth + 6cm\relax
@@ -31,7 +48,7 @@ Munich, Germany \\
 vincent.bode@tum.de}
 \and
 \IEEEauthorblockN{Arpan Gujarati}
-\IEEEauthorblockA{\textit{Systopia Lab} \\
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
 \textit{University of British Columbia}\\
 Vancouver, Canada \\
 arpanbg@cs.ubc.ca}
@@ -45,6 +62,16 @@ arpanbg@cs.ubc.ca}
 
 \maketitle
 
+\textbf{Potential Targets:}
+
+\begin{tabular}{p{5cm}l}
+    Venue & Deadline\\
+    \href{https://ieee-ims.org/document/ispcs-2024-call-papers}{Symposium on Precision Clock Synchronization for Measurement, Control, \& Communication} & 20.03.2024\\
+    \href{https://2024.rtss.org/call-for-papers/}{RTSS} & 23.05.2024\\
+    \href{https://2024.rtss.org/call-for-papers/}{SIGMETRICS} & 02.08.2023 (first of 3)\\
+    \href{https://ieee-ims.org/document/i2mtc-2024-call-papers}{Instrumentation and Measurement Technology Conference} & 24.11.2023\\
+\end{tabular}
+
 \begin{abstract}
 \end{abstract}
 
@@ -55,6 +82,10 @@ PTP, Time Synchronization, Fault Tolerance
 \input{sections/introduction.tex}
 \input{sections/motivation.tex}
 \input{sections/solutions.tex}
+\input{sections/fault_tolerance.tex}
+\input{sections/related_work.tex}
 \input{sections/methodology.tex}
+
+\printbibliography
 
 \end{document}
