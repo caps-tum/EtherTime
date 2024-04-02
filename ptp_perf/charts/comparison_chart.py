@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from random import random, Random
 from typing import List, Callable, Optional, Any, Union
 
 import pandas as pd
@@ -8,8 +7,8 @@ from matplotlib import pyplot as plt
 from pandas.core.dtypes.common import is_numeric_dtype
 
 from ptp_perf.charts.chart_container import ChartContainer, YAxisLabelType
-from ptp_perf.profiles.base_profile import BaseProfile
-from ptp_perf.profiles.data_container import MergedTimeSeries, BootstrapMetric
+from ptp_perf.models import PTPProfile
+from ptp_perf.profiles.data_container import BootstrapMetric
 from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import units
 from ptp_perf.utilities.colors import adjust_lightness
@@ -37,7 +36,7 @@ class ComparisonDataPoint:
 @dataclass
 class ComparisonChart(ChartContainer):
     title: str
-    profiles: List[BaseProfile]
+    profiles: List[PTPProfile]
     x_axis_label: str
     use_bar: bool = False
     include_p99: bool = True
@@ -61,7 +60,7 @@ class ComparisonChart(ChartContainer):
 
         self.plot_decorate_title(self.axes[0][0], self.title)
 
-    def plot_statistic(self, axis: plt.Axes, profile_callback: Callable[[BaseProfile], ComparisonDataPoint],
+    def plot_statistic(self, axis: plt.Axes, profile_callback: Callable[[PTPProfile], ComparisonDataPoint],
                        linestyle=None, y_axis_label_type=YAxisLabelType.OFFSET_GENERIC):
         data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
         data = pd.DataFrame(data_points)
@@ -143,7 +142,7 @@ class ComparisonChart(ChartContainer):
         axis.set_xlabel(self.x_axis_label)
 
 
-    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[BaseProfile], Union[float, str]]):
+    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[PTPProfile], Union[float, str]]):
         row = 0
 
         self.plot_statistic(

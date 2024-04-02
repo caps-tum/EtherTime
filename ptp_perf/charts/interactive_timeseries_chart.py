@@ -4,14 +4,14 @@ from bokeh import plotting
 from bokeh.models import WheelZoomTool, BoxAnnotation, CustomJSTickFormatter, \
     DatetimeTicker
 
-from ptp_perf.profiles.base_profile import BaseProfile
+from ptp_perf.models.sample_query import SampleQuery
 
 BOKEH_TIME_SCALE = 1000
 
 
 class InteractiveTimeseriesChart:
 
-    def create(self, profile: BaseProfile):
+    def create(self, query: SampleQuery):
         figure = plotting.figure(
             title=profile.id,
             x_axis_label="Time",

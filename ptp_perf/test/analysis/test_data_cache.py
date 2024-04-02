@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from ptp_perf.constants import LOCAL_DIR
-from profiles.data_cache import DataCache
+from ptp_perf.profiles.data_cache import DataCache
 
 
 class TestCache(DataCache):

@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from profiles.data_container import Timeseries
+from ptp_perf.profiles.data_container import Timeseries
 
 
 class TestTimeseries(TestCase):

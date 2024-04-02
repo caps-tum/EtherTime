@@ -2,9 +2,12 @@ import typing
 
 from django.db import models
 
+from ptp_perf.models.endpoint_type import EndpointType
+
 if typing.TYPE_CHECKING:
     from ptp_perf.profiles.benchmark import Benchmark
     from ptp_perf.vendor.vendor import Vendor
+    from ptp_perf.models import PTPEndpoint
 
 
 class PTPProfile(models.Model):
@@ -25,6 +28,18 @@ class PTPProfile(models.Model):
     def benchmark(self) -> "Benchmark":
         from ptp_perf.registry.benchmark_db import BenchmarkDB
         return BenchmarkDB.get(self.benchmark_id)
+
+    @property
+    def endpoint_master(self) -> "PTPEndpoint":
+        return self.ptpendpoint_set.filter(endpoint_type=EndpointType.MASTER).get()
+
+    @property
+    def endpoint_primary_slave(self) -> "PTPEndpoint":
+        return self.ptpendpoint_set.filter(endpoint_type=EndpointType.PRIMARY_SLAVE).get()
+
+    @property
+    def endpoint_secondary_slave(self) -> "PTPEndpoint":
+        return self.ptpendpoint_set.filter(endpoint_type=EndpointType.SECONDARY_SLAVE).get()
 
     @property
     def vendor(self) -> "Vendor":

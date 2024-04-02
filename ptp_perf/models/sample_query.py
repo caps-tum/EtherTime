@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import pandas as pd
@@ -8,10 +8,11 @@ from django.db.models import QuerySet
 from pandas import MultiIndex
 
 from ptp_perf.machine import Machine
-from ptp_perf.models import Sample, PTPEndpoint
+from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
+
 
 class NoDataError(Exception):
     pass
@@ -22,6 +23,8 @@ class SampleQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
     machine: Optional[Union[Machine, str]] = None
+
+    profile: Optional[PTPProfile] = None
 
     converged_only: bool = True
     remove_clock_step: bool = True
@@ -73,6 +76,10 @@ class SampleQuery:
             endpoint_query = endpoint_query.filter(profile__vendor_id=self.vendor.id)
         if self.machine is not None:
             endpoint_query = endpoint_query.filter(machine_id=self.machine.id if isinstance(self.machine, Machine) else self.machine)
+
+        if self.profile is not None:
+            endpoint_query = endpoint_query.filter(profile_id=self.profile.id)
+
         return endpoint_query
 
 @dataclass

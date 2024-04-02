@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Optional
 
 from ptp_perf.machine import Cluster, Machine, PluginSettings
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.util import ImmediateException, str_join
 
 RASPBERRY_PI_PTP_SETTINGS = {
@@ -21,6 +22,7 @@ PTP_SLAVE_SETTINGS = {
 MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
     ptp_force_master=True,
+    endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_PTP_SETTINGS,
     ptp_priority_1=1,
     plugin_settings=PluginSettings(
@@ -30,6 +32,7 @@ MACHINE_RPI06 = Machine(
 MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
     **RASPBERRY_PI_PTP_SETTINGS,
     ptp_priority_1=255,
     plugin_settings=PluginSettings(
@@ -39,6 +42,7 @@ MACHINE_RPI08 = Machine(
 MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_PTP_SETTINGS,
     ptp_failover_master=True,
     ptp_priority_1=200,
@@ -48,6 +52,7 @@ MACHINE_RPI07 = Machine(
 )
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
+    endpoint_type=EndpointType.ORCHESTRATOR,
     ptp_interface="",
 )
 

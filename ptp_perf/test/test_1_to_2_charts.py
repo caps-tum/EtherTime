@@ -65,7 +65,7 @@ class Test1To2Charts(TestCase):
                 chart.plot_median_clock_diff_and_path_delay(
                     x_axis_values=lambda profile: 'Base' if profile.benchmark == BenchmarkDB.BASE else ('Client 1' if profile.machine_id == MACHINE_RPI08.id else 'Client 2'),
                 )
-                chart.save(BenchmarkDB.BASE_TWO_CLIENTS.storage_base_path.joinpath("clients_vs_base.png"), make_parent=True)
+                chart.save(BenchmarkDB.BASE_TWO_CLIENTS.storage_base_path.joinpath("clients_vs_base.png"), make_parents=True)
 
     def test_software_fault(self):
         for vendor in VendorDB.ANALYZED_VENDORS:
@@ -150,7 +150,7 @@ class Test1To2Charts(TestCase):
                         )
 
                         chart.annotate(chart.axes[0], f"Number Faults = {len(faults)}", position=(0.05, 0.05), horizontalalignment='left', verticalalignment='bottom')
-                        chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"), make_parent=True)
+                        chart.save(benchmark.storage_base_path.joinpath(f"fault_wave_{vendor}_{machine.id}.png"), make_parents=True)
                     except NoDataError as e:
                         logging.warning(f"Missing data ({benchmark}, {vendor}, {machine}: {e}), skipping.")
 
@@ -165,10 +165,10 @@ class Test1To2Charts(TestCase):
         #         labels=["1-to-2\nClient 1", "1-to-2\nClient 2", "Hardware Fault\nNormal Client",
         #                 "Hardware Fault\nFaulty Client"],
         #         x_label="Profile")
-        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_comparison_{vendor}.png"), make_parent=True)
+        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_comparison_{vendor}.png"), make_parents=True)
         #
         #     chart = TimeSeriesChartVersus(
         #         profiles_1_to_2_clients[0], profiles_hardware_fault_clients[0]
         #     )
         #     chart.set_titles("No Faults", "Switch Hardware Fault")
-        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_versus_{vendor}.png"), make_parent=True)
+        #     chart.save(CHART_DIRECTORY.joinpath(f"hardware_fault_clients_versus_{vendor}.png"), make_parents=True)

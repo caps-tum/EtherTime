@@ -3,7 +3,6 @@ from django.test import TestCase
 from ptp_perf.models import PTPProfile, PTPEndpoint
 from ptp_perf.profiles.base_profile import ProfileType
 from ptp_perf.registry import resolve
-from ptp_perf.registry.resolve import ProfileDB
 
 
 class ImportTest(TestCase):

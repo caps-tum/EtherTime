@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt, patheffects
 from matplotlib.ticker import EngFormatter
 from pandas.core.dtypes.common import is_datetime64_dtype, is_timedelta64_dtype
 
+from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
 from ptp_perf.profiles.data_container import ANNOTATION_BBOX_PROPS
 from ptp_perf.util import PathOrStr
 from ptp_perf.utilities import units
@@ -28,10 +29,17 @@ class ChartContainer:
 
     ylimit_top: Optional[float] = None
     ylimit_top_use_always: bool = False
+    ylimit_bottom: Optional[float] = None
+    ylog: bool = False
 
 
-    def save(self, path: PathOrStr, make_parent: bool = False, include_yzero: bool = True):
-        if include_yzero:
+    def save(self, path: PathOrStr, make_parents: bool = False, include_yzero: bool = True):
+        if self.ylog:
+            for axis in self.figure.axes:
+                axis.set_yscale('log')
+                self.plot_decorate_yaxis(axis, "Log-Scale Clock Offset")
+
+        if not self.ylog and include_yzero:
             for axis in self.figure.axes:
                 # Ensure that the zero point is always in the view.
                 ylim_current = axis.get_ylim()
@@ -46,8 +54,17 @@ class ChartContainer:
 
                 axis.set_ybound(new_ylim_with_margin)
 
-        if make_parent:
-            Path(path).parent.mkdir(exist_ok=True)
+        if self.ylimit_bottom is not None:
+            for axis in self.figure.axes:
+                axis.set_ybound((self.ylimit_bottom, None))
+
+
+        if make_parents:
+            parent_path = Path(path).parent
+            if not parent_path.exists() and PTPPERF_REPOSITORY_ROOT not in parent_path.parents:
+                raise RuntimeError("Tried to make a path not inside the repository root.")
+            parent_path.mkdir(parents=True, exist_ok=True)
+
         self.figure.savefig(str(path))
         plt.close(self.figure)
 
@@ -91,7 +108,7 @@ class ChartContainer:
         if title is not None:
             ax.set_title(title)
 
-    def plot_timeseries(self, data: pd.Series, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0):
+    def plot_timeseries(self, data: pd.Series, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0, annotate_out_of_bounds: bool = True):
         import seaborn
 
         if abs:
@@ -148,7 +165,7 @@ class ChartContainer:
         if self.ylimit_top:
             if self.ylimit_top_use_always or data_max > self.ylimit_top:
                 ax.set_ylim(top=self.ylimit_top)
-            if data_max > self.ylimit_top:
+            if annotate_out_of_bounds and data_max > self.ylimit_top:
                 ax.annotate(
                     f"Max: {EngFormatter(unit='s', places=0).format_data(data_max)}",
                     # xy=(data_max_timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND, data_max),

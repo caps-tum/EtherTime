@@ -5,9 +5,7 @@ from unittest import TestCase
 import bokeh.util.serialization
 from bokeh import plotting
 
-from charts.interactive_timeseries_chart import InteractiveTimeseriesChart
-from registry import resolve
-from registry.resolve import ProfileDB
+from ptp_perf.charts.interactive_timeseries_chart import InteractiveTimeseriesChart
 
 
 class TestInteractiveTimeseriesChart(TestCase):

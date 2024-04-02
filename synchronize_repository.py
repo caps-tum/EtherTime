@@ -1,6 +1,9 @@
 import asyncio
 from argparse import ArgumentParser
 
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+bootstrap_django_environment()
+
 from ptp_perf import util
 from ptp_perf.config import get_configuration_by_cluster_name
 

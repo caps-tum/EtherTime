@@ -1,7 +1,7 @@
 import logging
 import re
 import typing
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -11,11 +11,11 @@ from django.db.models import CASCADE
 
 from ptp_perf import config
 from ptp_perf.machine import Machine
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.profiles.data_container import COLUMN_TIMESTAMP_INDEX, Timeseries, COLUMN_CLOCK_DIFF, \
-    ConvergenceStatistics
+from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics
 from ptp_perf.utilities import units
 
 if typing.TYPE_CHECKING:
@@ -29,20 +29,22 @@ class PTPEndpoint(models.Model):
     machine_id = models.CharField(max_length=255)
     restart_count = models.IntegerField(default=0)
 
+    endpoint_type = models.CharField(choices=EndpointType, max_length=32, default=EndpointType.UNKNOWN)
+
     # Summary statistics
-    clock_diff_median = models.FloatField(null=True, editable=False)
-    clock_diff_p99 = models.FloatField(null=True, editable=False)
-    path_delay_median = models.FloatField(null=True, editable=False)
+    clock_diff_median = models.FloatField(null=True)
+    clock_diff_p99 = models.FloatField(null=True)
+    path_delay_median = models.FloatField(null=True)
 
     # Convergence statistics
-    convergence_timestamp = models.DateTimeField(null=True, editable=False)
-    convergence_duration = models.DurationField(null=True, editable=False)
-    convergence_max_offset = models.FloatField(null=True, editable=False)
-    convergence_rate = models.FloatField(null=True, editable=False)
+    convergence_timestamp = models.DateTimeField(null=True)
+    convergence_duration = models.DurationField(null=True)
+    convergence_max_offset = models.FloatField(null=True)
+    convergence_rate = models.FloatField(null=True)
 
     # Clock step
-    clock_step_timestamp = models.DateTimeField(null=True, editable=False)
-    clock_step_magnitude = models.FloatField(null=True, editable=False)
+    clock_step_timestamp = models.DateTimeField(null=True)
+    clock_step_magnitude = models.FloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, normalize_time: bool = False) -> Optional[pd.Series]:
@@ -179,10 +181,13 @@ class PTPEndpoint(models.Model):
             chart = TimeseriesChart(
                 title=self.get_title(),
                 summary_statistics=None,
+                # ylimit_top = 1,
+                # ylimit_bottom = 0,
+                ylog=True
             )
             chart.add_path_delay(path_delay)
             chart.add_clock_difference(clock_diff)
-            chart.save(output_path, make_parent=True)
+            chart.save(output_path, make_parents=True)
 
         if self.clock_step_timestamp is not None:
             clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
@@ -201,7 +206,7 @@ class PTPEndpoint(models.Model):
                 chart_convergence.add_boundary(
                     chart_convergence.axes[0], self.convergence_duration
                 )
-            chart_convergence.save(output_path, make_parent=True)
+            chart_convergence.save(output_path, make_parents=True)
 
     def process_fault_data(self):
         from ptp_perf.models import LogRecord, Sample

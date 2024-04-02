@@ -1,15 +1,16 @@
+from typing import List
 from unittest import TestCase
 
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 bootstrap_django_environment()
 
 from ptp_perf import constants
+from ptp_perf.models.profile_query import ProfileQuery
+from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.charts.distribution_comparison_chart import DistributionComparisonChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
-from ptp_perf.models import PTPProfile
-from ptp_perf.registry import resolve
+from ptp_perf.models import PTPProfile, Sample
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.registry.resolve import ProfileDB
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -24,7 +25,7 @@ class TestTimeseriesChart(TestCase):
         # profiles = ProfileDB().resolve_all(resolve.VALID_PROCESSED_PROFILE())
         # profiles += ProfileDB().resolve_all(resolve.CORRUPT_PROCESSED_PROFILE())
         # profiles += ProfileDB().resolve_all(resolve.AGGREGATED_PROFILE())
-        profiles = PTPProfile.objects.filter(is_processed=True).all()
+        profiles = ProfileQuery().run()
 
         for profile in profiles:
             print(f"Processing {profile}")
@@ -33,41 +34,39 @@ class TestTimeseriesChart(TestCase):
 
 
     def test_comparison(self):
-        ptpd_profile = ProfileDB().resolve_most_recent(
-            resolve.AGGREGATED_PROFILE(),
-            resolve.BY_BENCHMARK(BenchmarkDB.BASE),
-            resolve.BY_VENDOR(VendorDB.PTPD),
+        ptpd_profile = SampleQuery(
+            benchmark=BenchmarkDB.BASE,
+            vendor=VendorDB.PTPD,
         )
-        linuxptp_profile = ProfileDB().resolve_most_recent(
-            resolve.AGGREGATED_PROFILE(),
-            resolve.BY_BENCHMARK(BenchmarkDB.BASE),
-            resolve.BY_VENDOR(VendorDB.LINUXPTP),
+        linuxptp_profile = SampleQuery(
+            benchmark=BenchmarkDB.BASE,
+            vendor=VendorDB.LINUXPTP,
         )
 
-        if ptpd_profile is None or linuxptp_profile is None:
-            self.skipTest("Required profile not found")
-            return
+        # TODO: Sample queries might be empty but they are not none
+        # if ptpd_profile is None or linuxptp_profile is None:
+        #     self.skipTest("Required profile not found")
 
         chart = TimeSeriesChartVersus(ptpd_profile, linuxptp_profile)
         chart.set_titles("PTPd", "LinuxPTP")
-        chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parent=True)
+        chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parents=True)
 
     def test_history(self):
         self.create_history_charts(BenchmarkDB.BASE)
 
     def create_history_charts(self, benchmark, y_log=False):
         for vendor in VendorDB.all():
-            profiles = ProfileDB().resolve_all(
-                resolve.VALID_PROCESSED_PROFILE(),
-                resolve.BY_BENCHMARK(benchmark),
-                resolve.BY_VENDOR(vendor)
-            )
+            profiles = ProfileQuery(
+                benchmark=benchmark,
+                vendor=vendor
+            ).run().all()
 
-            if not profiles:
+
+            if len(profiles) == 0:
                 continue
 
             chart = DistributionComparisonChart(
-                profiles,
+                [SampleQuery(profile=profile) for profile in profiles],
                 [f"#{index+1}: {profile.start_time.replace(second=0, microsecond=0)}" for index, profile in enumerate(profiles)],
                 x_label="Profile Date",
             )
@@ -76,7 +75,7 @@ class TestTimeseriesChart(TestCase):
                 chart.axes[1].set_yscale('log')
             chart.axes[0].set_title(f"Profile History: {benchmark.name} using {vendor}")
             chart.save(constants.CHARTS_DIR.joinpath("history").joinpath(f"{benchmark.id}-history-{vendor}.png"),
-                       make_parent=True)
+                       make_parents=True)
 
     # def create_figure(self, profile: BaseProfile):
     #

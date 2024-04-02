@@ -35,5 +35,5 @@ class TimeseriesChart(ChartContainer):
 
 
     def add_path_delay(self, series: pd.Series):
-        self.plot_timeseries(series, ax=self.axes[0], palette_index=3)
+        self.plot_timeseries(series, ax=self.axes[0], palette_index=3, annotate_out_of_bounds=False)
         self.plot_timeseries_distribution(series, self.axes[1], palette_index=3)

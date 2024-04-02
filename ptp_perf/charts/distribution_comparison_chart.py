@@ -1,23 +1,23 @@
-from typing import List, Self, Any, Iterable
+from typing import List, Any, Iterable
 
-import seaborn
 from matplotlib import pyplot as plt
 
 from ptp_perf.charts.chart_container import ChartContainer, YAxisLabelType
-from ptp_perf.profiles.base_profile import BaseProfile
+from ptp_perf.models import Sample
+from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.data_container import MergedTimeSeries
 
 
 class DistributionComparisonChart(ChartContainer):
     axes: List[plt.Axes]
 
-    def __init__(self, profiles: Iterable[BaseProfile], labels: Iterable[Any], x_label: str):
+    def __init__(self, queries: Iterable[SampleQuery], labels: Iterable[Any], x_label: str):
         self.figure, self.axes = plt.subplots(
             nrows=2, ncols=1, figsize=(14, 7),
         )
 
         merged_series = MergedTimeSeries.merge_series(
-            original_series=[profile.time_series for profile in profiles],
+            original_series=[query.run(Sample.SampleType.CLOCK_DIFF) for query in queries],
             labels=labels,
             timestamp_align=True,
         )

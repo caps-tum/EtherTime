@@ -25,4 +25,4 @@ class Test1To2Charts(TestCase):
                 continue
 
             chart = TimeSeriesChartVersus(baseline, no_switch, include_path_delay=True)
-            chart.save(CHART_DIRECTORY.joinpath(f"base_vs_no_switch_{vendor}.png"), make_parent=True)
+            chart.save(CHART_DIRECTORY.joinpath(f"base_vs_no_switch_{vendor}.png"), make_parents=True)

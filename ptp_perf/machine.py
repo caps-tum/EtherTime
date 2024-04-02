@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, List, Union
 
 from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.rpc.rpc_target import RPCTarget
 from ptp_perf.util import async_gather_with_progress, unpack_one_value
 
@@ -96,6 +97,7 @@ class PluginSettings:
 class Machine(RPCTarget):
     id: str
     ptp_interface: str
+    endpoint_type: EndpointType
     ptp_force_master: bool = False
     ptp_failover_master: bool = False
     ptp_force_slave: bool = False

@@ -10,6 +10,7 @@ from ptp_perf.cluster_restart import restart_cluster
 from ptp_perf.config import Configuration
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.models import PTPProfile, PTPEndpoint
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import str_join
@@ -34,6 +35,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     orchestrator_endpoint = PTPEndpoint(
         profile=profile,
         machine_id="orchestrator",
+        endpoint_type=EndpointType.ORCHESTRATOR,
     )
     await orchestrator_endpoint.asave()
 
@@ -48,6 +50,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
             machine_endpoint = PTPEndpoint(
                 profile=profile,
                 machine_id=machine.id,
+                endpoint_type=machine.endpoint_type,
             )
             await machine_endpoint.asave()
 

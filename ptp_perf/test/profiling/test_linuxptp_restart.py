@@ -1,8 +1,7 @@
 import asyncio
 from unittest import TestCase
 
-import config
-from config import current_configuration
+from ptp_perf import config
 from ptp_perf.machine import Machine
 from ptp_perf.util import setup_logging
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
