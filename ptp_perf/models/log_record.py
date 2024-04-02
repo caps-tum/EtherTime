@@ -15,4 +15,3 @@ class LogRecord(models.Model):
     class Meta:
         ordering = ('id',)
         app_label = 'app'
-        db_table = "ptp_perf_logrecord"

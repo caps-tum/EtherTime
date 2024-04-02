@@ -21,4 +21,3 @@ class Sample(models.Model):
 
     class Meta:
         app_label = 'app'
-        db_table = "ptp_perf_sample"

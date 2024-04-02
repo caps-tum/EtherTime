@@ -1,12 +1,13 @@
 import asyncio
-import os
 from argparse import ArgumentParser
 from datetime import timedelta
+
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+bootstrap_django_environment()
 
 from ptp_perf import util
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import StackTraceGuard
-from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 from ptp_perf.vendor.registry import VendorDB
 
 if __name__ == '__main__':
@@ -41,7 +42,6 @@ if __name__ == '__main__':
     test_mode = result.test
 
     with StackTraceGuard():
-        bootstrap_django_environment()
 
         from ptp_perf.orchestrator import run_orchestration
 

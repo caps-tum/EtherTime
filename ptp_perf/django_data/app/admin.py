@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag
+from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask
 
 
 # Register your models here.
@@ -27,3 +27,7 @@ class SampleAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(ScheduleTask)
+class ScheduleTaskAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'estimated_time', 'success', 'start_time', 'completion_time']

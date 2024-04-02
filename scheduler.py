@@ -1,6 +1,9 @@
 from argparse import ArgumentParser
 
-from ptp_perf.scheduler import run_scheduler, queue_task, queue_benchmarks, info, pause_queue
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+bootstrap_django_environment()
+
+from ptp_perf.scheduler import run_scheduler, queue_task, queue_benchmarks, info
 from ptp_perf.util import setup_logging, StackTraceGuard
 
 if __name__ == '__main__':
@@ -30,11 +33,6 @@ if __name__ == '__main__':
 
     info_command = subparsers.add_parser("info", help="Retrieve queue status.")
     info_command.set_defaults(action=info)
-
-    pause_command = subparsers.add_parser("pause", help="Pause or unpause the processing of the queue.")
-    pause_command.set_defaults(action=pause_queue)
-    pause_command.add_argument("--unpause", action='store_true', default=False,
-                               help="Unpause the queue rather than pausing it.")
 
     result = parser.parse_args()
 
