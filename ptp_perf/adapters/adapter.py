@@ -1,8 +1,4 @@
-import logging
-from datetime import datetime
-
 from ptp_perf.models import PTPEndpoint
-from ptp_perf.profiles.base_profile import BaseProfile
 
 
 class Adapter:

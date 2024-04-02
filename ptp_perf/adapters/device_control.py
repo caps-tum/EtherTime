@@ -5,7 +5,6 @@ from tinytuya import OutletDevice
 from ptp_perf.adapters.adapter import Adapter
 from ptp_perf.config import Configuration
 from ptp_perf.models import PTPEndpoint
-from ptp_perf.profiles.base_profile import BaseProfile
 
 
 class DeviceControl(Adapter):
