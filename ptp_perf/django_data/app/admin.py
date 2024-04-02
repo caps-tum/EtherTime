@@ -3,16 +3,22 @@ from django.contrib import admin
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask
 
 
-# Register your models here.
+
+class LogRecordInline(admin.TabularInline):
+    model = LogRecord
+
+class PTPEndpointInline(admin.TabularInline):
+    model = PTPEndpoint
 
 @admin.register(PTPProfile)
 class PTPProfileAdmin(admin.ModelAdmin):
     list_display = ['id', 'benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
     list_filter = ['benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
+    inlines = [PTPEndpointInline]
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    pass
+    inlines = [LogRecordInline]
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
