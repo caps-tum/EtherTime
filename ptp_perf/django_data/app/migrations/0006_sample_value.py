@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ptp_perf', '0005_remove_ptpprofile_state_ptpprofile_is_corrupted_and_more'),
+        ('app', '0005_remove_ptpprofile_state_ptpprofile_is_corrupted_and_more'),
     ]
 
     operations = [

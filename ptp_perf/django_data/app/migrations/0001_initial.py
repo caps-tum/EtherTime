@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ('convergence_time', models.DateTimeField(editable=False, null=True)),
                 ('convergence_max_offset', models.FloatField(editable=False, null=True)),
                 ('convergence_rate', models.FloatField(editable=False, null=True)),
-                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ptp_perf.ptpprofile')),
+                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app.ptpprofile')),
             ],
         ),
         migrations.CreateModel(
@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('timestamp', models.DateTimeField(auto_now=True)),
                 ('message', models.TextField()),
-                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ptp_perf.ptpprofile')),
+                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app.ptpprofile')),
             ],
         ),
         migrations.CreateModel(
@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('timestamp', models.DateTimeField()),
                 ('sample_type', models.CharField(choices=[('CLOCK_DIFF', 'Clock Diff'), ('PATH_DELAY', 'Path Delay'), ('FAULT', 'Fault')], max_length=255)),
-                ('endpoint', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ptp_perf.ptpendpoint')),
+                ('endpoint', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app.ptpendpoint')),
             ],
         ),
     ]

@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ptp_perf', '0002_rename_benchmark_ptpprofile_benchmark_id_and_more'),
+        ('app', '0002_rename_benchmark_ptpprofile_benchmark_id_and_more'),
     ]
 
     operations = [
@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='logrecord',
             name='endpoint',
-            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='ptp_perf.ptpendpoint'),
+            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='app.ptpendpoint'),
             preserve_default=False,
         ),
     ]

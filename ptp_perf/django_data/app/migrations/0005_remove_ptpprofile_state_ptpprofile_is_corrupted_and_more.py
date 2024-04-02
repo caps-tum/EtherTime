@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ptp_perf', '0004_ptpendpoint_restart_count'),
+        ('app', '0004_ptpendpoint_restart_count'),
     ]
 
     operations = [

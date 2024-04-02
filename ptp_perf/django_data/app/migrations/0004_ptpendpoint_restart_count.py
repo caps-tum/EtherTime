@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ptp_perf', '0003_remove_logrecord_profile_logrecord_endpoint'),
+        ('app', '0003_remove_logrecord_profile_logrecord_endpoint'),
     ]
 
     operations = [

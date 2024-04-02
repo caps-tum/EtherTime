@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ptp_perf', '0007_alter_sample_value'),
+        ('app', '0007_alter_sample_value'),
     ]
 
     operations = [
