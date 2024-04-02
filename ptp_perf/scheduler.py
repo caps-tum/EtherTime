@@ -65,7 +65,7 @@ def queue_task(result):
 def info(result):
     alignment_str = "{0: >4}  {1: <50}  {2: >20}  {3: >20}"
 
-    now = datetime.now().replace(microsecond=0)
+    now = datetime.now().replace(microsecond=0).astimezone()
     eta = now
     print(alignment_str.format("Id", "Name", "Est. Time Remaining", "ETA"))
     pending_tasks = ScheduleQueue.pending_tasks()
