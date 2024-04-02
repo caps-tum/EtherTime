@@ -6,7 +6,6 @@ from typing import Optional
 from ptp_perf import config
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.models import PTPEndpoint
-from ptp_perf.profiles.base_profile import BaseProfile
 from ptp_perf.util import unpack_one_value_or_error
 
 
