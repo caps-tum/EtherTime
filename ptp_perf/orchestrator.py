@@ -105,22 +105,13 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
         duration_override = timedelta(minutes=1)
         logging.info(f"Applying duration override of {duration_override} due to test mode.")
 
-    try:
+    if duration_override:
+        benchmark = copy.deepcopy(benchmark)
+        benchmark.duration = duration_override
+        logging.info(f"Applied benchmark duration override: {benchmark.duration}")
 
-        if duration_override:
-            benchmark = copy.deepcopy(benchmark)
-            benchmark.duration = duration_override
-            logging.info(f"Applied benchmark duration override: {benchmark.duration}")
-
-        logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor_id}")
-        profiles = await do_benchmark(
-            configuration,
-            benchmark=benchmark, vendor=vendor
-        )
-
-        # if analyze:
-        #     logging.info(f"Analyzing profiles: {str_join(profiles)}")
-        #     for profile in profiles:
-        #         convert_profile(profile)
-    except Exception as e:
-        util.log_exception(e)
+    logging.info(f"Now running benchmark: {benchmark_id} for vendor {vendor_id}")
+    await do_benchmark(
+        configuration,
+        benchmark=benchmark, vendor=vendor
+    )
