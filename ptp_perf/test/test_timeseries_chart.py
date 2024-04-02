@@ -59,7 +59,7 @@ class TestTimeseriesChart(TestCase):
             profiles = ProfileQuery(
                 benchmark=benchmark,
                 vendor=vendor
-            ).run().all()
+            ).run()
 
 
             if len(profiles) == 0:
