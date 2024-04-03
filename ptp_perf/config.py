@@ -34,7 +34,7 @@ MACHINE_RPI08 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
     **RASPBERRY_PI_PTP_SETTINGS,
-    ptp_priority_1=255,
+    ptp_priority_1=248,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
