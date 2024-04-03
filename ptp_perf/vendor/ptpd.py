@@ -38,6 +38,8 @@ class PTPDVendor(Vendor):
     async def run(self, endpoint: "PTPEndpoint"):
 
         self._process = Invocation.of_command(
+            # Run PTPd through stdbuf line buffering so that we get log lines as they are emitted.
+            "stdbuf", "-eL", "-oL",
             "ptpd",
             "-i", endpoint.machine.ptp_interface,
             "--verbose",
@@ -59,7 +61,8 @@ class PTPDVendor(Vendor):
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
         from ptp_perf.models.sample import Sample
 
-        logs: typing.List[LogRecord] = endpoint.logrecord_set.filter(source="ptpd").all()
+        # Since we use stdbuf for ptpd now we also need to use that as a source.
+        logs: typing.List[LogRecord] = endpoint.logrecord_set.filter(source="stdbuf").all()
 
         # Keep only the CSV header and the statistics lines in the state "slave"
         # We are only interested in the first CSV header (when process is restarted there might be multiple)
