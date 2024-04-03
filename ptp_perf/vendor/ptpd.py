@@ -7,6 +7,7 @@ import pandas as pd
 
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.util import str_join
+from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
@@ -93,7 +94,7 @@ class PTPDVendor(Vendor):
                     endpoint=endpoint,
                     timestamp=row["# Timestamp"],
                     sample_type=Sample.SampleType.CLOCK_DIFF,
-                    value=row["Offset From Master"],
+                    value=row["Offset From Master"] * units.NANOSECONDS_IN_SECOND,
                 )
             )
             samples.append(
@@ -101,7 +102,7 @@ class PTPDVendor(Vendor):
                     endpoint=endpoint,
                     timestamp=row["# Timestamp"],
                     sample_type=Sample.SampleType.PATH_DELAY,
-                    value=row["One Way Delay"],
+                    value=row["One Way Delay"] * units.NANOSECONDS_IN_SECOND,
                 )
             )
 
