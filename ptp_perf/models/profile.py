@@ -14,6 +14,7 @@ class PTPProfile(models.Model):
     id = models.AutoField(primary_key=True)
     benchmark_id: str = models.CharField(max_length=255, null=False, blank=False)
     vendor_id: str = models.CharField(max_length=255, null=False, blank=False)
+    cluster_id: str = models.CharField(max_length=255, null=False, blank=False)
 
     is_running: bool = models.BooleanField(default=False)
     is_successful: bool = models.BooleanField(default=False)

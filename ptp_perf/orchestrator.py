@@ -26,6 +26,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,
+        cluster_id=configuration.cluster.id,
         is_running=True,
         start_time=profile_timestamp,
         stop_time=profile_timestamp + benchmark.duration

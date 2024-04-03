@@ -61,7 +61,7 @@ machines = {
 }
 
 CLUSTER_PI = Cluster(
-    id="Pi Cluster",
+    id="Raspberry-Pi 4",
     machines=[
         MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
     ]
