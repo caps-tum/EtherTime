@@ -110,5 +110,9 @@ def get_configuration_by_cluster_name(name: str) -> Configuration:
 
 def subset_cluster(configuration: Configuration, num_machines: int) -> Configuration:
     new_config = copy.deepcopy(configuration)
-    new_config.cluster = Cluster(f"{new_config.cluster}-subset-{num_machines}", new_config.cluster.machines[0:num_machines])
+    new_config.cluster = Cluster(
+        id=configuration.cluster.id,
+        name=configuration.cluster.name,
+        machines=new_config.cluster.machines[0:num_machines],
+    )
     return new_config
