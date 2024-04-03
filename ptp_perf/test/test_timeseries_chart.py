@@ -1,20 +1,21 @@
-from typing import List
+import logging
 from unittest import TestCase
 
-from ptp_perf.utilities.django_utilities import bootstrap_django_environment
-bootstrap_django_environment()
+from ptp_perf.charts.timeseries_chart import TimeseriesChart
+from ptp_perf.models.endpoint_type import EndpointType
 
 from ptp_perf import constants
 from ptp_perf.models.profile_query import ProfileQuery
-from ptp_perf.models.sample_query import SampleQuery
+from ptp_perf.models.sample_query import SampleQuery, NoDataError
 from ptp_perf.charts.distribution_comparison_chart import DistributionComparisonChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
-from ptp_perf.models import PTPProfile, Sample
+from ptp_perf.models import Sample
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.vendor.registry import VendorDB
 
 
 class TestTimeseriesChart(TestCase):
+    # databases = ['default']
     # def test_create(self):
     #     profile = PTPDTimeSeriesProfile.load_str(TEST_TIMESERIES_PROFILE)
     #     chart = TimeseriesChart()
@@ -31,6 +32,23 @@ class TestTimeseriesChart(TestCase):
             print(f"Processing {profile}")
             for endpoint in profile.ptpendpoint_set.all():
                 endpoint.create_timeseries_charts()
+
+        for benchmark in BenchmarkDB.all():
+            for vendor in VendorDB.all():
+                try:
+                    # Todo separate by machine
+                    # for machine in Configuration.cluster
+                    data = SampleQuery(benchmark=benchmark, vendor=vendor, endpoint_type=EndpointType.PRIMARY_SLAVE)
+
+                    chart = TimeseriesChart(
+                        f"{benchmark} {vendor}"
+                    )
+                    chart.add_clock_difference(data.run(Sample.SampleType.CLOCK_DIFF))
+                    chart.add_path_delay(data.run(Sample.SampleType.PATH_DELAY))
+
+                    chart.save(benchmark.storage_base_path.joinpath(vendor).joinpath("aggregated.png"))
+                except NoDataError:
+                    logging.info(f"No data for {benchmark} {vendor}")
 
 
     def test_comparison(self):

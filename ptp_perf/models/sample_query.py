@@ -9,6 +9,7 @@ from pandas import MultiIndex
 
 from ptp_perf.machine import Machine
 from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
@@ -23,6 +24,7 @@ class SampleQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
     machine: Optional[Union[Machine, str]] = None
+    endpoint_type: Optional[EndpointType] = None
 
     profile: Optional[PTPProfile] = None
 
@@ -51,7 +53,11 @@ class SampleQuery:
         if any(data_series is None for data_series in data):
             raise NoDataError("Endpoint in query returned no data.")
 
-        result = pd.concat(data, keys=[endpoint.id for endpoint in endpoints], names=["endpoint_id"])
+        result = pd.concat(
+            data,
+            keys=[endpoint.id for endpoint in endpoints],
+            names=["endpoint_id"]
+        )
 
         if self.timestamp_merge_append:
             next_starting_timestamp = timedelta(seconds=0)
@@ -76,6 +82,8 @@ class SampleQuery:
             endpoint_query = endpoint_query.filter(profile__vendor_id=self.vendor.id)
         if self.machine is not None:
             endpoint_query = endpoint_query.filter(machine_id=self.machine.id if isinstance(self.machine, Machine) else self.machine)
+        if self.endpoint_type is not None:
+            endpoint_query = endpoint_query.filter(endpoint_type=self.endpoint_type)
 
         if self.profile is not None:
             endpoint_query = endpoint_query.filter(profile_id=self.profile.id)

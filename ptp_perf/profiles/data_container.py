@@ -46,8 +46,11 @@ class BootstrapMetric:
         return formatter.format_data(self.value)
 
     @staticmethod
-    def create(data: pd.Series, quantile: float):
+    def create(data: pd.Series, quantile: float, abs: bool = False):
         import scipy
+        if abs:
+            data = data.abs()
+
         bootstrap_result = scipy.stats.bootstrap(
             # Samples must be in a sequence, this isn't clear from the documentation
             # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html
@@ -72,14 +75,16 @@ class BootstrapMetric:
 @dataclass
 class SummaryStatistics:
     clock_diff_median: BootstrapMetric = None
-    clock_diff_p99: BootstrapMetric = None
+    clock_diff_p95: BootstrapMetric = None
     path_delay_median: BootstrapMetric = None
 
     def plot_annotate(self, ax: plt.Axes):
         ax.annotate(
+            f"Clock Diff\n"
             f"Median: {self.clock_diff_median.format()}\n"
-            f"$P_{{99}}$: {self.clock_diff_p99.format()}\n"
-            f"Path Delay: {self.path_delay_median.format()}",
+            f"$P_{{95}}$: {self.clock_diff_p95.format()}\n"
+            f"Path Delay\n"
+            f"Median: {self.path_delay_median.format()}",
             xy=(0.95, 0.95), xycoords='axes fraction',
             verticalalignment='top', horizontalalignment='right',
             bbox=ANNOTATION_BBOX_PROPS,
@@ -88,9 +93,17 @@ class SummaryStatistics:
     def export(self, unit_multiplier: int = 1) -> Dict:
         return {
             'Clock Difference (Median)': self.clock_diff_median.value * unit_multiplier,
-            'Clock Difference (99-th Percentile)': self.clock_diff_p99.value * unit_multiplier,
+            'Clock Difference (95-th Percentile)': self.clock_diff_p95.value * unit_multiplier,
             'Path Delay (Median)': self.path_delay_median.value * unit_multiplier,
         }
+
+    @classmethod
+    def create(cls, clock_diff: pd.Series, path_delay: pd.Series):
+        return cls(
+            clock_diff_median=BootstrapMetric.create(clock_diff, 0.5, abs=True),
+            clock_diff_p95=BootstrapMetric.create(clock_diff, 0.95, abs=True),
+            path_delay_median=BootstrapMetric.create(path_delay, 0.5),
+        )
 
 
 @dataclass
@@ -305,7 +318,7 @@ class Timeseries:
             with TimerUtil("recalculating bootstrap metrics"):
                 statistics = SummaryStatistics(
                     clock_diff_median=BootstrapMetric.create(clock_diff, 0.5),
-                    clock_diff_p99=BootstrapMetric.create(clock_diff, 0.99),
+                    clock_diff_p99=BootstrapMetric.create(clock_diff, 0.95),
                     path_delay_median=BootstrapMetric.create(path_delay, 0.5),
                 )
 

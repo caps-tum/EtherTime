@@ -160,7 +160,7 @@ class ComparisonChart(ChartContainer):
                 axis=self.axes[row][0],
                 profile_callback=lambda profile: ComparisonDataPoint.from_bootstrap_metric(
                     x=x_axis_values(profile),  # GBit/s to %
-                    y=profile.summary_statistics.clock_diff_p99,
+                    y=profile.summary_statistics.clock_diff_p95,
                     hue=f"{profile.vendor.name} $P_{{99}}$",
                 ),
                 y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS_P99,

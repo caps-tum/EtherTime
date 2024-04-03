@@ -15,7 +15,7 @@ from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics
+from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics, SummaryStatistics
 from ptp_perf.utilities import units
 
 if typing.TYPE_CHECKING:
@@ -76,7 +76,10 @@ class PTPEndpoint(models.Model):
             series *= units.NANOSECONDS_TO_SECONDS
 
         if normalize_time:
-            series.index -= self.convergence_timestamp
+            if converged_only:
+                series.index -= self.convergence_timestamp
+            else:
+                series.index -= self.clock_step_timestamp
 
         return series
 
@@ -180,10 +183,10 @@ class PTPEndpoint(models.Model):
             # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
             chart = TimeseriesChart(
                 title=self.get_title(),
-                summary_statistics=None,
-                # ylimit_top = 1,
-                # ylimit_bottom = 0,
-                ylog=True
+                summary_statistics=SummaryStatistics.create(clock_diff, path_delay),
+                ylimit_top = 1,
+                ylimit_bottom = 0,
+                # ylog=True
             )
             chart.add_path_delay(path_delay)
             chart.add_clock_difference(clock_diff)

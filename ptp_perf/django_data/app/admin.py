@@ -18,7 +18,8 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    inlines = [LogRecordInline]
+    pass
+    # inlines = [LogRecordInline]
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):

@@ -1,6 +1,7 @@
 import datetime
 from dataclasses import field, dataclass
 from datetime import timedelta
+from pathlib import Path
 from typing import List, Optional, Literal
 
 from ptp_perf import constants
@@ -49,7 +50,7 @@ class Benchmark:
     fault_failover: Optional[bool] = False
 
     @property
-    def storage_base_path(self):
+    def storage_base_path(self) -> Path:
         return constants.MEASUREMENTS_DIR.joinpath(self.id)
 
     def __str__(self):
