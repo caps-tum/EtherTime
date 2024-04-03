@@ -61,3 +61,4 @@ class ScheduleTask(models.Model):
 
     class Meta:
         app_label = 'app'
+        ordering = ('id',)
