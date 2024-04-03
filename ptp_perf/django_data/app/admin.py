@@ -18,7 +18,9 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'profile', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median']
+    list_filter = ['endpoint_type', 'profile']
+
     # inlines = [LogRecordInline]
 
 @admin.register(LogRecord)
