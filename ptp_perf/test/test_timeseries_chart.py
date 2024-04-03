@@ -6,7 +6,8 @@ from ptp_perf.models.endpoint_type import EndpointType
 
 from ptp_perf import constants
 from ptp_perf.models.profile_query import ProfileQuery
-from ptp_perf.models.sample_query import SampleQuery, NoDataError
+from ptp_perf.models.sample_query import SampleQuery
+from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.charts.distribution_comparison_chart import DistributionComparisonChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
 from ptp_perf.models import Sample
@@ -31,7 +32,10 @@ class TestTimeseriesChart(TestCase):
         for profile in profiles:
             print(f"Processing {profile}")
             for endpoint in profile.ptpendpoint_set.all():
-                endpoint.create_timeseries_charts()
+                try:
+                    endpoint.create_timeseries_charts()
+                except NoDataError:
+                    logging.warning(f"No data for profile {profile}")
 
         for benchmark in BenchmarkDB.all():
             for vendor in VendorDB.all():

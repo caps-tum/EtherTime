@@ -18,7 +18,8 @@ from ptp_perf.charts.timeseries_chart import TimeseriesChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
 from ptp_perf.config import MACHINE_RPI08, MACHINE_RPI07
 from ptp_perf.machine import Machine
-from ptp_perf.models.sample_query import SampleQuery, QueryPostProcessor, NoDataError
+from ptp_perf.models.sample_query import SampleQuery, QueryPostProcessor
+from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.base_profile import BaseProfile
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry import resolve

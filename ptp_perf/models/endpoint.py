@@ -13,6 +13,7 @@ from ptp_perf import config
 from ptp_perf.machine import Machine
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
+from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics, SummaryStatistics
@@ -178,6 +179,9 @@ class PTPEndpoint(models.Model):
         if self.convergence_timestamp is not None:
             clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, normalize_time=True)
             path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, normalize_time=True)
+
+            if clock_diff is None or path_delay is None:
+                raise NoDataError()
 
             output_path = self.get_chart_timeseries_path()
             # if self.check_dependent_file_needs_update(output_path) or force_regeneration:

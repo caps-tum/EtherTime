@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -10,13 +10,10 @@ from pandas import MultiIndex
 from ptp_perf.machine import Machine
 from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
 from ptp_perf.models.endpoint_type import EndpointType
+from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
-
-
-class NoDataError(Exception):
-    pass
 
 
 @dataclass
