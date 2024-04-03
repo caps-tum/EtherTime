@@ -61,13 +61,15 @@ machines = {
 }
 
 CLUSTER_PI = Cluster(
-    id="Raspberry-Pi 4",
+    id="rpi-4",
+    name="Raspberry-Pi 4",
     machines=[
         MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
     ]
 )
 CLUSTER_RPI_SERV = Cluster(
     id="rpi-serv",
+    name='RPI Server',
     machines=[
         MACHINE_RPISERV
     ]
@@ -82,13 +84,6 @@ clusters = {
 class Configuration:
     cluster: Cluster = None
     machine: Optional[Machine] = None
-
-
-# current_configuration = Configuration()
-
-# Currently we default to the first (only) defined cluster
-# current_configuration.cluster = clusters["Pi Cluster"]
-# current_configuration.cluster = clusters["3-Pi"]
 
 
 def verify(configuration: Configuration):

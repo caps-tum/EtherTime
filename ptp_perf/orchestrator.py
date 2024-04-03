@@ -92,7 +92,7 @@ async def run_orchestration(benchmark_id: str, vendor_id: str,
     vendor = VendorDB.get(vendor_id)
 
     configuration = config.subset_cluster(
-        config.get_configuration_by_cluster_name("Pi Cluster"),
+        config.get_configuration_by_cluster_name("rpi-4"),
         benchmark.num_machines,
     )
     await configuration.cluster.synchronize_repositories()

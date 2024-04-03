@@ -127,6 +127,7 @@ class Machine(RPCTarget):
 @dataclass
 class Cluster:
     id: str
+    name: str
     machines: List[Machine]
 
     async def synchronize_repositories(self):
