@@ -1,4 +1,5 @@
 import logging
+from argparse import ArgumentParser
 from datetime import datetime
 
 from django.core.management.base import BaseCommand
@@ -7,9 +8,12 @@ from ptp_perf import util, constants
 from ptp_perf.models import PTPProfile
 
 
-def analyze():
+def analyze(force: bool = False):
     # profile_query = PTPProfile.objects.filter(is_processed=False).all()
     profile_query = PTPProfile.objects.all()
+    if not force:
+        profile_query = profile_query.filter(is_processed=False)
+
     converted_profiles = 0
 
     for profile in profile_query:
@@ -96,15 +100,20 @@ def convert_profile(profile: PTPProfile):
 class Command(BaseCommand):
     help = "Analyzes profiles"
 
+    def add_arguments(self, parser: ArgumentParser):
+        parser.add_argument("--force", action='store_true', help="Force analysis of all profiles, even if they were already analyzed.")
+
     def handle(self, *args, **options):
         markdown_formatter = logging.Formatter("%(levelname)s: %(message)s\n")
         util.setup_logging(log_file=constants.MEASUREMENTS_DIR.joinpath("analysis.log.md"), log_file_mode="w",
                            log_file_formatter=markdown_formatter)
 
+        force = options["force"]
+
         with util.StackTraceGuard():
             start_time = datetime.now()
 
-            converted_profiles = analyze()
+            converted_profiles = analyze(force=force)
             # merge()
 
             completion_time = datetime.now()
