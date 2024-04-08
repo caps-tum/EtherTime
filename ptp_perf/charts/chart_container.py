@@ -16,7 +16,7 @@ from ptp_perf.utilities import units
 
 
 class YAxisLabelType:
-    CLOCK_DIFF_ABS_P99 = "Absolute Clock Offset $P_{99}$"
+    CLOCK_DIFF_ABS_P95 = "Absolute Clock Offset $P_{95}$"
     CLOCK_DIFF_ABS = "Absolute Clock Offset"
     CLOCK_DIFF = "Clock Offset"
     PATH_DELAY = "Path Delay"
@@ -32,12 +32,17 @@ class ChartContainer:
     ylimit_bottom: Optional[float] = None
     ylog: bool = False
 
+    legend: bool = True
 
     def save(self, path: PathOrStr, make_parents: bool = False, include_yzero: bool = True):
         if self.ylog:
             for axis in self.figure.axes:
                 axis.set_yscale('log')
                 self.plot_decorate_yaxis(axis, "Log-Scale Clock Offset")
+
+        if self.ylimit_top_use_always:
+            for axis in self.figure.axes:
+                axis.set_ylim(top=self.ylimit_top)
 
         if not self.ylog and include_yzero:
             for axis in self.figure.axes:
@@ -58,6 +63,10 @@ class ChartContainer:
             for axis in self.figure.axes:
                 axis.set_ybound((self.ylimit_bottom, None))
 
+        if not self.legend:
+            # Remove legends
+            for axis in self.figure.axes:
+                axis.legend().remove()
 
         if make_parents:
             parent_path = Path(path).parent
@@ -65,19 +74,24 @@ class ChartContainer:
                 raise RuntimeError("Tried to make a path not inside the repository root.")
             parent_path.mkdir(parents=True, exist_ok=True)
 
+        matplotlib.rcParams['pdf.fonttype'] = 42
+        matplotlib.rcParams['ps.fonttype'] = 42
+
         self.figure.savefig(str(path))
         plt.close(self.figure)
 
-
     @staticmethod
     def plot_decorate_yaxis(ax: plt.Axes, ylabel: str):
-        ax.yaxis.set_major_formatter(
+        ChartContainer.plot_decorate_axis(ax.yaxis, ylabel)
+
+    @staticmethod
+    def plot_decorate_axis(axis, label: str):
+        axis.set_major_formatter(
             matplotlib.ticker.FuncFormatter(
                 lambda value, _: units.format_time_offset(value)
             )
         )
-        ax.yaxis.set_label_text(ylabel)
-
+        axis.set_label_text(label)
 
     @staticmethod
     def plot_decorate_xaxis_timeseries(ax: plt.Axes):
@@ -94,7 +108,6 @@ class ChartContainer:
         )
         ax.xaxis.set_label_text("Timestamp")
 
-
     @staticmethod
     def add_boundary(axes: plt.Axes, timestamp: timedelta):
         axes.axvline(
@@ -108,7 +121,9 @@ class ChartContainer:
         if title is not None:
             ax.set_title(title)
 
-    def plot_timeseries(self, data: pd.Series, ax: plt.Axes, abs: bool = True, points: bool = True, moving_average: bool = True, title: str = None, palette_index: int = 0, annotate_out_of_bounds: bool = True):
+    def plot_timeseries(self, data: pd.Series, ax: plt.Axes, abs: bool = True, points: bool = True,
+                        moving_average: bool = True, title: str = None, palette_index: int = 0,
+                        annotate_out_of_bounds: bool = True):
         import seaborn
 
         if abs:
@@ -143,6 +158,7 @@ class ChartContainer:
                     data=out_of_bounds_data.clip(upper=self.ylimit_top),
                     color=(*base_color, 0.7),
                     marker='x',
+                    label='_nolegend_',
                 )
 
         if moving_average:
@@ -155,7 +171,8 @@ class ChartContainer:
                 ax=ax,
                 data=averages,
                 path_effects=[patheffects.Stroke(linewidth=2.5, foreground='black'), patheffects.Normal()],
-                color=base_color
+                color=base_color,
+                label='_nolegend_',
             )
 
         self.plot_decorate_yaxis(ax=ax, ylabel=YAxisLabelType.CLOCK_DIFF_ABS if abs else YAxisLabelType.CLOCK_DIFF)
@@ -175,10 +192,11 @@ class ChartContainer:
                     arrowprops=dict(arrowstyle='->'),
                 )
 
-
     def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
-                                     hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True, palette_index: int = 0,
-                                     annotate_medians: bool = False):
+                                     hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True,
+                                     palette_index: int = 0,
+                                     annotate_medians: bool = False,
+                                     include_p95: bool = True, include_iqr: bool = False,):
         import seaborn
 
         if abs:
@@ -186,7 +204,8 @@ class ChartContainer:
 
         seaborn.violinplot(
             y=data,
-            inner="quart",
+            # inner="quart",
+            inner=None,
             split=split,
             inner_kws={'color': '0.9'},
             cut=0,
@@ -195,7 +214,26 @@ class ChartContainer:
             x=x_discriminator,
             color=seaborn.color_palette()[palette_index] if hue_discriminator is None else None,
             density_norm='count',
+            label='_nolegend_',
         )
+
+        median = data.quantile(0.5)
+        line = ax.axhline(median, xmax=1.05, color='black')
+        line.set_clip_on(False)
+        ax.annotate(
+            xy=(1.07, median), xycoords=('axes fraction', 'data'),
+            text=f"{units.format_time_offset(median)}" + (f"\n±{units.format_time_offset(data.std())}" if include_iqr else ""),
+            horizontalalignment='left', verticalalignment='center',
+        )
+        if include_p95:
+            p95 = data.quantile(0.95)
+            line = ax.axhline(p95, xmax=1.05, color='black', linestyle='dashed')
+            line.set_clip_on(False)
+            ax.annotate(
+                xy=(1.07, p95), xycoords=('axes fraction', 'data'),
+                text=f"{units.format_time_offset(p95)}",
+                horizontalalignment='left', verticalalignment='center',
+            )
 
         if hue_discriminator is not None and annotate_medians:
             raise NotImplementedError("Cannot annotate medians with a hue discriminator.")
@@ -242,8 +280,8 @@ class ChartContainer:
             pass
             # ax.update_datalim(((0, 0),), updatex=False)
 
-
-    def annotate(self, ax: plt.Axes, annotation: str, position=(0.95, 0.95), horizontalalignment: str ="right", verticalalignment: str = 'top'):
+    def annotate(self, ax: plt.Axes, annotation: str, position=(0.95, 0.95), horizontalalignment: str = "right",
+                 verticalalignment: str = 'top'):
         ax.annotate(
             annotation,
             xy=position, xycoords='axes fraction',

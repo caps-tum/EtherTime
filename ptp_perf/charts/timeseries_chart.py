@@ -16,7 +16,7 @@ class TimeseriesChart(ChartContainer):
 
     def __post_init__(self):
         self.figure, self.axes = plt.subplots(
-            nrows=1, ncols=2, figsize=(10, 7),
+            nrows=1, ncols=2, figsize=(6, 4),
             sharey=True,
             width_ratios=[0.8, 0.2],
         )
@@ -36,4 +36,4 @@ class TimeseriesChart(ChartContainer):
 
     def add_path_delay(self, series: pd.Series):
         self.plot_timeseries(series, ax=self.axes[0], palette_index=3, annotate_out_of_bounds=False)
-        self.plot_timeseries_distribution(series, self.axes[1], palette_index=3)
+        self.plot_timeseries_distribution(series, self.axes[1], palette_index=3, include_p95=False, include_iqr=True)

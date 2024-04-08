@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models import CASCADE
 
 from ptp_perf import config
-from ptp_perf.machine import Machine
+from ptp_perf.machine import Machine, Cluster
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.models.exceptions import NoDataError
@@ -28,14 +28,19 @@ class PTPEndpoint(models.Model):
 
     profile: PTPProfile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
     machine_id = models.CharField(max_length=255)
+    cluster_id = models.CharField(max_length=255)
     restart_count = models.IntegerField(default=0)
 
     endpoint_type = models.CharField(choices=EndpointType, max_length=32, default=EndpointType.UNKNOWN)
 
     # Summary statistics
     clock_diff_median = models.FloatField(null=True)
-    clock_diff_p99 = models.FloatField(null=True)
+    clock_diff_p05 = models.FloatField(null=True)
+    clock_diff_p95 = models.FloatField(null=True)
     path_delay_median = models.FloatField(null=True)
+    path_delay_p05 = models.FloatField(null=True)
+    path_delay_p95 = models.FloatField(null=True)
+    path_delay_std = models.FloatField(null=True)
 
     # Convergence statistics
     convergence_timestamp = models.DateTimeField(null=True)
@@ -156,10 +161,15 @@ class PTPEndpoint(models.Model):
             Timeseries._validate_series(converged_series)
 
             # self.summary_statistics = self.time_series.summarize()
-            self.clock_diff_median = converged_series.median()
-            self.clock_diff_p99 = converged_series.quantile(0.99)
+            abs_clock_diff = converged_series.abs()
+            self.clock_diff_median = abs_clock_diff.median()
+            self.clock_diff_p05 = abs_clock_diff.quantile(0.05)
+            self.clock_diff_p95 = abs_clock_diff.quantile(0.95)
             path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True)
             self.path_delay_median = path_delay_values.median()
+            self.path_delay_p05 = path_delay_values.quantile(0.05)
+            self.path_delay_p95 = path_delay_values.quantile(0.95)
+            self.path_delay_std = path_delay_values.std()
 
         else:
             # This profile is probably corrupt.
@@ -187,13 +197,17 @@ class PTPEndpoint(models.Model):
             # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
             chart = TimeseriesChart(
                 title=self.get_title(),
-                summary_statistics=SummaryStatistics.create(clock_diff, path_delay),
-                ylimit_top = 1,
+                # summary_statistics=SummaryStatistics.create(clock_diff, path_delay),
+                ylimit_top = 0.0001,
+                ylimit_top_use_always=True,
                 ylimit_bottom = 0,
                 # ylog=True
+                legend=True,
             )
             chart.add_path_delay(path_delay)
             chart.add_clock_difference(clock_diff)
+            # legend = chart.figure.legend(["Path Delay", "Path Delay", "Clock Difference"])
+            # legend.
             chart.save(output_path, make_parents=True)
 
         if self.clock_step_timestamp is not None:
@@ -251,6 +265,10 @@ class PTPEndpoint(models.Model):
         return config.machines.get(self.machine_id)
 
     @property
+    def cluster(self) -> Cluster:
+        return config.clusters.get(self.cluster_id)
+
+    @property
     def storage_base_path(self) -> Path:
         return self.benchmark.storage_base_path.joinpath(self.profile.vendor.id).joinpath(str(self.id))
 
@@ -260,7 +278,7 @@ class PTPEndpoint(models.Model):
 
     def get_chart_timeseries_path(self, convergence_included: bool = False) -> Path:
         suffix = "" if not convergence_included else "-convergence"
-        return self.storage_base_path.joinpath(f"{self.filename_base}{suffix}.png")
+        return self.storage_base_path.joinpath(f"{self.filename_base}{suffix}.pdf")
 
     def get_title(self, extra_info: str = None):
         return f"{self.benchmark.name} ({self.profile.vendor.name}" + (

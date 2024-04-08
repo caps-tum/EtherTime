@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pandas.core.dtypes.common import is_numeric_dtype
 
 from ptp_perf.charts.chart_container import ChartContainer, YAxisLabelType
-from ptp_perf.models import PTPProfile
+from ptp_perf.models import PTPProfile, PTPEndpoint
 from ptp_perf.profiles.data_container import BootstrapMetric
 from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import units
@@ -36,14 +36,14 @@ class ComparisonDataPoint:
 @dataclass
 class ComparisonChart(ChartContainer):
     title: str
-    profiles: List[PTPProfile]
+    profiles: List[PTPEndpoint]
     x_axis_label: str
     use_bar: bool = False
     include_p99: bool = True
     include_p99_separate_axis: bool = True
     include_profile_confidence_intervals: bool = False
     include_annotate_range: bool = False
-    """Whether to import the confidence intervals from each profile that is plotted."""
+    """Whether to import the confidence intervals from each endpoint that is plotted."""
     include_additional_quantile_confidence_intervals: bool = False
     """Whether to compute additional aggregate quantile confidence intervals for the confidence intervals provided by seaborn."""
     hue_name: str = "Vendor"
@@ -53,14 +53,14 @@ class ComparisonChart(ChartContainer):
 
     def __post_init__(self):
         self.figure, self.axes = plt.subplots(
-            nrows=self.num_axis_rows, ncols=1, figsize=(10, 7),
+            nrows=self.num_axis_rows, ncols=1, figsize=(6, 4),
             squeeze=False,
             # sharex="col", sharey="row",
         )
 
         self.plot_decorate_title(self.axes[0][0], self.title)
 
-    def plot_statistic(self, axis: plt.Axes, profile_callback: Callable[[PTPProfile], ComparisonDataPoint],
+    def plot_statistic(self, axis: plt.Axes, profile_callback: Callable[[PTPEndpoint], ComparisonDataPoint],
                        linestyle=None, y_axis_label_type=YAxisLabelType.OFFSET_GENERIC):
         data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
         data = pd.DataFrame(data_points)
@@ -130,11 +130,15 @@ class ComparisonChart(ChartContainer):
         if self.include_annotate_range:
             axis.get_legend().set_loc("upper left")
 
-            range = data['y'].max() - data['y'].min()
-            relative_range = 100 * (range / abs(data['y'].median()))
+            min = data['y'].min()
+            max = data['y'].max()
+            range = max - min
+            relative_range = 100 * (range / max)
             self.annotate(
                 axis,
-                f"Range: {units.format_time_offset(range)} = {relative_range:.0f}%"
+                f"Min: {units.format_time_offset(min)}, Max: {units.format_time_offset(max)}\n"
+                f"Range: {relative_range:.0f}%",
+                position=(0.05, 0.95), horizontalalignment='left',
             )
 
         self.plot_decorate_yaxis(axis, ylabel=y_axis_label_type)
@@ -147,8 +151,9 @@ class ComparisonChart(ChartContainer):
 
         self.plot_statistic(
             axis=self.axes[row][0],
-            profile_callback=lambda profile: ComparisonDataPoint.from_bootstrap_metric(
-                x=x_axis_values(profile), y=profile.summary_statistics.clock_diff_median, hue=profile.vendor.name,
+            profile_callback=lambda endpoint: ComparisonDataPoint(
+                x=x_axis_values(endpoint), y=endpoint.clock_diff_median, hue=endpoint.profile.vendor.name,
+                y_lower_bound=endpoint.clock_diff_p05, y_upper_bound=endpoint.clock_diff_p95,
             ),
             y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS)
 
@@ -158,22 +163,23 @@ class ComparisonChart(ChartContainer):
 
             self.plot_statistic(
                 axis=self.axes[row][0],
-                profile_callback=lambda profile: ComparisonDataPoint.from_bootstrap_metric(
-                    x=x_axis_values(profile),  # GBit/s to %
-                    y=profile.summary_statistics.clock_diff_p95,
-                    hue=f"{profile.vendor.name} $P_{{99}}$",
+                profile_callback=lambda endpoint: ComparisonDataPoint(
+                    x=x_axis_values(endpoint),  # GBit/s to %
+                    y=endpoint.clock_diff_p95,
+                    hue=f"{endpoint.profile.vendor.name} $P_{{99}}$",
                 ),
-                y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS_P99,
+                y_axis_label_type=YAxisLabelType.CLOCK_DIFF_ABS_P95,
                 linestyle='dotted',
             )
 
         row += 1
         self.plot_statistic(
             axis=self.axes[row][0],
-            profile_callback=lambda profile: ComparisonDataPoint.from_bootstrap_metric(
-                x=x_axis_values(profile),
-                y=profile.summary_statistics.path_delay_median,
-                hue=profile.vendor.name,
+            profile_callback=lambda endpoint: ComparisonDataPoint(
+                x=x_axis_values(endpoint),
+                y=endpoint.path_delay_median,
+                y_lower_bound=endpoint.path_delay_p05, y_upper_bound=endpoint.path_delay_p95,
+                hue=endpoint.profile.vendor.name,
             ),
             y_axis_label_type=YAxisLabelType.PATH_DELAY)
 

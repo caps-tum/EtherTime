@@ -24,10 +24,10 @@ class ProfileQuery:
             query = query.filter(is_processed=True)
 
         if self.benchmark:
-            query = query.filter(benchmark_id=self.benchmark)
+            query = query.filter(benchmark_id=self.benchmark.id)
 
         if self.vendor:
-            query = query.filter(vendor_id=self.vendor)
+            query = query.filter(vendor_id=self.vendor.id)
 
         benchmarks_from_tags = [benchmark for benchmark in BenchmarkDB.all() if all(tag in benchmark.tags for tag in self.tags)]
         query = query.filter(benchmark_id__in=[benchmark.id for benchmark in benchmarks_from_tags])
