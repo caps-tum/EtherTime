@@ -1,12 +1,14 @@
+\newcommand{\safetyMargin}{10$\times$}
 
 \section{Potential Failures}
+\todo{Should this be a sub-section}
 
 Having an accurate clock synchronization across a network of machines can be just a nice-to-have for some applications, but applications that need to rely on the accuracy of the clock to perform their work need better guarantees than just an estimate of the accuracy.
 Resilience is a top priority when building dependable systems, and to ensure that a system can operate reliably engineers will often add safety margins to their systems so that deviations in components of the system will not cause complete system failure.
 In the context of time synchronization, since estimating the offset between clocks in software is imprecise even after applying denoising techniques, and the actual offset is influenced by a range of environmental conditions, the margin needs to be sufficiently large.
-The high level of uncertainty combined with high risk, consequences of failure, and/or system criticality for certain application scenarios can merit safety factors of 5$\times$, 10$\times$ or beyond depending on the application scenario\todo{Would be nice to have something to cite here}.
-Naturally, the exact factor varies between use-cases, but for the purpose of our analysis of determining what conditions can lead to failures, we choose a safety factor of an order of magnitude (10$\times$) over the baseline to be conservative, although actual deployments may require additional margin.
-Thus, for our testbed of Raspberry Pis, a failure constitutes any time when the measured clock offset exceeds 40\,\textmu{}s\todo{Actually insert the baseline.}.
+The high level of uncertainty combined with high risk, major consequences of failure, and/or system criticality for certain application scenarios can merit safety factors of 5$\times$, 10$\times$ or beyond depending on the application scenario\todo{Would be nice to have something to cite here}.
+Naturally, the exact factor varies between use-cases, but for the purpose of our analysis of determining what conditions can lead to failures, we choose a safety factor of an order of magnitude (\safetyMargin) over the baseline to be conservative, although actual deployments may require additional margin\todo{self-contradictory}.
+Thus, for our testbed of Raspberry Pis, a failure constitutes any time when the measured clock offset exceeds 40\,\textmu{}s\todo{out-of-place: hardware not introduced.}\todo{Actually insert the baseline.}.
 
 \subsection{Sources of Error}
 
@@ -16,9 +18,9 @@ Error can originate from 2 principal sources: either the clock fails to perform 
 
 \newcounter{errorConditions}
 \begin{enumerate}[label=I\arabic*.]
-    \item \textbf{Time flows forward.} This is perhaps the most important assumption, and the one with the worst consequences when it is violated. A clock that rewinds is not something that is well accounted for in software systems, and it can cause any number of cascading failures, with common ones including missed deadlines as well as data inconsistencies. Due to the problems associated with this, any amount of backward time shifting is considered a violation.
-    \item \textbf{Time does not jump.} While systems expect time to pass, jumping too far into the future can cause e.g. load spikes through too many scheduled tasks arriving simultaneously or tasks being skipped entirely. To be compliant, gaps in time-keeping should be no larger than our designated bound.
-    \item \textbf{Time passes at a constant rate.} While this might seem like the most important constraint, it is actually the easiest one to bend without compromising the usefulness of the clock. No process is perfect, thus tolerance is always expected, and software is designed to cope with some amount of variance in the flow of time.
+    \item \textbf{Time flows forward.} This is perhaps the most trivial assumption, and the one with the worst consequences when it is violated. A clock that rewinds is not something that is well accounted for in software systems, and it can cause any number of cascading failures, with common ones including missed deadlines as well as data inconsistencies. Due to the these risks, even minor backward time shifts can result in system stability issues.
+    \item \textbf{Time passes continuously, it does not jump.} While systems expect time to pass, jumping too far into the future can cause e.g. load spikes through too many scheduled tasks arriving simultaneously or tasks being skipped entirely. For stability, direct modifications of a clock should be limited to a magnitude smaller than the chosen safety bound.
+    \item \textbf{Time passes at a constant rate.} While this might seem like the most important constraint, it is actually the easiest one to bend without compromising the usefulness of the clock. No process is perfect, thus tolerance is always expected, and software is designed to cope with some amount of variance in the flow of time. Making clocks tick slightly faster or slower can be used for synchronization with fewer stability implications.
     \setcounter{errorConditions}{\value{enumi}}
 \end{enumerate}
 
@@ -30,16 +32,16 @@ When two or more clocks are at play, then another invariant arises:
 
 \begin{enumerate}[label=I\arabic*.]
     \setcounter{enumi}{\value{errorConditions}}
-    \item \textbf{Coherence between ordered readings of different clocks.} A reading of one clock that comes before another should always yield a timestamp smaller than the latter to allow comparing them to be useful. This is equivalent with obtaining the same timestamp when reading both clocks simultaneously, but this is not possible in practice. Since this condition cannot be perfectly fulfilled, we only consider the coherency to be violated when the order is not preserved even though the readings were further apart than the tolerance bound.
+    \item \textbf{Coherence between ordered readings of different clocks.} A reading of one clock that comes before another should always yield a timestamp smaller than the latter to allow comparing them to be useful. This is theoretically equivalent with obtaining the same arbitrary-precision timestamp when reading both clocks simultaneously, but this is not possible in practice. Since this condition cannot be perfectly fulfilled, we only consider the coherency to be violated when the order is not preserved even though the readings were further apart than the tolerance bound.
 \end{enumerate}
 
-Establishing and maintaining coherency is PTP's primary purpose, and maintaining I4 does not have a fixed priority, it sometimes merits breaking I2 or even I1. However, for synchronization to be possible two preconditions need to be fulfilled. These are the two principal challenges that PTP is faced with:
+Establishing and maintaining coherency is PTP's primary purpose, and maintaining invariant I4 does not have a fixed priority, it sometimes merits breaking I3, I2 or even I1. However, for synchronization to even become possible two preconditions need to be fulfilled. These are the two principal challenges that PTP is faced with:
 
 \begin{enumerate}[label=P\arabic*.]
 %    \setcounter{enumi}{\value{errorConditions}}
 
-    \item \textbf{Clock difference can be measured.} The prerequisite to synchronizing two clocks is to be able to quantify the offset, which is difficult to do reliably across packet-switched networks with best-effort quality of service.
-    \item \textbf{Clock difference can be corrected.} Even when a difference can be measured it does not automatically imply that it can be corrected. Modifying current time directly violates conditions I1-I3, so time synchronization programs frequently have rules in place limiting when which conditions may be violated.
+    \item \textbf{Clock difference can be measured.} The prerequisite to synchronizing two clocks is to be able to quantify the offset, which is difficult to do reliably across packet-switched networks with best-effort quality of service due to the inherent packet-delay variation present.
+    \item \textbf{Clock difference can be corrected.} Even when a difference can be measured it does not automatically imply that it can be corrected. Modifying current time has system stability implications because it directly violates conditions I1-I3, so time synchronization programs frequently have rules in place limiting under what conditions which invariants may be violated.
 \end{enumerate}
 
 In order for two clocks to stay synchronized, both conditions need to be continuously fulfilled to prevent divergence from occurring, which would cause invariant I4 to break down.
@@ -48,13 +50,16 @@ In order for two clocks to stay synchronized, both conditions need to be continu
 A violation of any of these conditions is an error in the timing system that can propagate throughout the entire system.
 In the case of the first three clock invariants, failures will cause local incoherence, potentially triggering cascading failure even in system components that do not interact across a network. On the other hand, problems with time synchronization prerequisites causes clocks to diverge (I4), which only becomes noticeable upon communication when the coherency breaks down.
 While this might seem less troublesome, the entire point of deploying PTP is to provide reliable and high accuracy time synchronization, so a failure to provide this invalidates the usefulness of PTP itself.
+\todo{Needs rephrasing for clarity.}
+
+The importance of maintaining the clock invariants can be easy to underestimate. While intuitively a small clock error, say a one-second offset, might seem negligible for most timekeeping use cases, multiple production outages have been linked to timekeeping failures. One common cause is the existence of the leap-second, an extra second that occurs once every few years to keep the calendar in sync with the earth's rotation, which has been known to cause problems with navigation/collision avoidance systems, deadlocks and livelocks occurring in the Linux kernel causing computer systems to freeze (both transient and persistent, meaning a server restart could not fix the problem), and multi-hour freezes in financial transaction processing systems~\cite{leap-seconds-recap}. Significant engineering work has gone into trying to mitigate the leap-second, with some solutions employing a leap-smear~\cite{leap-second-google, leap-second-technical-aspects} to avoid a time jump (thus breaking lower-priority condition I3 rather than I1/I2), but imperfections in the mitigation systems have in turn caused synchronization failures leading to accidental time jumps as large as 10 years~\cite{leap-seconds-recap}, large enough to break even ``simple'' systems that we take for granted such as SSL. The leap-second is such a significant reliability problem that recently calls are being made to abolish it altogether rather than trying to deal with its consequences~\cite{leap-second-facebook-abolish}, a resolution which has since found its way into the definition of UTC~\cite{leap-second-resolution}. When even well-vetted software such as the Linux kernel has issues with resilience against timing invariants breaking on a magnitude as small as just one second, it is easy to guess that the average user application will be much less resilient still.
 
 Throughout this study, we will determine what can be expected of PTP, when and under what conditions the invariants and prerequisites inevitably break down under adverse conditions, and what this means for the ability of applications to reliably leverage Ethernet-based time synchronization.
 %\todo{Explicitly list what our 10x bound means for each invariant.}
 
 \begin{table}
     \centering
-    \caption{Conditions that constitute a violation of the time source invariants, as per the defined 10$\times$ safety margin above the baseline.}
+    \caption{Conditions that constitute a violation of the time source invariants, as per the defined \safetyMargin{} safety margin above the baseline.}
     \begin{tabular}{crr}
         Invariant & Raspberry-Pi& 2nd System\\
         I1 & $\Delta{}t<0$& \\

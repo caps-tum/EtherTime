@@ -28,6 +28,7 @@
   backend=biber
 ]{biblatex}
 \addbibresource{bibliography.bib}
+%\usepackage{siunitx}
 
 %% TODONOTES
 \paperwidth=\dimexpr \paperwidth + 6cm\relax
@@ -35,6 +36,18 @@
 \evensidemargin=\dimexpr\evensidemargin + 3cm\relax
 \marginparwidth=\dimexpr \marginparwidth + 3cm\relax
 \usepackage{todonotes}
+
+
+% Key-system
+
+\newcommand{\ptpKeyPrefix}{}
+\newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
+\newcommand{\fTime}[1]{#1\,\textmu{}s}
+\newcommand{\fTimeKey}[1]{\fTime{\ptpKey{#1}}}
+\newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
+\newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
+\newcommand{\fPercentage}[2][0]{\fpeval{round(100*(#2), #1)}\%}
+\newcommand{\fRelative}[2][0]{\fpeval{round(100*(#2)-100, #1)}\%}
 
 \begin{document}
 
@@ -85,6 +98,7 @@ PTP, Time Synchronization, Fault Tolerance
 \input{sections/fault_tolerance.tex}
 \input{sections/related_work.tex}
 \input{sections/methodology.tex}
+\input{sections/results.tex}
 
 \printbibliography
 
