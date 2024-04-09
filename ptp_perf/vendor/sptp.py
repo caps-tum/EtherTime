@@ -57,6 +57,8 @@ class SPTPVendor(Vendor):
         else:
             raise NotImplementedError()
 
+        # SPTP exits with return code -15 if it gets cancelled
+        self._process.expected_return_codes.append(-15)
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
 
         await self._process.run()

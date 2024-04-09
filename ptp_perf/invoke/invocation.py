@@ -25,7 +25,7 @@ class Invocation:
     privileged: bool = False
 
     verify_return_code: bool = True
-    expected_return_code: int = 0
+    expected_return_codes: List[int] = field(default_factory=lambda: [0])
     keep_alive: bool = False
     restart_delay: timedelta = timedelta(seconds=1)
 
@@ -199,7 +199,7 @@ class Invocation:
             if self.log_invocation:
                 self._logger.info(f"Process {self.command_short_name} exited with return code {self.return_code}.")
 
-            if self.verify_return_code and not skip_verify_return_code and self.return_code != self.expected_return_code:
+            if self.verify_return_code and not skip_verify_return_code and self.return_code not in self.expected_return_codes:
                 if self.dump_output_on_failure:
                     for line in self.output.splitlines():
                         self._logger.info(f"| {line}")
