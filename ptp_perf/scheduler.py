@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+from ptp_perf import config
 from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
 from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
 from ptp_perf.models.schedule_task import ScheduleTask
@@ -84,6 +85,7 @@ def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
+    cluster = config.clusters[result.cluster]
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
     else:
@@ -98,7 +100,10 @@ def queue_benchmarks(result):
 
     for benchmark in benchmarks:
         for vendor in vendors:
-            command = f"LOG_EXCEPTIONS=1 python3 run_orchestration.py --benchmark '{benchmark.id}' --vendor {vendor.id}"
+            command = (f"LOG_EXCEPTIONS=1 python3 run_orchestration.py "
+                       f"--benchmark '{benchmark.id}' "
+                       f"--vendor {vendor.id} "
+                       f"--cluster {cluster.id} ")
 
             if duration_override is None:
                 duration = benchmark.duration
