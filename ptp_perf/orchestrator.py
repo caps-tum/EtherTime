@@ -88,13 +88,13 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
 
     return profile
 
-async def run_orchestration(benchmark_id: str, vendor_id: str,
-                            duration_override: timedelta = None, test_mode: bool = False, analyze: bool = False):
+async def run_orchestration(benchmark_id: str, vendor_id: str, cluster_id: str,
+                            duration_override: timedelta = None, test_mode: bool = False):
     benchmark = BenchmarkDB.get(benchmark_id)
     vendor = VendorDB.get(vendor_id)
 
     configuration = config.subset_cluster(
-        config.get_configuration_by_cluster_name("rpi-4"),
+        config.get_configuration_by_cluster_name(cluster_id),
         benchmark.num_machines,
     )
     await configuration.cluster.synchronize_repositories()

@@ -5,7 +5,7 @@ from datetime import timedelta
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 bootstrap_django_environment()
 
-from ptp_perf import util
+from ptp_perf import util, config
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import StackTraceGuard
 from ptp_perf.vendor.registry import VendorDB
@@ -21,6 +21,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "--vendor", choices=[vendor.id for vendor in VendorDB.all()], required=True,
         help="Specify which vendor to benchmark, by vendor id."
+    )
+    parser.add_argument(
+        "--cluster", choices=config.clusters.keys(), required=True,
+        help="Specify which cluster to benchmark on, by cluster id."
     )
     parser.add_argument(
         "--duration", type=int, default=None, help="Duration override (in minutes)",
@@ -46,7 +50,6 @@ if __name__ == '__main__':
         from ptp_perf.orchestrator import run_orchestration
 
         asyncio.run(run_orchestration(
-            benchmark_id=result.benchmark, vendor_id=result.vendor,
+            benchmark_id=result.benchmark, vendor_id=result.vendor, cluster_id=result.cluster,
             duration_override=duration_override, test_mode=test_mode,
-            analyze=result.analyze,
         ))
