@@ -7,10 +7,15 @@ from ptp_perf.machine import Cluster, Machine, PluginSettings
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.util import ImmediateException, str_join
 
-RASPBERRY_PI_PTP_SETTINGS = {
+RASPBERRY_PI_4_PTP_SETTINGS = {
     'ptp_interface': 'eth0',
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': True,
+}
+RASPBERRY_PI_5_PTP_SETTINGS = {
+    'ptp_interface': 'eth0',
+    'ptp_use_phc2sys': False,
+    'ptp_software_timestamping': False,
 }
 
 PTP_SLAVE_SETTINGS = {
@@ -24,7 +29,7 @@ MACHINE_RPI06 = Machine(
     ptp_address="10.0.0.6",
     ptp_force_master=True,
     endpoint_type=EndpointType.MASTER,
-    **RASPBERRY_PI_PTP_SETTINGS,
+    **RASPBERRY_PI_4_PTP_SETTINGS,
     ptp_priority_1=1,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.6", iperf_secondary_address="192.168.1.106",
@@ -35,7 +40,7 @@ MACHINE_RPI08 = Machine(
     ptp_address="10.0.0.8",
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
-    **RASPBERRY_PI_PTP_SETTINGS,
+    **RASPBERRY_PI_4_PTP_SETTINGS,
     ptp_priority_1=248,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
@@ -46,13 +51,49 @@ MACHINE_RPI07 = Machine(
     ptp_address="10.0.0.7",
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
-    **RASPBERRY_PI_PTP_SETTINGS,
+    **RASPBERRY_PI_4_PTP_SETTINGS,
     ptp_failover_master=True,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
+
+MACHINE_RPI56 = Machine(
+    id="rpi56", address="rpi56", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.56",
+    ptp_force_master=True,
+    endpoint_type=EndpointType.MASTER,
+    **RASPBERRY_PI_5_PTP_SETTINGS,
+    ptp_priority_1=1,
+    plugin_settings=PluginSettings(
+        iperf_server=True, iperf_address="10.0.0.56", iperf_secondary_address="192.168.1.156",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+MACHINE_RPI58 = Machine(
+    id="rpi58", address="rpi58", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.58",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    **RASPBERRY_PI_5_PTP_SETTINGS,
+    ptp_priority_1=248,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.58", iperf_secondary_address="192.168.1.158",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+MACHINE_RPI57 = Machine(
+    id="rpi57", address="rpi57", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.57",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.SECONDARY_SLAVE,
+    **RASPBERRY_PI_5_PTP_SETTINGS,
+    ptp_failover_master=True,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.57", iperf_secondary_address="192.168.1.157",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
     ptp_address="0.0.0.0",
@@ -61,12 +102,23 @@ MACHINE_RPISERV = Machine(
 )
 
 machines = {
-    machine.id: machine for machine in [MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08, MACHINE_RPISERV]
+    machine.id: machine for machine in [
+        MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08,
+        MACHINE_RPI56, MACHINE_RPI57, MACHINE_RPI58,
+        MACHINE_RPISERV
+    ]
 }
 
 CLUSTER_PI = Cluster(
     id="rpi-4",
     name="Raspberry-Pi 4",
+    machines=[
+        MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
+    ]
+)
+CLUSTER_PI5 = Cluster(
+    id="rpi-5",
+    name="Raspberry-Pi 5",
     machines=[
         MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
     ]
@@ -80,7 +132,7 @@ CLUSTER_RPI_SERV = Cluster(
 )
 
 clusters = {
-    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_RPI_SERV]
+    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_RPI_SERV]
 }
 
 
