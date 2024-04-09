@@ -77,44 +77,21 @@ class LinuxPTPVendor(Vendor):
         self.invoke_package_manager("linuxptp", action="purge")
 
     def parse_log_data(self, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
-        from ptp_perf.models.sample import Sample
+        results = Vendor.extract_sample_from_log_using_regex(
+            endpoint,
+            source_name='ptp4l',
+            pattern="ptp4l\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
+        )
 
-        if endpoint.logrecord_set.filter(source="phc2sys").count() > 0:
-            raise NotImplementedError("Cannot import phc2sys log for the moment.")
+        # Unsupported, offsets need to be added to each other
+        # results += Vendor.extract_sample_from_log_using_regex(
+        #     endpoint,
+        #     source_name='phc2sys',
+        #     pattern="phc2sys\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
+        # )
 
-        logs = endpoint.logrecord_set.filter(source="ptp4l").all()
+        return results
 
-        samples = []
-        for log in logs:
-            match = re.search(
-                pattern="ptp4l\[(?P<timestamp>[0-9.+-]+)\]: master offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+)",
-                string=log.message,
-            )
-            if match is None:
-                continue
-
-            samples.append(
-                Sample(
-                    endpoint = endpoint,
-                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
-                    timestamp=log.timestamp,
-                    sample_type=Sample.SampleType.CLOCK_DIFF,
-                    value=int(match.group("master_offset")),
-                )
-            )
-
-            samples.append(
-                Sample(
-                    endpoint=endpoint,
-                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
-                    timestamp=log.timestamp,
-                    sample_type=Sample.SampleType.PATH_DELAY,
-                    value=int(match.group("path_delay")),
-                )
-            )
-
-        Sample.objects.bulk_create(samples)
-        return samples
 
     @property
     def running(self):

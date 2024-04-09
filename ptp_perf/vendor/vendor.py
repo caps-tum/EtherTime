@@ -1,3 +1,4 @@
+import re
 import shutil
 import typing
 from dataclasses import dataclass
@@ -8,7 +9,7 @@ from ptp_perf.constants import LOCAL_DIR, PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 
 if typing.TYPE_CHECKING:
-    from ptp_perf.models import PTPEndpoint, Sample
+    from ptp_perf.models import PTPEndpoint, Sample, LogRecord
 
 
 @dataclass
@@ -81,3 +82,46 @@ class Vendor:
         output_file = self.config_file_path
         output_file.write_text(output)
         return output_file
+
+
+    @staticmethod
+    def extract_sample_from_log_using_regex(endpoint: "PTPEndpoint", source_name: str, pattern: str):
+        """Search through records from specified endpoint and log source using pattern,
+        ingesting samples from values in regex groups 'master_offset' and 'path_delay'"""
+        from ptp_perf.models.sample import Sample
+
+        # Since we use stdbuf for ptpd now we also need to use that as a source.
+        logs: typing.List["LogRecord"] = endpoint.logrecord_set.filter(source=source_name).all()
+
+
+        samples = []
+        for log in logs:
+            match = re.search(
+                pattern=pattern,
+                string=log.message,
+            )
+            if match is None:
+                continue
+
+            samples.append(
+                Sample(
+                    endpoint = endpoint,
+                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
+                    timestamp=log.timestamp,
+                    sample_type=Sample.SampleType.CLOCK_DIFF,
+                    value=int(match.group("master_offset")),
+                )
+            )
+
+            samples.append(
+                Sample(
+                    endpoint=endpoint,
+                    # timestamp=timedelta(seconds=float(match.group("timestamp"))),
+                    timestamp=log.timestamp,
+                    sample_type=Sample.SampleType.PATH_DELAY,
+                    value=int(match.group("path_delay")),
+                )
+            )
+
+        Sample.objects.bulk_create(samples)
+        return samples
