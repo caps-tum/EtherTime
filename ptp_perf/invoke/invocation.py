@@ -69,12 +69,11 @@ class Invocation:
     def set_environment_variable(self, name: str, value: str, replace: bool = False, extend: bool = False):
         if name in self.environment and not replace:
             if extend:
-                self.environment[name].extend(value)
+                self.environment[name] = f"{self.environment[name]}:{value}"
             else:
                 raise RuntimeError(f"Attempted to set environment variable {name} multiple times on invocation")
-        self.environment[name] = InvocationEnvironmentVariable(name, value)
-        if extend:
-            self.environment[name].value_as_extension()
+        else:
+            self.environment[name] = value
         return self
 
     def set_working_directory(self, working_directory: Union[Path, str, None]) -> Self:

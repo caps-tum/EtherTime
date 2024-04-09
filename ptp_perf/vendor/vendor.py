@@ -67,9 +67,16 @@ class Vendor:
         return LOCAL_DIR.joinpath("ptp-config.txt")
 
 
+    def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
+        return base_path.joinpath(f"{self.id}_template.conf")
+
+
     def create_configuration_file(self, endpoint: "PTPEndpoint") -> Path:
         # Render the configuration template file to a temporary file and return it
-        template = PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config").joinpath(f"{self.id}_template.conf").read_text()
+        template_source_path = self.config_file_source_path(
+            PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config"), endpoint
+        )
+        template = template_source_path.read_text()
         output = template.format(ptp_config=endpoint.benchmark.ptp_config, machine=endpoint.machine)
         output_file = self.config_file_path
         output_file.write_text(output)

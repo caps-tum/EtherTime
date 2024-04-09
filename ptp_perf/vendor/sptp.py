@@ -1,7 +1,9 @@
 import io
+import os
 import typing
 from dataclasses import dataclass
 from datetime import timedelta
+from pathlib import Path
 
 import pandas as pd
 
@@ -15,9 +17,9 @@ if typing.TYPE_CHECKING:
 
 
 @dataclass
-class PTPDVendor(Vendor):
-    id: str = "ptpd"
-    name: str = "PTPd"
+class SPTPVendor(Vendor):
+    id: str = "sptp"
+    name: str = "SPTP"
     _process: Invocation = None
 
     def running(self):
@@ -27,27 +29,34 @@ class PTPDVendor(Vendor):
 
     @property
     def installed(self):
-        return self.check_executable_present("ptpd")
+        return self.check_executable_present("~/go/bin/sptp")
 
     def install(self):
-        self.invoke_package_manager("ptpd")
+        raise NotImplementedError()
 
     def uninstall(self):
-        self.invoke_package_manager("ptpd", action="purge")
+        raise NotImplementedError()
 
     async def run(self, endpoint: "PTPEndpoint"):
 
+        if endpoint.machine.ptp_failover_master:
+            raise NotImplementedError()
+
         self._process = Invocation.of_command(
-            # Run PTPd through stdbuf line buffering so that we get log lines as they are emitted.
-            "stdbuf", "-eL", "-oL",
-            "ptpd",
-            "-i", endpoint.machine.ptp_interface,
-            "--verbose",
-        ).append_arg_if_present(
-            '--masteronly', endpoint.machine.ptp_force_master
-        ).append_arg_if_present(
-            '--slaveonly', endpoint.machine.ptp_force_slave_effective(endpoint.benchmark.fault_failover)
-        ).as_privileged()
+            "ptp4u" if endpoint.machine.ptp_force_master else "sptp",
+            "-iface", endpoint.machine.ptp_interface,
+        ).set_environment_variable("PATH", f"/home/rpi/go/bin/", extend=True).as_privileged()
+
+        if endpoint.machine.ptp_force_master:
+            self._process.append_arg_if_present("--timestamptype", endpoint.machine.ptp_software_timestamping)
+            self._process.append_arg_if_present("software", endpoint.machine.ptp_software_timestamping)
+        elif endpoint.machine.ptp_force_slave:
+            self._process.append_arg_if_present("-config")
+            self._process.append_arg_if_present(str(self.config_file_path)),
+            self._process.append_arg_if_present(endpoint.cluster.ptp_master.ptp_address)
+        else:
+            raise NotImplementedError()
+
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
 
         await self._process.run()
@@ -55,6 +64,11 @@ class PTPDVendor(Vendor):
     async def restart(self, kill: bool = True, restart_delay: timedelta = timedelta(seconds=1)):
         await self._process.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
 
+    def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
+        if endpoint.machine.ptp_force_slave:
+            return base_path.joinpath("sptp_template_slave.conf")
+        else:
+            return base_path.joinpath("sptp_template_master.conf")
 
     @classmethod
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:

@@ -21,6 +21,7 @@ PTP_SLAVE_SETTINGS = {
 
 MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.6",
     ptp_force_master=True,
     endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_PTP_SETTINGS,
@@ -31,6 +32,7 @@ MACHINE_RPI06 = Machine(
 )
 MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.8",
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
     **RASPBERRY_PI_PTP_SETTINGS,
@@ -41,6 +43,7 @@ MACHINE_RPI08 = Machine(
 )
 MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.7",
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_PTP_SETTINGS,
@@ -52,6 +55,7 @@ MACHINE_RPI07 = Machine(
 )
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
+    ptp_address="0.0.0.0",
     endpoint_type=EndpointType.ORCHESTRATOR,
     ptp_interface="",
 )

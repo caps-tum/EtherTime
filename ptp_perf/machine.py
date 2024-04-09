@@ -97,6 +97,7 @@ class PluginSettings:
 class Machine(RPCTarget):
     id: str
     ptp_interface: str
+    ptp_address: str
     endpoint_type: EndpointType
     ptp_force_master: bool = False
     ptp_failover_master: bool = False
@@ -120,6 +121,10 @@ class Machine(RPCTarget):
         # This is not really a nice way of handling it
         return not self.ptp_force_master and not self.ptp_failover_master
 
+    @property
+    def ptp_timestamp_type(self):
+        return "software" if self.ptp_software_timestamping else "hardware"
+
     def __str__(self):
         return self.id
 
@@ -138,3 +143,7 @@ class Cluster:
 
     def machine_by_id(self, id: str):
         return unpack_one_value(machine for machine in self.machines if machine.id == id)
+
+    @property
+    def ptp_master(self) -> Machine:
+        return unpack_one_value([machine for machine in self.machines if machine.ptp_force_master])
