@@ -2,6 +2,7 @@ import typing
 
 from django.db import models
 
+from ptp_perf.machine import Cluster
 from ptp_perf.models.endpoint_type import EndpointType
 
 if typing.TYPE_CHECKING:
@@ -46,6 +47,11 @@ class PTPProfile(models.Model):
     def vendor(self) -> "Vendor":
         from ptp_perf.vendor.registry import VendorDB
         return VendorDB.get(self.vendor_id)
+
+    @property
+    def cluster(self) -> Cluster:
+        import ptp_perf.config as config
+        return config.clusters.get(self.cluster_id)
 
     def __str__(self):
         return f"{self.benchmark} (#{self.id}, {self.vendor}, {self.start_time})"

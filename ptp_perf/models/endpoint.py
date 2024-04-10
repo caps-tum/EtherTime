@@ -28,7 +28,6 @@ class PTPEndpoint(models.Model):
 
     profile: PTPProfile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
     machine_id = models.CharField(max_length=255)
-    cluster_id = models.CharField(max_length=255)
     restart_count = models.IntegerField(default=0)
 
     endpoint_type = models.CharField(choices=EndpointType, max_length=32, default=EndpointType.UNKNOWN)
@@ -266,7 +265,7 @@ class PTPEndpoint(models.Model):
 
     @property
     def cluster(self) -> Cluster:
-        return config.clusters.get(self.cluster_id)
+        return self.profile.cluster
 
     @property
     def storage_base_path(self) -> Path:

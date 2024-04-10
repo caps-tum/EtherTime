@@ -38,7 +38,6 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
     orchestrator_endpoint = PTPEndpoint(
         profile=profile,
         machine_id="orchestrator",
-        cluster_id=configuration.cluster.id,
         endpoint_type=EndpointType.ORCHESTRATOR,
     )
     await orchestrator_endpoint.asave()
@@ -57,7 +56,6 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
             machine_endpoint = PTPEndpoint(
                 profile=profile,
                 machine_id=machine.id,
-                cluster_id=configuration.cluster.id,
                 endpoint_type=machine.endpoint_type,
             )
             await machine_endpoint.asave()
