@@ -48,6 +48,9 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
 
     controller = MultiTaskController()
 
+    run_successful = False
+    finalize_successful = False
+
     try:
 
         for machine in configuration.cluster.machines:
@@ -80,13 +83,16 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         await controller.run_for()
         await controller.run_for(duration=timedelta(seconds=10), wait_for_all=True)
 
-        profile.is_successful = True
+        run_successful = True
 
     finally:
-        await controller.cancel_pending_tasks()
-
-        profile.is_running = False
-        await profile.asave()
+        try:
+            await controller.cancel_pending_tasks()
+            finalize_successful = True
+        finally:
+            profile.is_successful = run_successful and finalize_successful
+            profile.is_running = False
+            await profile.asave()
 
     logging_handler.uninstall()
 
