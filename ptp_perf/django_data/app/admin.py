@@ -18,9 +18,9 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile_id', 'vendor', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median']
+    list_display = ['id', 'profile_id', 'vendor', 'cluster_id', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median']
     list_select_related = ['profile']
-    list_filter = ['endpoint_type', 'profile__vendor_id', 'profile_id']
+    list_filter = ['endpoint_type', 'profile__vendor_id', 'cluster_id', 'profile_id']
 
     def vendor(self, endpoint: PTPEndpoint):
         return endpoint.profile.vendor.name
