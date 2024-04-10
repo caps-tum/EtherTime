@@ -80,6 +80,8 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         await controller.run_for()
         await controller.run_for(duration=timedelta(seconds=10), wait_for_all=True)
 
+        profile.is_successful = True
+
     finally:
         await controller.cancel_pending_tasks()
 
