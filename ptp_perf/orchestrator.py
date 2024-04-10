@@ -3,6 +3,8 @@ import copy
 import logging
 from datetime import datetime, timedelta
 
+from django.utils import timezone
+
 from ptp_perf import config
 from ptp_perf import util
 from ptp_perf.adapters.device_control import DeviceControl
@@ -22,7 +24,7 @@ from ptp_perf.vendor.vendor import Vendor
 
 async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
 
-    profile_timestamp = datetime.now().astimezone()
+    profile_timestamp = timezone.localtime()
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,

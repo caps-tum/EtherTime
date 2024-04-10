@@ -1,19 +1,14 @@
-import asyncio
 import logging
-import time
-from argparse import ArgumentParser
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from pathlib import Path
+from dataclasses import dataclass
+from datetime import timedelta
 from typing import Optional
+
+from django.utils import timezone
 
 from ptp_perf import config
 from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
-from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
 from ptp_perf.models.schedule_task import ScheduleTask
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.util import PathOrStr, setup_logging, StackTraceGuard
-from ptp_perf.utilities.pydantic import pydantic_save_model, pydantic_load_model
 from ptp_perf.vendor.registry import VendorDB
 
 QUEUE = ensure_directory_exists(LOCAL_DIR.joinpath("task_queue"))
@@ -66,7 +61,7 @@ def queue_task(result):
 def info(result):
     alignment_str = "{0: >4}  {1: <50}  {2: >20}  {3: >20}"
 
-    now = datetime.now().replace(microsecond=0).astimezone()
+    now = timezone.localtime().replace(microsecond=0)
     eta = now
     print(alignment_str.format("Id", "Name", "Est. Time Remaining", "ETA"))
     pending_tasks = ScheduleQueue.pending_tasks()
