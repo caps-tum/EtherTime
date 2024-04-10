@@ -12,8 +12,8 @@ class PTPEndpointInline(admin.TabularInline):
 
 @admin.register(PTPProfile)
 class PTPProfileAdmin(admin.ModelAdmin):
-    list_display = ['id', 'benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
-    list_filter = ['benchmark_id', 'vendor_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
+    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
+    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
     inlines = [PTPEndpointInline]
 
 @admin.register(PTPEndpoint)
