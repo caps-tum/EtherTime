@@ -7,7 +7,7 @@ import pandas as pd
 from django.db.models import QuerySet
 from pandas import MultiIndex
 
-from ptp_perf.machine import Machine
+from ptp_perf.machine import Machine, Cluster
 from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
@@ -20,6 +20,7 @@ from ptp_perf.vendor.vendor import Vendor
 class SampleQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
+    cluster: Optional[Cluster] = None
     machine: Optional[Union[Machine, str]] = None
     endpoint_type: Optional[EndpointType] = None
 
@@ -77,6 +78,8 @@ class SampleQuery:
             endpoint_query = endpoint_query.filter(profile__benchmark_id=self.benchmark.id)
         if self.vendor is not None:
             endpoint_query = endpoint_query.filter(profile__vendor_id=self.vendor.id)
+        if self.cluster is not None:
+            endpoint_query = endpoint_query.filter(profile__cluster_id=self.cluster.id)
         if self.machine is not None:
             endpoint_query = endpoint_query.filter(machine_id=self.machine.id if isinstance(self.machine, Machine) else self.machine)
         if self.endpoint_type is not None:
