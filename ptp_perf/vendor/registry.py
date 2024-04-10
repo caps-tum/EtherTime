@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from ptp_perf.registry.base_registry import BaseRegistry
+from ptp_perf.vendor.chrony import ChronyVendor
 from ptp_perf.vendor.linuxptp import LinuxPTPVendor
 from ptp_perf.vendor.ptpd import PTPDVendor
 from ptp_perf.vendor.sptp import SPTPVendor
@@ -15,8 +16,9 @@ class VendorDB(BaseRegistry):
     PTPD = PTPDVendor()
     LINUXPTP = LinuxPTPVendor()
     SPTP = SPTPVendor()
+    CHRONY = ChronyVendor()
 
-    ANALYZED_VENDORS: List[Vendor] = [PTPD, LINUXPTP, SPTP]
+    ANALYZED_VENDORS: List[Vendor] = [PTPD, LINUXPTP, SPTP, CHRONY]
 
 
 VendorDB.register_all(
@@ -24,4 +26,5 @@ VendorDB.register_all(
     VendorDB.PTPD,
     VendorDB.LINUXPTP,
     VendorDB.SPTP,
+    VendorDB.CHRONY,
 )

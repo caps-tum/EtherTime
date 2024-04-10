@@ -86,14 +86,9 @@ async def benchmark(endpoint_id: str):
 
 async def synchronize_time_ntp(local_machine: Machine):
     # Synchronize the time to NTP
-    logging.info(f"Starting initial time synchronization via SystemD-NTP.")
-    systemd_ntp_vendor = VendorDB.SYSTEMD_NTP
-    await systemd_ntp_vendor.toggle_ntp_service(active=True)
-    await async_wait_for_condition(
-        systemd_ntp_vendor.check_clock_synchronized, target=True, timeout=timedelta(seconds=30), quiet=True,
-        label=f"NTP Synchronization ({local_machine})"
-    )
-    await systemd_ntp_vendor.toggle_ntp_service(active=False)
+    logging.info(f"Starting initial time synchronization via Chrony.")
+    ntp = VendorDB.CHRONY
+    await ntp.initial_time_synchronization()
 
 async def clock_jump(local_machine: Machine, use_initial_clock_offset: bool = True):
     # Step the clock using PPSi tool

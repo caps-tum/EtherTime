@@ -78,14 +78,14 @@ class Vendor:
             PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config"), endpoint
         )
         template = template_source_path.read_text()
-        output = template.format(ptp_config=endpoint.benchmark.ptp_config, machine=endpoint.machine)
+        output = template.format(ptp_config=endpoint.benchmark.ptp_config, machine=endpoint.machine, cluster=endpoint.cluster)
         output_file = self.config_file_path
         output_file.write_text(output)
         return output_file
 
 
     @staticmethod
-    def extract_sample_from_log_using_regex(endpoint: "PTPEndpoint", source_name: str, pattern: str):
+    def extract_sample_from_log_using_regex(endpoint: "PTPEndpoint", source_name: str, pattern: str, number_conversion: typing.Callable[[str], int] = int):
         """Search through records from specified endpoint and log source using pattern,
         ingesting samples from values in regex groups 'master_offset' and 'path_delay'"""
         from ptp_perf.models.sample import Sample
@@ -109,7 +109,7 @@ class Vendor:
                     # timestamp=timedelta(seconds=float(match.group("timestamp"))),
                     timestamp=log.timestamp,
                     sample_type=Sample.SampleType.CLOCK_DIFF,
-                    value=int(match.group("master_offset")),
+                    value=number_conversion(match.group("master_offset")),
                 )
             )
 
@@ -119,7 +119,7 @@ class Vendor:
                     # timestamp=timedelta(seconds=float(match.group("timestamp"))),
                     timestamp=log.timestamp,
                     sample_type=Sample.SampleType.PATH_DELAY,
-                    value=int(match.group("path_delay")),
+                    value=number_conversion(match.group("path_delay")),
                 )
             )
 
