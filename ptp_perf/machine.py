@@ -147,3 +147,6 @@ class Cluster:
     @property
     def ptp_master(self) -> Machine:
         return unpack_one_value([machine for machine in self.machines if machine.ptp_force_master])
+
+    def __str__(self):
+        return self.name
