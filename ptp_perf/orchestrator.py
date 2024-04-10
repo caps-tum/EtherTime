@@ -24,7 +24,7 @@ from ptp_perf.vendor.vendor import Vendor
 
 async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendor: Vendor) -> PTPProfile:
 
-    profile_timestamp = timezone.localtime()
+    profile_timestamp = timezone.now()
     profile = PTPProfile(
         benchmark_id=benchmark.id,
         vendor_id=vendor.id,

@@ -61,7 +61,7 @@ def queue_task(result):
 def info(result):
     alignment_str = "{0: >4}  {1: <50}  {2: >20}  {3: >20}"
 
-    now = timezone.localtime().replace(microsecond=0)
+    now = timezone.now().replace(microsecond=0)
     eta = now
     print(alignment_str.format("Id", "Name", "Est. Time Remaining", "ETA"))
     pending_tasks = ScheduleQueue.pending_tasks()
@@ -69,8 +69,12 @@ def info(result):
         remaining_time = task.estimated_time_remaining
 
         eta = eta + remaining_time
-        timedelta()
-        print(alignment_str.format(task.id, task.name + (" (running)" if task.running else ''), str(remaining_time).split(".")[0], str(eta.strftime("%H:%M"))))
+        print(alignment_str.format(
+            task.id,
+            task.name + (" (running)" if task.running else ''),
+            str(remaining_time).split(".")[0],
+            str(timezone.localtime(eta).strftime("%H:%M")))
+        )
 
     remaining_duration = eta.replace(microsecond=0) - now.replace(microsecond=0)
     print(f"Estimated completion of {len(pending_tasks)} tasks in {remaining_duration}")
