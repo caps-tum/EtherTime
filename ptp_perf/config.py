@@ -120,7 +120,7 @@ CLUSTER_PI5 = Cluster(
     id="rpi-5",
     name="Raspberry-Pi 5",
     machines=[
-        MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
+        MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
     ]
 )
 CLUSTER_RPI_SERV = Cluster(
