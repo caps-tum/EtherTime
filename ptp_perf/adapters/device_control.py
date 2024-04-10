@@ -1,4 +1,5 @@
 import asyncio
+from typing import List, Dict, Tuple
 
 from tinytuya import OutletDevice
 
@@ -10,35 +11,43 @@ from ptp_perf.models import PTPEndpoint
 class DeviceControl(Adapter):
     log_source = "fault-generator"
 
-    id = "ebb88e5f6700fa300acvqr"
-    ip = "192.168.1.200"
-    key = "Ow/wW6UPpqT2%N5u"
-
     # Which machine is plugged where
-    machine_socket_map = {
-        'switch': 1,
-        'rpi06': 2,
-        'rpi07': 4,
-        'rpi08': 6,
+    machine_socket_map: Dict[str, Tuple[int, int]] = {
+        'switch': (0, 1),
+        'rpi06': (0, 2),
+        'rpi07': (0, 4),
+        'rpi08': (0, 6),
+        'rpi56': (1, 2),
+        'rpi57': (1, 4),
+        'rpi58': (1, 6),
     }
 
-    power_strip: OutletDevice
+    power_strips: List[OutletDevice]
     configuration: Configuration
 
     def __init__(self, endpoint: PTPEndpoint, configuration: Configuration):
         super().__init__(endpoint)
         self.configuration = configuration
-        self.power_strip = OutletDevice(
-            dev_id=self.id,
-            address=self.ip,
-            local_key=self.key,
-            version=3.3,
-        )
+
+        self.power_strips = [
+            OutletDevice(
+                dev_id="ebb88e5f6700fa300acvqr",
+                address="192.168.1.200",
+                local_key="Ow/wW6UPpqT2%N5u",
+                version=3.3,
+            ),
+            OutletDevice(
+                dev_id="eb577872fdf15b915avgl2",
+                address="192.168.1.201",
+                local_key="+n<ykcP|O&tuI|EP",
+                version=3.3,
+            ),
+        ]
 
     def toggle_machine(self, machine_id: str, state: bool):
         try:
-            port = self.machine_socket_map[machine_id]
-            self.power_strip.set_status(state, switch=port)
+            power_strip_id, port = self.machine_socket_map[machine_id]
+            self.power_strips[power_strip_id].set_status(state, switch=port)
         except KeyError:
             raise RuntimeError(f"Machine {machine_id} is not assigned to a power strip socket.")
 
