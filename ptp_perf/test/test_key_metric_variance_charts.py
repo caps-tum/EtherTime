@@ -39,7 +39,7 @@ class KeyMetricVarianceCharts(TestCase):
         endpoints.sort(key=lambda endpoint: endpoint.profile.vendor_id)
         comparison_chart = ComparisonChart(
             title=f"Reproducibility ({benchmark_names})",
-            profiles=endpoints,
+            endpoints=endpoints,
             x_axis_label="Profile",
             use_bar=True,
             include_p99=False, include_p99_separate_axis=False,

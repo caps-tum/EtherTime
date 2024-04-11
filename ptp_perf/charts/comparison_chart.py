@@ -36,7 +36,7 @@ class ComparisonDataPoint:
 @dataclass
 class ComparisonChart(ChartContainer):
     title: str
-    profiles: List[PTPEndpoint]
+    endpoints: List[PTPEndpoint]
     x_axis_label: str
     use_bar: bool = False
     include_p99: bool = True
@@ -60,9 +60,9 @@ class ComparisonChart(ChartContainer):
 
         self.plot_decorate_title(self.axes[0][0], self.title)
 
-    def plot_statistic(self, axis: plt.Axes, profile_callback: Callable[[PTPEndpoint], ComparisonDataPoint],
+    def plot_statistic(self, axis: plt.Axes, endpoint_callback: Callable[[PTPEndpoint], ComparisonDataPoint],
                        linestyle=None, y_axis_label_type=YAxisLabelType.OFFSET_GENERIC):
-        data_points = [profile_callback(profile).__dict__ for profile in self.profiles]
+        data_points = [endpoint_callback(profile).__dict__ for profile in self.endpoints]
         data = pd.DataFrame(data_points)
 
         if data.empty:
@@ -146,12 +146,12 @@ class ComparisonChart(ChartContainer):
         axis.set_xlabel(self.x_axis_label)
 
 
-    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[PTPProfile], Union[float, str]]):
+    def plot_median_clock_diff_and_path_delay(self, x_axis_values: Callable[[PTPEndpoint], Union[float, str]]):
         row = 0
 
         self.plot_statistic(
             axis=self.axes[row][0],
-            profile_callback=lambda endpoint: ComparisonDataPoint(
+            endpoint_callback=lambda endpoint: ComparisonDataPoint(
                 x=x_axis_values(endpoint), y=endpoint.clock_diff_median, hue=endpoint.profile.vendor.name,
                 y_lower_bound=endpoint.clock_diff_p05, y_upper_bound=endpoint.clock_diff_p95,
             ),
@@ -163,7 +163,7 @@ class ComparisonChart(ChartContainer):
 
             self.plot_statistic(
                 axis=self.axes[row][0],
-                profile_callback=lambda endpoint: ComparisonDataPoint(
+                endpoint_callback=lambda endpoint: ComparisonDataPoint(
                     x=x_axis_values(endpoint),  # GBit/s to %
                     y=endpoint.clock_diff_p95,
                     hue=f"{endpoint.profile.vendor.name} $P_{{99}}$",
@@ -175,7 +175,7 @@ class ComparisonChart(ChartContainer):
         row += 1
         self.plot_statistic(
             axis=self.axes[row][0],
-            profile_callback=lambda endpoint: ComparisonDataPoint(
+            endpoint_callback=lambda endpoint: ComparisonDataPoint(
                 x=x_axis_values(endpoint),
                 y=endpoint.path_delay_median,
                 y_lower_bound=endpoint.path_delay_p05, y_upper_bound=endpoint.path_delay_p95,
