@@ -54,8 +54,8 @@ class LogRecordAdmin(admin.ModelAdmin):
 
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
-    list_display = ['id', 'endpoint', "sample_type", 'value']
-    list_filter = ['endpoint__profile', 'endpoint__machine_id', "sample_type"]
+    list_display = ['id', 'endpoint', "sample_type", "timestamp", 'value']
+    list_filter = ['endpoint__profile__benchmark_id', 'endpoint__profile__vendor_id', 'endpoint__machine_id', "sample_type"]
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
