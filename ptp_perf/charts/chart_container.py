@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from datetime import timedelta
+from io import StringIO
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import matplotlib.ticker
 import pandas as pd
+import seaborn
 from matplotlib import pyplot as plt, patheffects
 from matplotlib.ticker import EngFormatter
 from pandas.core.dtypes.common import is_datetime64_dtype, is_timedelta64_dtype
@@ -33,8 +35,12 @@ class ChartContainer:
     ylog: bool = False
 
     legend: bool = True
+    legend_pos: str = None
+    legend_kwargs: dict = None
 
-    def save(self, path: PathOrStr, make_parents: bool = False, include_yzero: bool = True):
+    tight_layout: bool = False
+
+    def save(self, path: Union[Path, str, StringIO], make_parents: bool = False, include_yzero: bool = True, format: str = None):
         if self.ylog:
             for axis in self.figure.axes:
                 axis.set_yscale('log')
@@ -63,10 +69,17 @@ class ChartContainer:
             for axis in self.figure.axes:
                 axis.set_ybound((self.ylimit_bottom, None))
 
-        if not self.legend:
+        if self.legend:
+            if self.legend_pos:
+                for axis in self.figure.axes:
+                    seaborn.move_legend(axis, self.legend_pos, **self.legend_kwargs)
+        else:
             # Remove legends
             for axis in self.figure.axes:
                 axis.legend().remove()
+
+        if self.tight_layout:
+            self.figure.tight_layout()
 
         if make_parents:
             parent_path = Path(path).parent
@@ -77,7 +90,10 @@ class ChartContainer:
         matplotlib.rcParams['pdf.fonttype'] = 42
         matplotlib.rcParams['ps.fonttype'] = 42
 
-        self.figure.savefig(str(path))
+        if isinstance(path, Path):
+            path = str(path)
+
+        self.figure.savefig(path, format=format)
         plt.close(self.figure)
 
     @staticmethod

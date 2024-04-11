@@ -22,7 +22,8 @@ class VendorComparisonCharts(TestCase):
 
         for benchmark in [BenchmarkDB.BASE]:
             output_data = []
-            for vendor_index, vendor in enumerate(VendorDB.ANALYZED_VENDORS):
+            vendors = VendorDB.ANALYZED_VENDORS
+            for vendor_index, vendor in enumerate(vendors):
 
                 for cluster_index, cluster in enumerate(config.clusters.values()):
                     try:
@@ -57,8 +58,8 @@ class VendorComparisonCharts(TestCase):
 
                     for quantile in quantiles:
                         output_data.append({
-                            'Label': f"{vendor.name}" + (f"\n{cluster.name}" if vendor_index == 1 else ''),
-                            'X': 4 * cluster_index + vendor_index,
+                            'Label': f"{vendor.name}",
+                            'X': (len(vendors) + 1) * cluster_index + vendor_index,
                             'Cluster': cluster.name,
                             'Vendor': vendor.name,
                             'Value': quantile,
@@ -78,11 +79,12 @@ class VendorComparisonCharts(TestCase):
                 native_scale=True,
                 legend=False,
             )
-            plot.set_xticks(frame['X'])
-            plot.set_xticklabels(frame['Label'])
+            plot.set_xticks(list(frame['X']) + [1.5, 6.5])
+            plot.set_xticklabels(list(frame['Label']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"])
 
             chart = ChartContainer(figure=plot.get_figure())
             chart.plot_decorate_yaxis(plot, 'Clock Offset')
+            chart.plot_decorate_title(plot, "Baseline Performance by Vendor and Cluster")
 
             chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
 
