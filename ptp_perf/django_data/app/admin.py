@@ -93,6 +93,17 @@ class SampleAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     pass
 
+@admin.action(description="Toggle paused")
+def toggle_pause(modeladmin, request, queryset):
+    task: ScheduleTask
+    with transaction.atomic():
+        for task in queryset.all():
+            task.paused = not task.paused
+            task.save()
+
+
 @admin.register(ScheduleTask)
 class ScheduleTaskAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'estimated_time', 'success', 'start_time', 'completion_time']
+    list_display = ['id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time']
+    list_filter = ['success']
+    actions = [toggle_pause]

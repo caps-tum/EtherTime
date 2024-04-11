@@ -13,6 +13,7 @@ class ScheduleTask(models.Model):
     id: int = models.AutoField(primary_key=True)
     name: str = models.CharField(max_length=255)
     command: str = models.TextField()
+    paused: bool = models.BooleanField(default=False)
     estimated_time: timedelta = models.DurationField()
     slack_time: timedelta = models.DurationField(default=timedelta(minutes=5))
 

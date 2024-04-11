@@ -39,11 +39,11 @@ class VendorComparisonCharts(TestCase):
                         continue
 
                     # data = data.resample('1m').
-                    resampled_data = data.droplevel('endpoint_id').abs().resample('60s').apply(
-                        lambda group: group.median() if len(group) >= 30 else np.nan
-                    ).dropna()
-
-                    print('Resampled', vendor.name, resampled_data.min(), resampled_data.median(), resampled_data.max())
+                    # resampled_data = data.droplevel('endpoint_id').abs().resample('60s').apply(
+                    #     lambda group: group.median() if len(group) >= 30 else np.nan
+                    # ).dropna()
+                    #
+                    # print('Resampled', vendor.name, resampled_data.min(), resampled_data.median(), resampled_data.max())
 
                     unmodified_data = data.droplevel('endpoint_id').abs()
                     quantiles = unmodified_data.quantile([0.05, 0.5, 0.95])

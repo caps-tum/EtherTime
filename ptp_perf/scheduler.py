@@ -28,7 +28,7 @@ class ScheduleQueue:
 
     @staticmethod
     def pending_tasks():
-        return ScheduleTask.objects.filter(completion_time__isnull=True)
+        return ScheduleTask.objects.filter(completion_time__isnull=True, paused=False)
 
     @staticmethod
     def queue_task(task: ScheduleTask):
@@ -71,7 +71,7 @@ def info(result):
         eta = eta + remaining_time
         print(alignment_str.format(
             task.id,
-            task.name + (" (running)" if task.running else ''),
+            task.name + (" (running)" if task.running else '') + (" (paused)" if task.paused else ''),
             str(remaining_time).split(".")[0],
             str(timezone.localtime(eta).strftime("%H:%M")))
         )
