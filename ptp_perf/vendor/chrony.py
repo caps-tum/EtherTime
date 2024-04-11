@@ -99,6 +99,7 @@ class ChronyVendor(Vendor):
             # Log line:
             # 2024-04-10 20:43:50 10.0.0.56       N 10 111 111 1111   0  0 1.00 -4.530e-07  1.526e-04  1.146e-07  0.000e+00  0.000e+00 7F7F0101 4I K K
             # Regex: Date + Time + IP at beginning of address. Then stuff in between, then offset, peer delay, peer displacement, root delay and root displacement all as scientific notation
-            pattern='\d+-\d+-\d+ \d+:\d+:\d+ \d+\.\d+\.\d+\.\d+ .* (?P<master_offset>[+-]' + scientific_number + ')\s*(?P<path_delay>' + scientific_number + ')\s*' + scientific_number + '\s+' + scientific_number + '\s+' + scientific_number + '\s+',
+            # Literal pattern: \d+-\d+-\d+ \d+:\d+:\d+ \d+\.\d+\.\d+\.\d+ .* (?P<master_offset>[+-]?\d+\.\d+e[+-]\d+)\s*(?P<path_delay>[+-]?\d+\.\d+e[+-]\d+)\s*[+-]?\d+\.\d+e[+-]\d+\s+[+-]?\d+\.\d+e[+-]\d+\s+[+-]?\d+\.\d+e[+-]\d+\s+
+            pattern='\d+-\d+-\d+ \d+:\d+:\d+ \d+\.\d+\.\d+\.\d+ .* (?P<master_offset>' + scientific_number + ')\s*(?P<path_delay>' + scientific_number + ')\s*' + scientific_number + '\s+' + scientific_number + '\s+' + scientific_number + '\s+',
             number_conversion=lambda x: int(float(x) * units.NANOSECONDS_IN_SECOND)
         )
