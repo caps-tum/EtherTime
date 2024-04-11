@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import transaction
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask
 
@@ -10,11 +11,25 @@ class LogRecordInline(admin.TabularInline):
 class PTPEndpointInline(admin.TabularInline):
     model = PTPEndpoint
 
+
+@admin.action(description="Delete analysis output")
+def delete_analysis_output(modeladmin, request, queryset):
+    profile: PTPProfile
+    for profile in queryset.all():
+        with transaction.atomic():
+            for endpoint in profile.ptpendpoint_set.all():
+                endpoint.sample_set.all().delete()
+            profile.is_processed = False
+            profile.is_corrupted = False
+            profile.save()
+
+
 @admin.register(PTPProfile)
 class PTPProfileAdmin(admin.ModelAdmin):
     list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
     list_filter = ['benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
-    inlines = [PTPEndpointInline]
+    # inlines = [PTPEndpointInline]
+    actions = [delete_analysis_output]
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
