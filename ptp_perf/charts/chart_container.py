@@ -15,6 +15,7 @@ from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
 from ptp_perf.profiles.data_container import ANNOTATION_BBOX_PROPS
 from ptp_perf.util import PathOrStr
 from ptp_perf.utilities import units
+from ptp_perf.vendor.registry import VendorDB
 
 
 class YAxisLabelType:
@@ -304,3 +305,18 @@ class ChartContainer:
             verticalalignment=verticalalignment, horizontalalignment=horizontalalignment,
             bbox=ANNOTATION_BBOX_PROPS,
         )
+
+    VENDOR_COLORS = {
+        VendorDB.PTPD.id: '#1f77b4',
+        VendorDB.PTPD.name: '#1f77b4',
+        VendorDB.LINUXPTP.id: '#ff7f0e',
+        VendorDB.LINUXPTP.name: '#ff7f0e',
+        VendorDB.SPTP.id: '#2ca02c',
+        VendorDB.SPTP.name: '#2ca02c',
+        VendorDB.CHRONY.id: '#d62728',
+        VendorDB.CHRONY.name: '#d62728',
+    }
+
+    @staticmethod
+    def calculate_vendor_color(vendor_data: pd.Series):
+        return vendor_data.apply(lambda x: ChartContainer.VENDOR_COLORS[x])

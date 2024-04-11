@@ -70,23 +70,30 @@ class VendorComparisonCharts(TestCase):
 
             print(frame)
 
+            # seaborn.set_style("whitegrid")
             plot = seaborn.barplot(
                 frame,
                 x='X',
                 hue='Vendor',
+                palette=ChartContainer.VENDOR_COLORS,
                 y='Value',
                 errorbar=('pi', 100),
                 native_scale=True,
                 legend=False,
             )
+            plot.grid(axis='y')
+            # plot.grid(axis='y', which='minor', linestyle='dotted')
+            plot.set_axisbelow(True)
             plot.set_xticks(list(frame['X']) + [1.5, 6.5])
             plot.set_xticklabels(list(frame['Label']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"])
 
             chart = ChartContainer(figure=plot.get_figure())
+            plot.xaxis.set_label_text('')
             chart.plot_decorate_yaxis(plot, 'Clock Offset')
             chart.plot_decorate_title(plot, "Baseline Performance by Vendor and Cluster")
 
-            chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
+            chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.svg"))
+            chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
 
                 #
                 # comparison_chart = ComparisonChart(
