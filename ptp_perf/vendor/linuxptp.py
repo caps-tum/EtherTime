@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 @dataclass
 class LinuxPTPVendor(Vendor):
     id: str = "linuxptp"
-    name: str = "LinuxPTP"
+    name: str = "PTP4L"
 
     _process_ptp4l: Invocation = None
     _process_phc2sys: Invocation = None

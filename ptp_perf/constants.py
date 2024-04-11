@@ -23,6 +23,7 @@ CHARTS_DIR = ensure_directory_exists(DATA_DIR.joinpath("charts"))
 CONFIG_DIR = ensure_directory_exists(DATA_DIR.joinpath("config"))
 
 LOCAL_DIR = ensure_directory_exists(PTPPERF_REPOSITORY_ROOT.joinpath("local"))
+PAPER_GENERATED_RESOURCES_DIR = PTPPERF_REPOSITORY_ROOT.joinpath("doc").joinpath("project-4-paper").joinpath("res").joinpath("generated")
 
 DEFAULT_BENCHMARK_DURATION = timedelta(minutes=20)
 

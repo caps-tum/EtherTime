@@ -9,6 +9,7 @@ import matplotlib.ticker
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn
+from matplotlib.ticker import MultipleLocator
 
 from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
@@ -44,6 +45,7 @@ class AxisContainer:
 
     xlabel: str = None
     xticks: Optional[Iterable] = None
+    yticks_interval: float = 10 * units.us
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = True
     xaxis_invert: bool = False
@@ -53,6 +55,10 @@ class AxisContainer:
     ylimit_top: Optional[float] = None
     ylimit_bottom: Optional[float] = None
     yticklabels_format_time: bool = True
+
+    yminorticks: bool = False
+    yminorticks_interval: float = 1 * units.us
+    yminorticklabels: bool = False
 
     legend: bool = False
     legend_pos: Optional[str] = None
@@ -73,7 +79,7 @@ class AxisContainer:
         self.axis.xaxis.set_label_text(self.xlabel)
         if self.xticks is not None:
             self.axis.set_xticks(self.xticks)
-        if self.yticklabels_format_time:
+        if self.xticklabels_format_time:
             self.decorate_axis_time_formatter(self.axis.xaxis)
         if self.xticklabels is not None:
             self.axis.set_xticklabels(self.xticklabels)
@@ -82,12 +88,20 @@ class AxisContainer:
 
         # Y-axis
         self.axis.yaxis.set_label_text(self.ylabel)
-        self.axis.set_ylim(self.ylimit_top, self.ylimit_bottom)
+        self.axis.set_ylim(self.ylimit_bottom, self.ylimit_top)
+        if self.yticks_interval:
+            self.axis.yaxis.set_major_locator(MultipleLocator(self.yticks_interval))
         if self.yticklabels_format_time:
             self.decorate_axis_time_formatter(self.axis.yaxis)
 
+        if self.yminorticks:
+            self.axis.yaxis.set_minor_locator(MultipleLocator(self.yminorticks_interval))
+            if self.yminorticklabels:
+                self.decorate_axis_time_formatter(self.axis.yaxis, major=False)
+
         if self.grid:
             self.axis.grid(axis='y')
+            self.axis.grid(axis='y', which='minor', linestyle='dotted')
             self.axis.set_axisbelow(True)
 
         if not self.legend:
@@ -97,12 +111,14 @@ class AxisContainer:
                 seaborn.move_legend(self.axis, self.legend_pos, **self.legend_kwargs)
 
     @staticmethod
-    def decorate_axis_time_formatter(axis):
-        axis.set_major_formatter(
-            matplotlib.ticker.FuncFormatter(
-                lambda value, _: units.format_time_offset(value)
+    def decorate_axis_time_formatter(axis, major: bool = True):
+        formatter = matplotlib.ticker.FuncFormatter(lambda value, _: units.format_time_offset(value))
+        if major:
+            axis.set_major_formatter(
+                formatter
             )
-        )
+        else:
+            axis.set_minor_formatter(formatter)
 
     @staticmethod
     def add_boundary(axes: plt.Axes, timestamp: timedelta):
@@ -119,20 +135,28 @@ class FigureContainer:
 
     figure: plt.Figure = None
     size: Tuple[int, int] = (6, 4)
+    weights: List[int] = None
+    w_space: float = None
     share_y: bool = True
 
     tight_layout: bool = False
 
     def plot(self):
         self.figure, axes = plt.subplots(
+            figsize=self.size,
             nrows=1, ncols=len(self.axes_containers),
             sharey=self.share_y,
             squeeze=False,
+            width_ratios=self.weights,
         )
+        if self.w_space is not None:
+            plt.subplots_adjust(wspace=self.w_space)
+
+        axes = axes.flatten()
 
         assert len(axes) == len(self.axes_containers)
 
-        for axis, axis_container in zip(axes.flatten(), self.axes_containers):
+        for axis, axis_container in zip(axes, self.axes_containers):
             axis_container.axis = axis
             axis_container.plot()
 
