@@ -30,6 +30,12 @@ class YAxisLabelType:
 class ChartContainer:
     figure: plt.Figure = None
 
+    xlabel: str = "Timestamp"
+    xticks: Optional[pd.Series] = None
+    xticklabels: Optional[pd.Series] = None
+
+    ylabel: str = "Clock Offset"
+
     ylimit_top: Optional[float] = None
     ylimit_top_use_always: bool = False
     ylimit_bottom: Optional[float] = None

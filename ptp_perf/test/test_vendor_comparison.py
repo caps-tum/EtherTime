@@ -7,6 +7,8 @@ import seaborn
 
 from ptp_perf import config
 from ptp_perf.charts.chart_container import ChartContainer
+from ptp_perf.charts.comparison_bar_element import ComparisonBarElement
+from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.constants import MEASUREMENTS_DIR
 from ptp_perf.models import Sample
 from ptp_perf.models.endpoint_type import EndpointType
@@ -71,45 +73,21 @@ class VendorComparisonCharts(TestCase):
             print(frame)
 
             # seaborn.set_style("whitegrid")
-            plot = seaborn.barplot(
-                frame,
-                x='X',
-                hue='Vendor',
-                palette=ChartContainer.VENDOR_COLORS,
-                y='Value',
-                errorbar=('pi', 100),
-                native_scale=True,
-                legend=False,
-            )
-            plot.grid(axis='y')
-            # plot.grid(axis='y', which='minor', linestyle='dotted')
-            plot.set_axisbelow(True)
-            plot.set_xticks(list(frame['X']) + [1.5, 6.5])
-            plot.set_xticklabels(list(frame['Label']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"])
 
-            chart = ChartContainer(figure=plot.get_figure())
-            plot.xaxis.set_label_text('')
-            chart.plot_decorate_yaxis(plot, 'Clock Offset')
-            chart.plot_decorate_title(plot, "Baseline Performance by Vendor and Cluster")
+            chart = FigureContainer(
+                [AxisContainer(
+                    [ComparisonBarElement(
+                        data=frame,
+                        column_x='X',
+                        column_y='Value',
+                        column_hue='Vendor'
+                    )],
+                    title="Baseline Performance by Vendor and Cluster",
+                    xticks=list(frame['X']) + [1.5, 6.5],
+                    xticklabels=list(frame['Label']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"],
+                )],
+            )
+            chart.plot()
 
             chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.svg"))
             chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
-
-                #
-                # comparison_chart = ComparisonChart(
-                #     title=f"Reproducibility ({benchmark.name})",
-                #     profiles=endpoints,
-                #     x_axis_label="Profile",
-                #     use_bar=True,
-                #     include_p99=False, include_p99_separate_axis=False,
-                #     include_profile_confidence_intervals=True,
-                #     include_annotate_range=True,
-                #     ylimit_top=0.0001, ylimit_top_use_always=True,
-                #     legend=False,
-                # )
-                # comparison_chart.plot_median_clock_diff_and_path_delay(
-                #     x_axis_values=lambda endpoint: endpoints.index(endpoint),
-                # )
-                #
-                # comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance.svg"))
-                # comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance.pdf"))
