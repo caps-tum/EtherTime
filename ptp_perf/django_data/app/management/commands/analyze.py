@@ -10,7 +10,7 @@ from ptp_perf.models import PTPProfile
 
 def analyze(force: bool = False):
     # profile_query = PTPProfile.objects.filter(is_processed=False).all()
-    profile_query = PTPProfile.objects.all(is_running=False)
+    profile_query = PTPProfile.objects.all().filter(is_running=False)
     if not force:
         profile_query = profile_query.filter(is_processed=False)
 
