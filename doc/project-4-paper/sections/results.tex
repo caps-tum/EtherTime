@@ -33,8 +33,37 @@ Figure \ref{fig:baseline_sample} shows a sample run of the baseline for the Linu
 \end{tabular}
 \end{table}
 
-A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on the Raspberry-Pi 4 and Raspberry-Pi 5 clusters. We observe that PTPd has the worst synchronization offset on both systems, with a median clock offset of \fTimeKey{base/rpi-4/ptpd/q50} on the Raspberry-Pi 4 and \fTimeKey{base/rpi-5/ptpd/q50} on the Raspberry-Pi 5.
+A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on the Raspberry-Pi 4 and Raspberry-Pi 5 clusters. We observe that PTPd has the worst synchronization offset on both systems, with a median clock offset of \fTimeKey[1]{base/rpi-4/ptpd/q50} on the Raspberry-Pi 4 and \fTimeKey[1]{base/rpi-5/ptpd/q50} on the Raspberry-Pi 5\todo{Comment on quantiles}. Chrony, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTimeKey[1]{base/rpi-4/chrony/q50} and \fTimeKey[1]{base/rpi-5/chrony/q50}, respectively.
 
+\foreach \vendor in {ptpd,linuxptp,sptp,chrony} {
+    \ptpperfLoadKeys{
+        /ptpperf/base/ratio/\vendor/q50/.initial=0,
+        /ptpperf/base/ratio/\vendor/q50/.expanded={\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}},
+    }
+}
+
+The most noticeable effect on the synchronization quality is the hardware, which is expected since the Raspberry-Pi 5 offers hardware timestamping while the Raspberry-Pi 4 does not.
+%
+\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{min}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+The advantage ranges from \fRatio{\cmpValue} for \fVendor{\cmpArg}
+\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+to \fRatio{\cmpValue} for \fVendor{\cmpArg}.
+
+%\todo{
+Advantages: \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{\fRatio{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}} }
+%}
+
+\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
+Another aspect to notice is the difference between the median clock offset and the 95\textsuperscript{th} percentile. Without hardware support, this difference can be rather large and has a high spread ()
+
+\foreach \cluster in {rpi-4,rpi-5}{
+%95 to Mean \cluster:
+
+\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/\cluster/\vendor/q95}/\ptpKey{base/\cluster/\vendor/q50}}
+
+Best: \fRatio{\cmpValue} at \fVendor{\cmpArg}
+
+}
 \subsection{Reproducibility}
 
 \pgfkeys{

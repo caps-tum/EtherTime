@@ -43,12 +43,55 @@
 \newcommand{\ptpperfLoadKeys}[1]{\pgfkeys{#1}}
 \newcommand{\ptpKeyPrefix}{/ptpperf}
 \newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
-\newcommand{\fTime}[1]{\fpeval{round(#1 * 10e6)}\,\textmu{}s}
-\newcommand{\fTimeKey}[1]{\fTime{\ptpKey{#1}}}
+\newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
+\newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
 \newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
 \newcommand{\fPercentage}[2][0]{\fpeval{round(100*(#2), #1)}\%}
 \newcommand{\fRelative}[2][0]{\fpeval{round(100*(#2)-100, #1)}\%}
+
+% Format vendor ids to names
+\pgfkeys{
+    /ptpperf/vendors/.cd,
+    ptpd/.initial={PTPd},
+    linuxptp/.initial={LinuxPTP},
+    sptp/.initial={SPTP},
+    chrony/.initial={Chrony},
+}
+\newcommand{\fVendor}[1]{\pgfkeysvalueof{/ptpperf/vendors/#1}}
+\newcommand{\vendors}{ptpd,linuxptp,sptp,chrony}
+
+% Comparison Tools
+
+\newcommand{\cmpValue}{0}
+\newcommand{\cmpArg}{}
+
+% Search for a value: #1: counter macro, #2: values, #3: optimization functio (min/max), #4: Function value to calculate
+\newcommand{\cmpSearch}[4]{%
+    \xdef\cmpValue{}%
+    \xdef\cmpArg{}%
+    % Loop across values searching for the best one
+    \foreach #1 in {#2}{%
+        \xdef\currentValue{\fpeval{#4}}%
+        %
+        % If first iteration, then define best value.
+        \ifundef{\cmpValue}{\xdef\cmpValue{\currentValue}}{}%
+        %
+        % Update best value and if changed, then also update best argument.
+        \xdef\cmpValue{\fpeval{#3(\currentValue, \cmpValue)}}%
+        \strcmpfullexpand{\currentValue}{\cmpValue}{\xdef\cmpArg{\vendor}}{}%
+        %
+%        Trace: \vendor, \currentValue, \cmpValue, \cmpArg\\
+    }%
+}
+
+% Utility
+
+\makeatletter
+\newcommand*{\strcmpfullexpand}[4]{%
+  \ifnum\pdf@strcmp{#1}{#2}=\z@#3\else#4\fi%
+}
+\makeatother
 
 \begin{document}
 
