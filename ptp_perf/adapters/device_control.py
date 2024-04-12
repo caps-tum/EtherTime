@@ -31,15 +31,15 @@ class DeviceControl(Adapter):
 
         self.power_strips = [
             OutletDevice(
-                dev_id="ebb88e5f6700fa300acvqr",
+                dev_id="eb06b72cf6479cd3bdcuzi",
                 address="192.168.1.200",
-                local_key="Ow/wW6UPpqT2%N5u",
+                local_key="3mqG5q4$4Nd<!?:`",
                 version=3.3,
             ),
             OutletDevice(
-                dev_id="eb577872fdf15b915avgl2",
+                dev_id="eb44349e87ad1b54086akt",
                 address="192.168.1.201",
-                local_key="+n<ykcP|O&tuI|EP",
+                local_key="H.BBK_VnvCu}O53%",
                 version=3.3,
             ),
         ]
