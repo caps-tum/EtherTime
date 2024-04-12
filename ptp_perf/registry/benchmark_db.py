@@ -148,6 +148,9 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
             if component == ResourceContentionComponent.NET:
                 benchmark_options.update(
                     artificial_load_network_secondary_interface=True,
+                    artificial_load_network_dscp_priority='cs1',
+                    # We also use low traffic priority to avoid disrupting SSH and database connections.
+                    # CS1 is low priority traffic: https://en.wikipedia.org/wiki/Differentiated_services#Class_Selector
                 )
             elif component == ResourceContentionComponent.CPU:
                 benchmark_options.update(
