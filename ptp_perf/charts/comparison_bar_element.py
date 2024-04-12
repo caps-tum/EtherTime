@@ -24,7 +24,7 @@ class ComparisonBarElement(DataElement):
 class ComparisonLineElement(DataElement):
 
     def plot(self, axis_container: AxisContainer):
-        seaborn.barplot(
+        seaborn.lineplot(
             self.data,
             ax=axis_container.axis,
             x=self.column_x,

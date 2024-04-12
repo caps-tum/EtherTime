@@ -174,6 +174,9 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
             ptp_config=configuration,
         )
 
+    @staticmethod
+    def all_by_tags(*tags) -> List[Benchmark]:
+        return [benchmark for benchmark in BenchmarkDB.all() if all(search_tag in benchmark.tags for search_tag in tags)]
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,

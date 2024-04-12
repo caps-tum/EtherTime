@@ -9,7 +9,7 @@ import matplotlib.ticker
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import MultipleLocator, PercentFormatter
 
 from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
@@ -48,6 +48,7 @@ class AxisContainer:
     yticks_interval: float = 10 * units.us
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = True
+    xticklabels_format_percent: bool = False
     xaxis_invert: bool = False
 
     ylabel: str = "Clock Offset"
@@ -81,6 +82,9 @@ class AxisContainer:
             self.axis.set_xticks(self.xticks)
         if self.xticklabels_format_time:
             self.decorate_axis_time_formatter(self.axis.xaxis)
+        if self.xticklabels_format_percent:
+            self.axis.set_xlim(0, 1)
+            self.axis.xaxis.set_major_formatter(PercentFormatter(xmax=1))
         if self.xticklabels is not None:
             self.axis.set_xticklabels(self.xticklabels)
         if self.xaxis_invert:

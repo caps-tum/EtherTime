@@ -2,10 +2,10 @@ import typing
 
 from django.db import models
 
-from ptp_perf.machine import Cluster
 from ptp_perf.models.endpoint_type import EndpointType
 
 if typing.TYPE_CHECKING:
+    from ptp_perf.machine import Cluster
     from ptp_perf.profiles.benchmark import Benchmark
     from ptp_perf.vendor.vendor import Vendor
     from ptp_perf.models import PTPEndpoint
@@ -49,7 +49,7 @@ class PTPProfile(models.Model):
         return VendorDB.get(self.vendor_id)
 
     @property
-    def cluster(self) -> Cluster:
+    def cluster(self) -> "Cluster":
         import ptp_perf.config as config
         return config.clusters.get(self.cluster_id)
 
