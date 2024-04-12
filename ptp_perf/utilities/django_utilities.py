@@ -10,8 +10,9 @@ def bootstrap_django_environment():
     try:
         from django.core.wsgi import get_wsgi_application
         get_wsgi_application()
-    except ImportError:
-        logging.info("Failed to import django settings")
+    except ImportError as e:
+        logging.error(f"Failed to import django settings: {e}")
+        raise
 
 
 def get_server_datetime():

@@ -3,7 +3,7 @@
 set -x
 
 sudo apt install -y tmux iperf stress-ng ptpd linuxptp || exit 255
-pip3 install --user --break-system-packages rpyc pydantic pandas matplotlib 'psycopg[binary]==3.1.18' "django==5.0.2" || exit 255
+pip3 install --user --break-system-packages rpyc pydantic pandas matplotlib seaborn 'psycopg[binary]==3.1.18' "django==5.0.2" || exit 255
 
 echo "Installing ssh keys"
 sudo bash -c "umask 077 && mkdir -p ~/.ssh && echo 'ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBDf+fowl76P6HzxBXJTDwDZKeyXFfIcXKH68i/9d3x5SRzDMk2ChLHILGaVtRv7ARd044qnjslpU7lj4AmYsiUI= vincent_bode@VTO-Laptop-XPS15' > ~/.ssh/authorized_keys"
