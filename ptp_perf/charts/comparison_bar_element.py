@@ -16,6 +16,7 @@ class ComparisonBarElement(DataElement):
             y=self.column_y,
             hue=self.column_hue,
             palette=self.color_map,
+            estimator='median',
             errorbar=('pi', 100),
             native_scale=True,
         )
@@ -32,5 +33,6 @@ class ComparisonLineElement(DataElement):
             hue=self.column_hue,
             palette=self.color_map,
             marker='o',
+            estimator='median',
             errorbar=('pi', 100),
         )
