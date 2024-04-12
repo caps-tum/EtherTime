@@ -19,7 +19,7 @@ class NetworkPerformanceDegrader:
         dscp_priority = self.endpoint.benchmark.artificial_load_network_dscp_priority
 
         worker = unpack_one_value_or_error(
-            [worker for worker in config.machines.values()
+            [worker for worker in self.endpoint.cluster.machines
              if worker.plugin_settings is not None and worker.plugin_settings.iperf_server],
             "Exactly one worker should be specified as the iPerf server to use the network performance degrader plugin"
         )
