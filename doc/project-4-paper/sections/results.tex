@@ -42,28 +42,21 @@ A logical first step is comparing each vendor's baseline across the systems. Fig
     }
 }
 
-The most noticeable effect on the synchronization quality is the hardware, which is expected since the Raspberry-Pi 5 offers hardware timestamping while the Raspberry-Pi 4 does not.
-%
-\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{min}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
-The advantage ranges from \fRatio{\cmpValue} for \fVendor{\cmpArg}
-\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
-to \fRatio{\cmpValue} for \fVendor{\cmpArg}.
+\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
+
+The most noticeable effect on the synchronization quality is the hardware, which is expected since the Raspberry-Pi 5 offers hardware timestamping while the Raspberry-Pi 4 does not. The advantage ranges from \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}.
 
 %\todo{
 Advantages: \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{\fRatio{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}} }
 %}
 
-\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
-Another aspect to notice is the difference between the median clock offset and the 95\textsuperscript{th} percentile. Without hardware support, this difference can be rather large and has a high spread ()
+\cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
+Another aspect to notice is the difference between the median clock offset and the 95\textsuperscript{th} percentile. Without hardware support, this difference can be rather large and has a high spread (between \fRatio{\cmpMin} for \fVendor{\cmpMinArg} and \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}),
+whereas the magnitude is smaller when hardware support is offered %
+\cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
+(\fRatio[1]{\cmpMin} \fVendor{\cmpMinArg} -- \fRatio[1]{\cmpMax} \fVendor{\cmpMaxArg}).
+This means that not only is the average performance improved, but the magnitude of outliers is reduced, which is especially important when considering the dependability aspect.
 
-\foreach \cluster in {rpi-4,rpi-5}{
-%95 to Mean \cluster:
-
-\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{max}{\ptpKey{base/\cluster/\vendor/q95}/\ptpKey{base/\cluster/\vendor/q50}}
-
-Best: \fRatio{\cmpValue} at \fVendor{\cmpArg}
-
-}
 \subsection{Reproducibility}
 
 \pgfkeys{

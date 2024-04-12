@@ -63,27 +63,46 @@
 
 % Comparison Tools
 
-\newcommand{\cmpValue}{0}
-\newcommand{\cmpArg}{}
+\newcommand{\cmpMin}{}
+\newcommand{\cmpMinArg}{}
+\newcommand{\cmpMax}{}
+\newcommand{\cmpMaxArg}{}
+\newcommand{\cmpMean}{}
+\newcommand{\cmpCount}{}
 
 % Search for a value: #1: counter macro, #2: values, #3: optimization functio (min/max), #4: Function value to calculate
-\newcommand{\cmpSearch}[4]{%
-    \xdef\cmpValue{}%
-    \xdef\cmpArg{}%
+\newcommand{\cmpSearch}[3]{%
+    \xdef\cmpMin{}%
+    \xdef\cmpMinArg{}%
+    \xdef\cmpMax{}%
+    \xdef\cmpMaxArg{}%
+    \xdef\cmpMean{}
+    \xdef\cmpCount{0}
     % Loop across values searching for the best one
     \foreach #1 in {#2}{%
-        \xdef\currentValue{\fpeval{#4}}%
+        \xdef\currentValue{\fpeval{#3}}%
         %
         % If first iteration, then define best value.
-        \ifundef{\cmpValue}{\xdef\cmpValue{\currentValue}}{}%
+        \ifundef{\cmpMin}{\xdef\cmpMin{\currentValue}}{}%
+        \ifundef{\cmpMax}{\xdef\cmpMax{\currentValue}}{}%
         %
         % Update best value and if changed, then also update best argument.
-        \xdef\cmpValue{\fpeval{#3(\currentValue, \cmpValue)}}%
-        \strcmpfullexpand{\currentValue}{\cmpValue}{\xdef\cmpArg{\vendor}}{}%
+        \xdef\cmpMin{\fpeval{min(\currentValue, \cmpMin)}}%
+        \strcmpfullexpand{\currentValue}{\cmpMin}{\xdef\cmpMinArg{#1}}{}%
         %
+        % Same for max.
+        \xdef\cmpMax{\fpeval{max(\currentValue, \cmpMax)}}%
+        \strcmpfullexpand{\currentValue}{\cmpMax}{\xdef\cmpMaxArg{#1}}{}%
+        %
+        \xdef\cmpMean{\fpeval{\cmpMean + \currentValue}}%
+        \xdef\cmpCount{\fpeval{\cmpCount + 1}}%
 %        Trace: \vendor, \currentValue, \cmpValue, \cmpArg\\
     }%
+    %
+    \xdef\cmpMean{\fpeval{\cmpMean/\cmpCount}}
 }
+
+\newcommand{\cmpSearchVendor}[1]{\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{#1}}
 
 % Utility
 
