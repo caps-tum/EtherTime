@@ -121,6 +121,12 @@ class VendorComparisonCharts(TestCase):
         chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
         chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
 
+        output = "\\ptpperfLoadKeys{\n"
+        for index, row in frame.iterrows():
+            output += f"    /ptpperf/{row['Benchmark Id']}/{row['Cluster Id']}/{row['Vendor Id']}/q{int(row['Quantile'] * 100)}/.initial={row['Value']},\n"
+        output += "}\n"
+        PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("keys.tex").write_text(output)
+
     @staticmethod
     def collect_quantile_data(benchmarks: List[Benchmark]) -> pd.DataFrame:
         output_data = []
@@ -142,14 +148,16 @@ class VendorComparisonCharts(TestCase):
                         continue
 
                     unmodified_data = data.droplevel('endpoint_id').abs()
-                    quantiles = unmodified_data.quantile([0.05, 0.5, 0.95])
+                    quantiles = [0.05, 0.5, 0.95]
+                    quantile_values = unmodified_data.quantile(quantiles)
 
-                    for quantile in quantiles:
+                    for quantile, value in zip(quantiles, quantile_values):
                         output_data.append({
                             'Benchmark': benchmark.name,
                             'Cluster': cluster.name,
                             'Vendor': vendor.name,
-                            'Value': quantile,
+                            'Quantile': quantile,
+                            'Value': value,
                             'Benchmark Index': benchmark_index,
                             'Cluster Index': cluster_index,
                             'Vendor Index': vendor_index,

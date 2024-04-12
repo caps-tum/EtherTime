@@ -40,9 +40,10 @@
 
 % Key-system
 
-\newcommand{\ptpKeyPrefix}{}
+\newcommand{\ptpperfLoadKeys}[1]{\pgfkeys{#1}}
+\newcommand{\ptpKeyPrefix}{/ptpperf}
 \newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
-\newcommand{\fTime}[1]{#1\,\textmu{}s}
+\newcommand{\fTime}[1]{\fpeval{round(#1 * 10e6)}\,\textmu{}s}
 \newcommand{\fTimeKey}[1]{\fTime{\ptpKey{#1}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
 \newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
