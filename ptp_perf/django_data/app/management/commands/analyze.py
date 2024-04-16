@@ -4,8 +4,12 @@ from datetime import datetime
 
 from django.core.management.base import BaseCommand
 
-from ptp_perf import util, constants
+from ptp_perf import util, constants, config
 from ptp_perf.models import PTPProfile
+from ptp_perf.models.benchmark_summary import BenchmarkSummary
+from ptp_perf.models.exceptions import NoDataError
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.vendor.registry import VendorDB
 
 
 def analyze(force: bool = False):
@@ -19,6 +23,9 @@ def analyze(force: bool = False):
     for profile in profile_query:
         try:
             convert_profile(profile)
+            BenchmarkSummary.invalidate(
+                benchmark=profile.benchmark, vendor=profile.vendor, cluster=profile.cluster
+            )
             converted_profiles += 1
         except Exception as e:
             logging.exception("Failed to convert profile!", exc_info=e)
@@ -65,37 +72,16 @@ def convert_profile(profile: PTPProfile):
     # else:
     #     logging.info("No profile generated.")
 
-#
-# def merge():
-#     profile_db = ProfileDB()
-#     profile_cache = profile_db.get_cache()
-#     for benchmark in BenchmarkDB.all():
-#         for vendor in VendorDB.ANALYZED_VENDORS:
-#             for machine in config.machines.values():
-#                 profiles = profile_db.resolve_all(
-#                     resolve.BY_BENCHMARK(benchmark), resolve.BY_VENDOR(vendor),
-#                     resolve.BY_MACHINE(machine),
-#                     resolve.VALID_PROCESSED_PROFILE(),
-#                 )
-#
-#                 if len(profiles) > 0:
-#
-#                     # Check if update needed
-#                     current_aggregate_profile = profile_db.resolve_most_recent(
-#                         resolve.BY_AGGREGATED_BENCHMARK_AND_VENDOR(benchmark, vendor),
-#                         resolve.BY_MACHINE(machine),
-#                     )
-#                     if current_aggregate_profile is None or any(profile.check_dependent_file_needs_update(current_aggregate_profile.file_path) for profile in profiles):
-#
-#                         links = [f"[{profile}]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)})" for profile in profiles]
-#                         logging.info(f"Merging profiles {benchmark.name} {vendor.name} {machine.id}: {str_join(links)}")
-#                         aggregated_profile = AggregatedProfile.from_profiles(profiles)
-#                         aggregated_profile.save()
-#
-#                         profile_cache.update(aggregated_profile, persist=False)
-#
-#     profile_cache.save()
-
+def summarize(force: bool = False):
+    for benchmark in BenchmarkDB.all():
+        for vendor in VendorDB.ANALYZED_VENDORS:
+            for cluster in config.ANALYZED_CLUSTERS:
+                try:
+                    BenchmarkSummary.create(
+                        benchmark, vendor, cluster, force_update=force,
+                    )
+                except NoDataError:
+                    pass
 
 class Command(BaseCommand):
     help = "Analyzes profiles"
@@ -114,7 +100,7 @@ class Command(BaseCommand):
             start_time = datetime.now()
 
             converted_profiles = analyze(force=force)
-            # merge()
+            summarize(force=force)
 
             completion_time = datetime.now()
             logging.info(f"Analysis of {converted_profiles} profiles completed in {completion_time - start_time}.")

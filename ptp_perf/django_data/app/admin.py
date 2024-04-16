@@ -6,7 +6,7 @@ from django.core import serializers
 from django.db import transaction
 from django.http import HttpResponse
 
-from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask
+from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
 
 
@@ -107,3 +107,10 @@ class ScheduleTaskAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time']
     list_filter = ['success']
     actions = [toggle_pause]
+
+
+@admin.register(BenchmarkSummary)
+class BenchmarkSummaryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median', 'clock_diff_p95']
+    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id']
+
