@@ -23,9 +23,10 @@ class VendorComparisonCharts(TestCase):
 
     def test_load_chart(self):
         benchmarks = BenchmarkDB.all_by_tags(ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)
+        benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network in [200, 500, 800, 1000]]
         benchmarks.append(BenchmarkDB.BASE)
 
-        frame = self.collect_quantile_data(benchmarks)
+        frame = self.collect_quantile_data(benchmarks, clusters=[config.CLUSTER_PI])
         frame['X'] = frame['Benchmark Id'].apply(lambda x: BenchmarkDB.get(x).artificial_load_network) / 1000
         frame.sort_values('X', inplace=True)
         print(frame)
@@ -44,6 +45,8 @@ class VendorComparisonCharts(TestCase):
                     xlabel='Network Load',
                     xticklabels_format_time=False,
                     xticklabels_format_percent=True,
+                    ylog=True,
+                    yticks_interval=None,
                 )
             ]
         )
@@ -128,13 +131,14 @@ class VendorComparisonCharts(TestCase):
         PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("keys.tex").write_text(output)
 
     @staticmethod
-    def collect_quantile_data(benchmarks: List[Benchmark]) -> pd.DataFrame:
+    def collect_quantile_data(benchmarks: List[Benchmark], vendors=None, clusters=config.clusters.values()) -> pd.DataFrame:
+        if vendors is None:
+            vendors = VendorDB.ANALYZED_VENDORS
+
         output_data = []
         for benchmark_index, benchmark in enumerate(benchmarks):
-            vendors = VendorDB.ANALYZED_VENDORS
             for vendor_index, vendor in enumerate(vendors):
-
-                for cluster_index, cluster in enumerate(config.clusters.values()):
+                for cluster_index, cluster in enumerate(clusters):
                     try:
                         data_query = SampleQuery(
                             benchmark=benchmark,

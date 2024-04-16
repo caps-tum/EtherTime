@@ -45,7 +45,6 @@ class AxisContainer:
 
     xlabel: str = None
     xticks: Optional[Iterable] = None
-    yticks_interval: float = 10 * units.us
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = True
     xticklabels_format_percent: bool = False
@@ -56,6 +55,7 @@ class AxisContainer:
     ylimit_top: Optional[float] = None
     ylimit_bottom: Optional[float] = None
     yticklabels_format_time: bool = True
+    yticks_interval: Optional[float] = 10 * units.us
 
     yminorticks: bool = False
     yminorticks_interval: float = 1 * units.us
@@ -91,6 +91,8 @@ class AxisContainer:
             self.axis.xaxis.invert()
 
         # Y-axis
+        if self.ylog:
+            self.axis.set_yscale('log')
         self.axis.yaxis.set_label_text(self.ylabel)
         self.axis.set_ylim(self.ylimit_bottom, self.ylimit_top)
         if self.yticks_interval:

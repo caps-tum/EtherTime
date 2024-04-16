@@ -33,14 +33,13 @@ Figure \ref{fig:baseline_sample} shows a sample run of the baseline for the Linu
 \end{tabular}
 \end{table}
 
-A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on the Raspberry-Pi 4 and Raspberry-Pi 5 clusters. We observe that PTPd has the worst synchronization offset on both systems, with a median clock offset of \fTimeKey[1]{base/rpi-4/ptpd/q50} on the Raspberry-Pi 4 and \fTimeKey[1]{base/rpi-5/ptpd/q50} on the Raspberry-Pi 5\todo{Comment on quantiles}. Chrony, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTimeKey[1]{base/rpi-4/chrony/q50} and \fTimeKey[1]{base/rpi-5/chrony/q50}, respectively.
+\cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}}
 
-\foreach \vendor in {ptpd,linuxptp,sptp,chrony} {
-    \ptpperfLoadKeys{
-        /ptpperf/base/ratio/\vendor/q50/.initial=0,
-        /ptpperf/base/ratio/\vendor/q50/.expanded={\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}},
-    }
-}
+A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on the Raspberry-Pi 4 and Raspberry-Pi 5 clusters. We observe that \fVendor{\cmpMaxArg} has the worst synchronization offset on both systems, with a median clock offset of \fTime[1]{\cmpMax} on the Raspberry-Pi 4 and \fTimeKey[1]{base/rpi-5/ptpd/q50} on the Raspberry-Pi 5.
+%
+%
+\fVendor{\cmpMinArg}, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTime[1]{\cmpMin} and \fTimeKey[1]{base/rpi-5/chrony/q50}, respectively.
+\todo{Both machines can not be Latex verified.}
 
 \cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
 
@@ -51,8 +50,8 @@ Advantages: \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{\fRatio{\ptpKey{base
 %}
 
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
-Another aspect to notice is the difference between the median clock offset and the 95\textsuperscript{th} percentile. Without hardware support, this difference can be rather large and has a high spread (between \fRatio{\cmpMin} for \fVendor{\cmpMinArg} and \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}),
-whereas the magnitude is smaller when hardware support is offered %
+Another aspect to notice is the difference between the median clock offset and the 95\textsuperscript{th} percentile. Without hardware support, this difference can be rather large and has a high spread (between \fRatio{\cmpMin} for the most stable vendor \fVendor{\cmpMinArg} and \fRatio{\cmpMax} for the least stable vendor \fVendor{\cmpMaxArg}),
+whereas the magnitude is smaller when hardware support is offered on the Raspberry-Pi %
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
 (\fRatio[1]{\cmpMin} \fVendor{\cmpMinArg} -- \fRatio[1]{\cmpMax} \fVendor{\cmpMaxArg}).
 This means that not only is the average performance improved, but the magnitude of outliers is reduced, which is especially important when considering the dependability aspect.
