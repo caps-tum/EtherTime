@@ -1,3 +1,5 @@
+from typing import Dict
+
 from django.db import models
 
 from ptp_perf.machine import Cluster
@@ -82,6 +84,12 @@ class BenchmarkSummary(models.Model):
             cluster_id=cluster.id
         )
 
+    def clock_quantiles(self) -> Dict[float, float]:
+        return {
+            0.05: self.clock_diff_p05,
+            0.5: self.clock_diff_median,
+            0.95: self.clock_diff_p95,
+        }
 
     class Meta:
         app_label = 'app'

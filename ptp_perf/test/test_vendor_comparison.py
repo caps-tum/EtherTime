@@ -8,7 +8,7 @@ from ptp_perf import config
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
-from ptp_perf.models import Sample
+from ptp_perf.models import Sample, BenchmarkSummary
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.models.sample_query import SampleQuery
@@ -141,22 +141,11 @@ class VendorComparisonCharts(TestCase):
             for vendor_index, vendor in enumerate(vendors):
                 for cluster_index, cluster in enumerate(clusters):
                     try:
-                        data_query = SampleQuery(
-                            benchmark=benchmark,
-                            vendor=vendor,
-                            cluster=cluster,
-                            endpoint_type=EndpointType.PRIMARY_SLAVE,
-                            normalize_time=False, timestamp_merge_append=False
-                        )
-                        data = data_query.run(Sample.SampleType.CLOCK_DIFF)
-                    except NoDataError:
+                        summary = BenchmarkSummary.get_query(benchmark, vendor, cluster).get()
+                    except BenchmarkSummary.DoesNotExist:
                         continue
 
-                    unmodified_data = data.droplevel('endpoint_id').abs()
-                    quantiles = [0.05, 0.5, 0.95]
-                    quantile_values = unmodified_data.quantile(quantiles)
-
-                    for quantile, value in zip(quantiles, quantile_values):
+                    for quantile, value in summary.clock_quantiles().items():
                         output_data.append({
                             'Benchmark': benchmark.name,
                             'Cluster': cluster.name,
