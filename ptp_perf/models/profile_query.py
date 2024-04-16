@@ -3,6 +3,7 @@ from typing import List, Iterable, Optional, Union
 
 from django.db.models import QuerySet
 
+from ptp_perf.machine import Cluster
 from ptp_perf.models import PTPProfile
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
@@ -13,6 +14,7 @@ from ptp_perf.vendor.vendor import Vendor
 class ProfileQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
+    cluster: Optional[Cluster] = None
     is_processed: bool = True
     tags: List[str] = field(default_factory=list)
 
@@ -28,6 +30,9 @@ class ProfileQuery:
 
         if self.vendor:
             query = query.filter(vendor_id=self.vendor.id)
+
+        if self.cluster:
+            query = query.filter(cluster_id=self.cluster.id)
 
         benchmarks_from_tags = [benchmark for benchmark in BenchmarkDB.all() if all(tag in benchmark.tags for tag in self.tags)]
         query = query.filter(benchmark_id__in=[benchmark.id for benchmark in benchmarks_from_tags])

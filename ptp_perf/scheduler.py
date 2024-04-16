@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from ptp_perf import config
 from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
+from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.models.schedule_task import ScheduleTask
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.vendor.registry import VendorDB
@@ -84,13 +85,14 @@ def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
-    cluster = config.clusters[result.cluster]
+    clusters = [config.clusters[cluster_id] for cluster_id in result.cluster]
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
     else:
         duration_override = None
     test_mode = result.test
     analyze = result.analyze
+    target_count = result.target_count
 
     if len(vendors) == 0:
         vendors = VendorDB.ANALYZED_VENDORS
@@ -98,29 +100,38 @@ def queue_benchmarks(result):
         vendors = [VendorDB.get(vendor_id) for vendor_id in vendors]
 
     for benchmark in benchmarks:
-        for vendor in vendors:
-            command = (f"LOG_EXCEPTIONS=1 python3 run_orchestration.py "
-                       f"--benchmark '{benchmark.id}' "
-                       f"--vendor {vendor.id} "
-                       f"--cluster {cluster.id} ")
+        for cluster in clusters:
+            for vendor in vendors:
 
-            if duration_override is None:
-                duration = benchmark.duration
-            else:
-                duration = duration_override
-                command += f" --duration {int(duration.total_seconds() // 60)}"
+                command = (f"LOG_EXCEPTIONS=1 python3 run_orchestration.py "
+                           f"--benchmark '{benchmark.id}' "
+                           f"--vendor {vendor.id} "
+                           f"--cluster {cluster.id} ")
 
-            if test_mode:
-                command += " --test"
+                if duration_override is None:
+                    duration = benchmark.duration
+                else:
+                    duration = duration_override
+                    command += f" --duration {int(duration.total_seconds() // 60)}"
 
-            if analyze:
-                command += " --analyze"
+                if test_mode:
+                    command += " --test"
 
-            ScheduleQueue.queue_task(
-                ScheduleTask(
-                    name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
-                    command=command,
-                    estimated_time=duration,
-                )
-            )
+                if analyze:
+                    command += " --analyze"
 
+                if target_count is not None:
+                    number_tasks_to_queue = max(
+                        target_count - len(ProfileQuery(benchmark=benchmark, vendor=vendor, cluster=cluster).run()), 0
+                    )
+                else:
+                    number_tasks_to_queue = 1
+
+                for i in range(number_tasks_to_queue):
+                    ScheduleQueue.queue_task(
+                        ScheduleTask(
+                            name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
+                            command=command,
+                            estimated_time=duration,
+                        )
+                    )

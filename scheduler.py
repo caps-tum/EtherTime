@@ -27,8 +27,10 @@ if __name__ == '__main__':
                                           help="RegEx for filtering benchmark ids.")
     queue_benchmarks_command.add_argument("--vendor", action='append', default=[],
                                           help="Vendors to benchmark (default all). Can be specified multiple times.")
-    queue_benchmarks_command.add_argument("--cluster", type=str, required=True,
-                                          help="Which cluster to run the benchmark on, by cluster id.")
+    queue_benchmarks_command.add_argument("--cluster", action='append', default=[],
+                                          help="Which cluster to run the benchmark on, by cluster id. Can be specified multiple times.")
+    queue_benchmarks_command.add_argument("--target-count", type=int, default=None,
+                                          help="The number of profiles to target (queues as many as necessary to reach the target count).")
     queue_benchmarks_command.add_argument("--duration", type=int, default=None, help="Duration override (in minutes)")
     queue_benchmarks_command.add_argument("--test", action="store_true", default=False, help="Run this benchmark in test mode.")
     queue_benchmarks_command.add_argument("--analyze", action="store_true", default=False, help="Analyze the profile after benchmarking.")

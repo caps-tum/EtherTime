@@ -22,36 +22,37 @@ from ptp_perf.vendor.registry import VendorDB
 class VendorComparisonCharts(TestCase):
 
     def test_load_chart(self):
-        benchmarks = BenchmarkDB.all_by_tags(ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)
-        benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network in [200, 500, 800, 1000]]
-        benchmarks.append(BenchmarkDB.BASE)
+        for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
+            benchmarks = BenchmarkDB.all_by_tags(ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)
+            benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network in [200, 500, 800, 1000]]
+            benchmarks.append(BenchmarkDB.BASE)
 
-        frame = self.collect_quantile_data(benchmarks, clusters=[config.CLUSTER_PI])
-        frame['X'] = frame['Benchmark Id'].apply(lambda x: BenchmarkDB.get(x).artificial_load_network) / 1000
-        frame.sort_values('X', inplace=True)
-        print(frame)
+            frame = self.collect_quantile_data(benchmarks, clusters=[cluster])
+            frame['X'] = frame['Benchmark Id'].apply(lambda x: BenchmarkDB.get(x).artificial_load_network) / 1000
+            frame.sort_values('X', inplace=True)
+            print(frame)
 
-        chart = FigureContainer(
-            axes_containers=[
-                AxisContainer([
-                        ComparisonLineElement(
-                            data=frame,
-                            column_x='X',
-                            column_y='Value',
-                            column_hue='Vendor',
-                        )
-                    ],
-                    title="Unisolated Network Load",
-                    xlabel='Network Load',
-                    xticklabels_format_time=False,
-                    xticklabels_format_percent=True,
-                    ylog=True,
-                    yticks_interval=None,
-                )
-            ]
-        )
-        chart.plot()
-        chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath("unprioritized_trend.png"))
+            chart = FigureContainer(
+                axes_containers=[
+                    AxisContainer([
+                            ComparisonLineElement(
+                                data=frame,
+                                column_x='X',
+                                column_y='Value',
+                                column_hue='Vendor',
+                            )
+                        ],
+                        title="Unisolated Network Load",
+                        xlabel='Network Load',
+                        xticklabels_format_time=False,
+                        xticklabels_format_percent=True,
+                        ylog=True,
+                        yticks_interval=None,
+                    )
+                ]
+            )
+            chart.plot()
+            chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"unprioritized_trend_{cluster.id}.png"))
 
     def test_vendor_chart(self):
         benchmark = BenchmarkDB.BASE
