@@ -38,9 +38,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         num_machines=3,
+        duration=timedelta(minutes=9),
         fault_hardware=True,
-        fault_interval=timedelta(minutes=2),
-        fault_duration=timedelta(seconds=5),
+        fault_interval=timedelta(minutes=7),
+        fault_duration=timedelta(seconds=10),
         fault_machine='switch',
     )
 
