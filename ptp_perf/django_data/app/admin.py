@@ -105,7 +105,7 @@ def toggle_pause(modeladmin, request, queryset):
 @admin.register(ScheduleTask)
 class ScheduleTaskAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time']
-    list_filter = ['success']
+    list_filter = ['success', 'paused']
     actions = [toggle_pause]
 
 
