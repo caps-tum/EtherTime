@@ -61,7 +61,7 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median']
+    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median', 'convergence_duration']
     list_select_related = ['profile']
     list_filter = ['endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id']
     actions = [create_key_metric_variance_chart]
