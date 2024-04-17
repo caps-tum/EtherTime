@@ -8,7 +8,7 @@ from ptp_perf.charts.figure_container import DataElement, AxisContainer
 
 @dataclass
 class ComparisonBarElement(DataElement):
-    dodge: Union[Literal["auto"], bool] = "autho"
+    dodge: Union[Literal["auto"], bool] = "auto"
 
     def plot(self, axis_container: AxisContainer):
         seaborn.barplot(
