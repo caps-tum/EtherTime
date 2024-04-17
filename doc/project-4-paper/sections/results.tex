@@ -157,6 +157,8 @@ SPTP is the only vendor that relies solely on unicast message exchange (a design
 \cmpSearchVendor{\ptpKey{load/net_unprioritized/load_100/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q95}}%
 The 95\textsuperscript{th} percentiles reflect the behavior of the outliers, and here we can observe even larger ranges, with \fVendor{\cmpMaxArg} now showing a ratio of \fRatio[-1]{\cmpMax} (\fTimeKey{base/rpi-4/\cmpMaxArg/q95} -- \fTimeKey[-1]{load/net_unprioritized/load_100/rpi-4/\cmpMaxArg/q95}). This is clearly above and beyond even very generous safety margins, so we need to examine how the effect of network load can be mitigated.
 
+ Note that under network load PTP sometimes fails to synchronize at all, when it gets stuck in an infinite loop running into transmission timeouts and thus switching between ``state init'' and ``state faulty''. In this case the timing system breaks entirely, and no synchronization can be established at all. These measurements have been excluded from the shown data, but we encountered them rather frequently at high load levels. Preventing this is paramount, as having no synchronization is potentially a lot worse than having a bad quality signal.
+
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/isolation_comparison.pdf}
     \caption{Different possibilities of isolation network load, compared to the baseline with no load.}
