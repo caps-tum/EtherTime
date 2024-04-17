@@ -46,7 +46,7 @@ class AxisContainer:
     xlabel: str = None
     xticks: Optional[Iterable] = None
     xticklabels: Optional[Iterable] = None
-    xticklabels_format_time: bool = True
+    xticklabels_format_time: bool = False
     xticklabels_format_percent: bool = False
     xaxis_invert: bool = False
 

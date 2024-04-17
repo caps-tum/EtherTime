@@ -7,6 +7,7 @@ from matplotlib.patches import ConnectionPatch, ConnectionStyle
 from ptp_perf import config
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
+from ptp_perf.config import CLUSTER_PI
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.models import Sample, BenchmarkSummary
 from ptp_perf.models.endpoint_type import EndpointType
@@ -15,6 +16,7 @@ from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.util import str_join
 from ptp_perf.utilities import units
 from ptp_perf.vendor.registry import VendorDB
 
@@ -44,7 +46,6 @@ class VendorComparisonCharts(TestCase):
                         ],
                         title="Unisolated Network Load",
                         xlabel='Network Load',
-                        xticklabels_format_time=False,
                         xticklabels_format_percent=True,
                         ylog=True,
                         yticks_interval=None,
@@ -53,6 +54,7 @@ class VendorComparisonCharts(TestCase):
             )
             chart.plot()
             chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"unprioritized_trend_{cluster.id}.png"))
+            chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"net_unprioritized_trend_{cluster.id}.pdf"))
 
     def test_vendor_chart(self):
         benchmark = BenchmarkDB.BASE
@@ -125,11 +127,54 @@ class VendorComparisonCharts(TestCase):
         chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
         chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
 
-        output = "\\ptpperfLoadKeys{\n"
-        for index, row in frame.iterrows():
-            output += f"    /ptpperf/{row['Benchmark Id']}/{row['Cluster Id']}/{row['Vendor Id']}/q{int(row['Quantile'] * 100)}/.initial={row['Value']},\n"
-        output += "}\n"
-        PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("keys.tex").write_text(output)
+
+    def test_vendor_resilience(self):
+        # Any isolation
+        benchmarks = BenchmarkDB.all_by_tags(ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET)
+        benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network == 1000]
+        benchmarks.append(BenchmarkDB.BASE)
+
+        frame = self.collect_quantile_data(benchmarks, clusters=[CLUSTER_PI])
+        frame["Benchmark"] = frame["Benchmark"].str.replace("Network 100% Load", "")
+
+        figure = FigureContainer(
+            axes_containers=[
+                AxisContainer(
+                    data_elements=[
+                        ComparisonBarElement(
+                            data=frame,
+                            column_x='Benchmark',
+                            column_y='Value',
+                            column_hue='Vendor',
+                        )
+                    ],
+                    title="Isolation Mechanisms at 100% Network Load",
+                    ylog=True,
+                    yticks_interval=None,
+                )
+            ]
+        )
+        figure.plot()
+
+        figure.save(MEASUREMENTS_DIR.joinpath("load").joinpath("isolation_comparison.png"))
+        figure.save(PAPER_GENERATED_RESOURCES_DIR.joinpath("isolation_comparison.pdf"))
+
+
+    def test_create_keys(self):
+        data = BenchmarkSummary.objects.all()
+        entries = []
+        for item in data:
+            for quantile, value in item.clock_quantiles().items():
+                entries.append(f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/q{int(quantile * 100)}/.initial={value},")
+            for quantile, value in item.path_delay_quantiles().items():
+                entries.append(f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/pd/q{int(quantile * 100)}/.initial={value},")
+        entries.sort()
+        PAPER_GENERATED_RESOURCES_DIR.joinpath("summary_keys.tex").write_text(
+            "\\ptpperfLoadKeys{\n"
+            + str_join(entries, separator='\n')
+            + "}"
+        )
+
 
     @staticmethod
     def collect_quantile_data(benchmarks: List[Benchmark], vendors=None, clusters=config.clusters.values()) -> pd.DataFrame:

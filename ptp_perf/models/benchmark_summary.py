@@ -90,6 +90,12 @@ class BenchmarkSummary(models.Model):
             0.5: self.clock_diff_median,
             0.95: self.clock_diff_p95,
         }
+    def path_delay_quantiles(self) -> Dict[float, float]:
+        return {
+            0.05: self.path_delay_p05,
+            0.5: self.path_delay_median,
+            0.95: self.path_delay_p95,
+        }
 
     class Meta:
         app_label = 'app'
