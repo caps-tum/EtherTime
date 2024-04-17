@@ -194,12 +194,16 @@ class VendorComparisonCharts(TestCase):
         data = BenchmarkSummary.objects.all()
         entries = []
         for item in data:
+            prefix = f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}"
+            entries.append(
+                f"{prefix}/count/.initial={item.count},"
+            )
             for quantile, value in item.clock_quantiles().items():
                 entries.append(
-                    f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/q{int(quantile * 100)}/.initial={value},")
+                    f"{prefix}/q{int(quantile * 100)}/.initial={value},")
             for quantile, value in item.path_delay_quantiles().items():
                 entries.append(
-                    f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/pd/q{int(quantile * 100)}/.initial={value},")
+                    f"{prefix}/pd/q{int(quantile * 100)}/.initial={value},")
         entries.sort()
         PAPER_GENERATED_RESOURCES_DIR.joinpath("summary_keys.tex").write_text(
             "\\ptpperfLoadKeys{\n"
