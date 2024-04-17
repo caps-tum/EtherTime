@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 from unittest import TestCase
 
@@ -5,6 +6,7 @@ import pandas as pd
 from matplotlib.patches import ConnectionPatch, ConnectionStyle
 
 from ptp_perf import config
+from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.config import CLUSTER_PI
@@ -16,8 +18,8 @@ from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB, ResourceContentionType, ResourceContentionComponent
-from ptp_perf.util import str_join
-from ptp_perf.utilities import units
+from ptp_perf.util import str_join, unpack_one_value
+from ptp_perf.utilities import units, colors
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -148,15 +150,23 @@ class VendorComparisonCharts(TestCase):
     def create_isolation_chart(self, benchmarks, component: ResourceContentionComponent):
         frame = self.collect_quantile_data(benchmarks, clusters=[CLUSTER_PI])
         frame["Benchmark"] = frame["Benchmark"].str.replace(f"{component} 100% Load", "")
+        frame["Benchmark and Vendor"] = frame["Benchmark"] + " " + frame["Vendor"]
+        color_map = {
+            f'{benchmark} {vendor_name}': ChartContainer.VENDOR_COLORS[vendor_name]
+            for vendor_name, benchmark in itertools.product(frame["Vendor"].unique(), frame["Benchmark"].unique())
+        }
         figure = FigureContainer(
             axes_containers=[
                 AxisContainer(
                     data_elements=[
                         ComparisonBarElement(
                             data=frame,
-                            column_x='Benchmark',
+                            column_x='Vendor',
                             column_y='Value',
-                            column_hue='Vendor',
+                            column_hue='Benchmark',
+                            color_map=None,
+                            # color_map=color_map,
+                            # dodge=False,
                         )
                     ],
                     title=f"Isolation Mechanisms at 100% {component} Load",
@@ -166,6 +176,17 @@ class VendorComparisonCharts(TestCase):
             ]
         )
         figure.plot()
+        axis = figure.axes_containers[0].axis
+        axis.set_ylim(bottom=axis.get_ylim()[0] * 0.85)
+        labels = ["U"] * 4 + ["P"] * 4 + ["I"] * 4 + ["B"] * 4 + [""] * 4
+        for i , bar in enumerate(axis.patches):
+            vendor_colors = [ChartContainer.VENDOR_COLORS[vendor.id] for vendor in VendorDB.ANALYZED_VENDORS]
+            vendor_shades = [colors.adjust_lightness(color, 0.8 + 0.25 * shade) for shade, color in itertools.product(range(4), vendor_colors)]
+            bar.set_facecolor(vendor_shades[i % len(vendor_shades)])
+            axis.text(
+                bar.get_x() + bar.get_width() / 2., axis.get_ylim()[0], labels[i],
+                ha='center', va='bottom', weight='bold',
+            )
         figure.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"{component.id}_isolation_comparison.png"))
         figure.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{component.id}_isolation_comparison.pdf"))
 

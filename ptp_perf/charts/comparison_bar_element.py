@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Union, Literal
 
 import seaborn
 
@@ -7,6 +8,7 @@ from ptp_perf.charts.figure_container import DataElement, AxisContainer
 
 @dataclass
 class ComparisonBarElement(DataElement):
+    dodge: Union[Literal["auto"], bool] = "autho"
 
     def plot(self, axis_container: AxisContainer):
         seaborn.barplot(
@@ -19,6 +21,7 @@ class ComparisonBarElement(DataElement):
             estimator='median',
             errorbar=('pi', 100),
             native_scale=True,
+            dodge=self.dodge,
         )
 
 @dataclass

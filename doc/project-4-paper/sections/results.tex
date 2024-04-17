@@ -160,7 +160,11 @@ The 95\textsuperscript{th} percentiles reflect the behavior of the outliers, and
  Note that under network load PTP sometimes fails to synchronize at all, when it gets stuck in an infinite loop running into transmission timeouts and thus switching between ``state init'' and ``state faulty''. In this case the timing system breaks entirely, and no synchronization can be established at all. These measurements have been excluded from the shown data, but we encountered them rather frequently at high load levels. Preventing this is paramount, as having no synchronization is potentially a lot worse than having a bad quality signal.
 
 \begin{figure}
-    \includegraphics[width=\linewidth]{res/generated/isolation_comparison.pdf}
+    \includegraphics[width=\linewidth]{res/generated/net_isolation_comparison.pdf}
+    \begin{center}
+    \vspace{-0.5cm}
+    \sffamily\scriptsize \textbf{U}: Unprioritized \quad\textbf{P}: Prioritized \quad\textbf{I}: Isolated \quad\textbf{B}: Baseline
+    \end{center}
     \caption{Different possibilities of isolation network load, compared to the baseline with no load.}
     \label{fig:net_isolation_comparison}
 \end{figure}
