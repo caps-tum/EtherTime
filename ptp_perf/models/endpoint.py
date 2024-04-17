@@ -21,6 +21,7 @@ from ptp_perf.utilities import units
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
+    from ptp_perf.charts.timeseries_chart import TimeseriesChart
 
 
 class PTPEndpoint(models.Model):
@@ -210,23 +211,29 @@ class PTPEndpoint(models.Model):
             chart.save(output_path, make_parents=True)
 
         if self.clock_step_timestamp is not None:
-            clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                     normalize_time=True)
-            path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False,
-                                                     normalize_time=True)
+            chart_convergence = self.create_timeseries_chart_convergence()
             output_path = self.get_chart_timeseries_path(convergence_included=True)
-            # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
-            chart_convergence = TimeseriesChart(
-                title=self.get_title("with Convergence"),
-                summary_statistics=None,
-            )
-            chart_convergence.add_path_delay(path_delay)
-            chart_convergence.add_clock_difference(clock_diff)
-            if self.convergence_duration is not None:
-                chart_convergence.add_boundary(
-                    chart_convergence.axes[0], self.convergence_duration
-                )
             chart_convergence.save(output_path, make_parents=True)
+
+    def create_timeseries_chart_convergence(self) -> "TimeseriesChart":
+        from ptp_perf.charts.timeseries_chart import TimeseriesChart
+        from ptp_perf.models.sample import Sample
+        clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
+                                                 normalize_time=True)
+        path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False,
+                                                 normalize_time=True)
+        # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
+        chart_convergence = TimeseriesChart(
+            title=self.get_title("with Convergence"),
+            summary_statistics=None,
+        )
+        chart_convergence.add_path_delay(path_delay)
+        chart_convergence.add_clock_difference(clock_diff)
+        if self.convergence_duration is not None:
+            chart_convergence.add_boundary(
+                chart_convergence.axes[0], self.convergence_duration
+            )
+        return chart_convergence
 
     def process_fault_data(self):
         from ptp_perf.models import LogRecord, Sample

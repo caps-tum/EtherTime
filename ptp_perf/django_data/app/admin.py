@@ -8,6 +8,7 @@ from django.http import HttpResponse
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
+from ptp_perf.util import unpack_one_value
 
 
 class LogRecordInline(admin.TabularInline):
@@ -29,6 +30,14 @@ def delete_analysis_output(modeladmin, request, queryset):
             profile.save()
 
 
+def chart_to_http_response(chart) -> HttpResponse:
+    image_data = StringIO()
+    chart.save(image_data, format='svg')
+    response = HttpResponse(content_type="image/svg+xml")
+    response.write(image_data.getvalue())
+    return response
+
+
 @admin.action(description="Create Key Metric Variance Chart")
 def create_key_metric_variance_chart(modeladmin, request, queryset):
     endpoints: List[PTPEndpoint] = list(queryset.all())
@@ -39,17 +48,16 @@ def create_key_metric_variance_chart(modeladmin, request, queryset):
         'bbox_to_anchor': (1, 0.5)
     }
     chart.tight_layout = True
+    return chart_to_http_response(chart)
 
-    image_data = StringIO()
-    chart.save(image_data, format='svg')
-    response = HttpResponse(content_type="image/svg+xml")
-    response.write(image_data.getvalue())
-    # serializers.serialize("json", queryset, stream=response)
-    return response
-    # return HttpResponse(
-    #     image_data,
-    #     # content_type="image/svg",
-    # )
+
+@admin.action(description="View timeseries")
+def create_timeseries(modeladmin, request, queryset):
+    endpoint: PTPEndpoint = unpack_one_value(queryset.all())
+    chart = endpoint.create_timeseries_chart_convergence()
+    chart.tight_layout = True
+    return chart_to_http_response(chart)
+
 
 
 @admin.register(PTPProfile)
@@ -64,7 +72,7 @@ class PTPEndpointAdmin(admin.ModelAdmin):
     list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median', 'convergence_duration']
     list_select_related = ['profile']
     list_filter = ['endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id']
-    actions = [create_key_metric_variance_chart]
+    actions = [create_key_metric_variance_chart, create_timeseries]
 
     def benchmark(self, endpoint: PTPEndpoint):
         return endpoint.profile.benchmark.name
