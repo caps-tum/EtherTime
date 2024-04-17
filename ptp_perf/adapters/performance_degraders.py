@@ -53,24 +53,32 @@ class NetworkPerformanceDegrader:
 
 
 @dataclass
-class CPUPerformanceDegrader:
+class StressNGPerformanceDegrader:
     endpoint: PTPEndpoint
     stressng_process: Optional[Invocation] = None
 
     async def run(self):
-        target_load = self.endpoint.benchmark.artificial_load_cpu
+        target_load_cpu = self.endpoint.benchmark.artificial_load_cpu
 
         stress_ng_command = ["stress-ng", "--metrics", "--timestamp", "--timeout", "0"]
-        if target_load is not None:
-            stress_ng_command += ["--cpu-load", str(target_load)]
-        if self.endpoint.benchmark.artificial_load_cpu_restrict_cores:
-            stress_ng_command += ["--taskset", self.endpoint.machine.plugin_settings.stress_ng_cpu_restrict_cores]
-        if self.endpoint.benchmark.artificial_load_cpu_scheduler is not None:
-            stress_ng_command += ["--sched", self.endpoint.benchmark.artificial_load_cpu_scheduler]
+        if target_load_cpu > 0:
+            stress_ng_command += [
+                '--cpu', str(self.endpoint.machine.plugin_settings.stress_ng_cpus),
+                "--cpu-load", str(target_load_cpu)
+            ]
 
+            if self.endpoint.benchmark.artificial_load_cpu_restrict_cores:
+                stress_ng_command += ["--taskset", self.endpoint.machine.plugin_settings.stress_ng_cpu_restrict_cores]
+            if self.endpoint.benchmark.artificial_load_cpu_scheduler is not None:
+                stress_ng_command += ["--sched", self.endpoint.benchmark.artificial_load_cpu_scheduler]
+
+        elif self.endpoint.benchmark.artificial_load_aux:
+            stress_ng_command += self.endpoint.benchmark.artificial_load_aux_options
+        else:
+            raise RuntimeError("Unsupported Stress-NG mode")
 
         logging.info("Launching stress_ng tasks...")
         self.stressng_process = Invocation.of_command(
-            *stress_ng_command, '--cpu', str(self.endpoint.machine.plugin_settings.stress_ng_cpus)
+            *stress_ng_command,
         )
         await self.stressng_process.run()

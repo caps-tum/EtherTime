@@ -1,40 +1,11 @@
-from dataclasses import dataclass
 from datetime import timedelta
-from enum import Enum
-from typing import List, ClassVar, Self
+from typing import List
 
 from ptp_perf import config
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark, PTPConfig
+from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
 from ptp_perf.registry.base_registry import BaseRegistry
-
-@dataclass
-class NamedItem:
-    id: str
-    name: str
-
-    def __eq__(self, __value):
-        return isinstance(__value, NamedItem) and self.id == __value.id
-
-    def __str__(self):
-        return self.name
-
-
-class ResourceContentionType(NamedItem):
-    UNPRIORITIZED: ClassVar["Self"]
-    PRIORITIZED: ClassVar["Self"]
-    ISOLATED: ClassVar["Self"]
-
-ResourceContentionType.UNPRIORITIZED = ResourceContentionType("unprioritized", "Unprioritized")
-ResourceContentionType.PRIORITIZED = ResourceContentionType("prioritized", "Prioritized")
-ResourceContentionType.ISOLATED = ResourceContentionType("isolated", "Isolated")
-
-class ResourceContentionComponent(NamedItem):
-    CPU: ClassVar["Self"]
-    NET: ClassVar["Self"]
-
-ResourceContentionComponent.CPU = ResourceContentionComponent("cpu", "CPU")
-ResourceContentionComponent.NET = ResourceContentionComponent("net", "Network")
 
 
 class BenchmarkDB(BaseRegistry[Benchmark]):
@@ -115,21 +86,20 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         """Create a network contention benchmark for a target bandwidth.
         :param component: Which component is being artificially loaded.
         :param type: How the load should be generated.
-        :param load_level: Percentage of load of (assumed GBit) interface to apply."""
+        :param load_level: Percentage of load of (assumed GBit) interface to apply.
+        """
 
         benchmark_options = {
             'id': f"load/{component.id}_{type.id}/load_{load_level}",
         }
-        tags = [ProfileTags.CATEGORY_LOAD]
+        tags = [ProfileTags.CATEGORY_LOAD, component.tag, type.tag]
 
         # Set up component specific values
         if component == ResourceContentionComponent.NET:
-            tags.append(ProfileTags.COMPONENT_NET)
             benchmark_options.update(
                 artificial_load_network=load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
             )
         elif component == ResourceContentionComponent.CPU:
-            tags.append(ProfileTags.COMPONENT_CPU)
             benchmark_options.update(
                 artificial_load_cpu=load_level
             )
@@ -138,13 +108,8 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
         # Setup isolation specific values.
         if type == ResourceContentionType.UNPRIORITIZED:
-            contention_name = "Unprioritized"
-            tags.append(ProfileTags.ISOLATION_UNPRIORITIZED)
-
+            pass
         elif type == ResourceContentionType.PRIORITIZED:
-            contention_name = "Prioritized"
-            tags.append(ProfileTags.ISOLATION_PRIORITIZED)
-
             if component == ResourceContentionComponent.NET:
                 benchmark_options.update(
                     artificial_load_network_dscp_priority='cs1',
@@ -156,11 +121,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
                     # Cannot set nice priority, so use scheduler idle instead.
                     # Nice priority +19 is lowest: https://www.man7.org/linux/man-pages/man7/sched.7.html
                 )
+            else:
+                raise RuntimeError(f"Unknown contention component: {component}")
 
         elif type == ResourceContentionType.ISOLATED:
-            contention_name = "Isolated"
-            tags.append(ProfileTags.ISOLATION_ISOLATED)
-
             if component == ResourceContentionComponent.NET:
                 benchmark_options.update(
                     artificial_load_network_secondary_interface=True,
@@ -172,15 +136,28 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
                 benchmark_options.update(
                     artificial_load_cpu_restrict_cores=True,
                 )
+            else:
+                raise RuntimeError(f"Unknown contention component: {component}")
 
         else:
             raise RuntimeError(f"Unknown network contention type: {type}")
 
         return Benchmark(
-            name=f"{contention_name} {component.name} {load_level}% Load",
+            name=f"{type.name} {component.name} {load_level}% Load",
             tags=tags,
             **benchmark_options,
         )
+
+    @staticmethod
+    def resource_contention_aux(id: str,  name: str, options: List[str]):
+        return Benchmark(
+            id=f"load/{ResourceContentionComponent.AUX.id}_{id}/load_100",
+            name=f"Unprioritized {name} 100% Load",
+            tags=[ProfileTags.CATEGORY_LOAD, ProfileTags.ISOLATION_UNPRIORITIZED, ProfileTags.COMPONENT_AUX],
+            artificial_load_aux=True,
+            artificial_load_aux_options=options,
+        )
+
 
 
     @staticmethod
@@ -214,6 +191,15 @@ for component in [ResourceContentionComponent.NET, ResourceContentionComponent.C
     BenchmarkDB.register_all(BenchmarkDB.resource_contention(component, ResourceContentionType.PRIORITIZED, load_level=100))
     BenchmarkDB.register_all(BenchmarkDB.resource_contention(component, ResourceContentionType.ISOLATED, load_level=100))
 
+# Auxiliary stresses (Unisolated, Full Load)
+BenchmarkDB.register_all(
+    BenchmarkDB.resource_contention_aux("alarm", "Alarm", options=["--alarm", "4"]),
+    BenchmarkDB.resource_contention_aux("cache", "Cache", options=["--cache", "4"]),
+    BenchmarkDB.resource_contention_aux("cyclic", "Cyclic", options=["--cyclic", "1"]),
+    BenchmarkDB.resource_contention_aux("memory", "Memory", options=["--stream", "4"]),
+    BenchmarkDB.resource_contention_aux("switch", "Switch", options=["--switch", "4"]),
+    BenchmarkDB.resource_contention_aux("timer", "Timer", options=["--timer", "4"]),
+)
 
 # Different configurations
 for interval in [3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7]:

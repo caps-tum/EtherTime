@@ -11,7 +11,8 @@ from ptp_perf.charts.distribution_comparison_chart import DistributionComparison
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.registry import resolve
-from ptp_perf.registry.benchmark_db import BenchmarkDB, ResourceContentionType, ResourceContentionComponent
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
 from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.models.sample_query import SampleQuery
 

@@ -1,3 +1,5 @@
+from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
+
 
 class ProfileType:
     RAW = "raw"
@@ -12,13 +14,14 @@ class ProfileTags:
     CATEGORY_LOAD = "category_load"
 
     # Component
-    COMPONENT_CPU = "component_cpu"
-    COMPONENT_NET = "component_net"
+    COMPONENT_CPU = ResourceContentionComponent.CPU.tag
+    COMPONENT_NET = ResourceContentionComponent.NET.tag
+    COMPONENT_AUX = ResourceContentionComponent.AUX.tag
 
     # Isolation
-    ISOLATION_UNPRIORITIZED = "isolation_unprioritized"
-    ISOLATION_PRIORITIZED = "isolation_prioritized"
-    ISOLATION_ISOLATED = "isolation_isolated"
+    ISOLATION_UNPRIORITIZED = ResourceContentionType.UNPRIORITIZED.tag
+    ISOLATION_PRIORITIZED = ResourceContentionType.PRIORITIZED.tag
+    ISOLATION_ISOLATED = ResourceContentionType.ISOLATED.tag
 
     # Fault types
     FAULT_SOFTWARE = "fault_software"

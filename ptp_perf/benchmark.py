@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from ptp_perf import util
 from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator
-from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, CPUPerformanceDegrader
+from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, StressNGPerformanceDegrader
 from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.machine import Machine
@@ -44,10 +44,10 @@ async def benchmark(endpoint_id: str):
             # Start iPerf
             artificial_network_load = NetworkPerformanceDegrader(endpoint)
             background_tasks.add_coroutine(artificial_network_load.run(), label="iPerf")
-        if profile.benchmark.artificial_load_cpu > 0:
+        if profile.benchmark.artificial_load_cpu > 0 or profile.benchmark.artificial_load_aux:
             # Start Stress_ng
-            artificial_cpu_load = CPUPerformanceDegrader(endpoint)
-            background_tasks.add_coroutine(artificial_cpu_load.run(), label="Stress-NG")
+            artificial_load = StressNGPerformanceDegrader(endpoint)
+            background_tasks.add_coroutine(artificial_load.run(), label="Stress-NG")
 
         # Launch background "crashes" of vendor if necessary
         if profile.benchmark.fault_software and profile.benchmark.fault_machine == endpoint.machine_id:

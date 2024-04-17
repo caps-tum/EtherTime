@@ -17,7 +17,8 @@ from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.registry.benchmark_db import BenchmarkDB, ResourceContentionType, ResourceContentionComponent
+from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
 from ptp_perf.util import str_join, unpack_one_value
 from ptp_perf.utilities import units, colors
 from ptp_perf.vendor.registry import VendorDB

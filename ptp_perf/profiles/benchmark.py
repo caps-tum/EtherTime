@@ -40,6 +40,8 @@ class Benchmark:
     artificial_load_cpu: Optional[int] = 0
     artificial_load_cpu_scheduler: Optional[str] = None
     artificial_load_cpu_restrict_cores: Optional[bool] = False
+    artificial_load_aux: bool = False
+    artificial_load_aux_options: Optional[List[str]] = None
 
     fault_ssh_keepalive: bool = False
     fault_software: bool = False
