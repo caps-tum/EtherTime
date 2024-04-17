@@ -34,6 +34,8 @@ class Benchmark:
 
     analyze_limit_permissible_clock_steps: Optional[int] = 1
 
+    setup_use_initial_clock_offset: bool = True
+
     artificial_load_network: Optional[int] = 0
     artificial_load_network_dscp_priority: Optional[str] = None
     artificial_load_network_secondary_interface: Optional[bool] = False

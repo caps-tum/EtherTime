@@ -36,7 +36,7 @@ async def benchmark(endpoint_id: str):
             # First time we set a predictable clock offset at the beginning of the benchmark
             # When restarting (due to e.g. hardware fault), we leave the clock at its default
             await synchronize_time_ntp(endpoint.machine)
-            await clock_jump(endpoint.machine)
+            await clock_jump(endpoint.machine, endpoint.benchmark.setup_use_initial_clock_offset)
 
         # Actually start the benchmark
 
