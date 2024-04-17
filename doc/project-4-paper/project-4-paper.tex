@@ -47,6 +47,7 @@
 \newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
 \newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
+\newcommand{\fNum}[2][0]{\fpeval{round(#2, #1)}}
 \newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
 \newcommand{\fPercentage}[2][0]{\fpeval{round(100*(#2), #1)}\%}
 \newcommand{\fRelative}[2][0]{\fpeval{round(100*(#2)-100, #1)}\%}
@@ -81,8 +82,8 @@
     \xdef\cmpMinArg{}%
     \xdef\cmpMax{}%
     \xdef\cmpMaxArg{}%
-    \xdef\cmpMean{}
-    \xdef\cmpCount{0}
+    \xdef\cmpMean{}%
+    \xdef\cmpCount{0}%
     % Loop across values searching for the best one
     \foreach #1 in {#2}{%
         \xdef\currentValue{\fpeval{#3}}%
@@ -120,7 +121,7 @@
 \newcommand{\assertError}[1]{\textbf{\textcolor{red}{ASSERTION ERROR: #1}}\errmessage{ASSERTION ERROR: #1}}
 % Raise an error if #2 != #3, with optional message #1.
 \newcommand{\assert}[3][]{\strcmpfullexpand{#2}{#3}{}{\assertError{\strcmpfullexpand{#1}{}{#2 != #3}{#1}}}}
-\newcommand{\assertRange}[3]{\pgfmathparse{ifthenelse(and(#1 >= #2, #1 <= #3),"1","0")}\assert[#1 not in range (#2, #3)]{\pgfmathresult}{1}}
+\newcommand{\assertRange}[3]{\pgfmathparse{ifthenelse(and(\fpeval{#1} >= #2, \fpeval{#1} <= #3),"1","0")}\assert[\fpeval{#1} not in range (#2, #3)]{\pgfmathresult}{1}}
 
 % Utility
 
