@@ -15,7 +15,7 @@ from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.registry.benchmark_db import BenchmarkDB, ResourceContentionType, ResourceContentionComponent
 from ptp_perf.util import str_join
 from ptp_perf.utilities import units
 from ptp_perf.vendor.registry import VendorDB
@@ -26,7 +26,8 @@ class VendorComparisonCharts(TestCase):
     def test_load_chart(self):
         for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
             benchmarks = BenchmarkDB.all_by_tags(ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)
-            benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network in [200, 500, 800, 1000]]
+            benchmarks = [benchmark for benchmark in benchmarks if
+                          benchmark.artificial_load_network in [200, 500, 800, 1000]]
             benchmarks.append(BenchmarkDB.BASE)
 
             frame = self.collect_quantile_data(benchmarks, clusters=[cluster])
@@ -37,13 +38,13 @@ class VendorComparisonCharts(TestCase):
             chart = FigureContainer(
                 axes_containers=[
                     AxisContainer([
-                            ComparisonLineElement(
-                                data=frame,
-                                column_x='X',
-                                column_y='Value',
-                                column_hue='Vendor',
-                            )
-                        ],
+                        ComparisonLineElement(
+                            data=frame,
+                            column_x='X',
+                            column_y='Value',
+                            column_hue='Vendor',
+                        )
+                    ],
                         title="Unisolated Network Load",
                         xlabel='Network Load',
                         xticklabels_format_percent=True,
@@ -63,7 +64,6 @@ class VendorComparisonCharts(TestCase):
         frame['X'] = (len(VendorDB.ANALYZED_VENDORS) + 0.5) * frame['Cluster Index'] + frame['Vendor Index']
         frame.sort_values('X', inplace=True)
         print(frame)
-
 
         frame_rpi5 = frame[frame['Cluster'] == config.CLUSTER_PI5.name]
 
@@ -120,23 +120,34 @@ class VendorComparisonCharts(TestCase):
                 (1.0, boundary / ax1.get_ylim()[1]), (-0.2, boundary / ax2.get_ylim()[1]),
                 coordsA='axes fraction', coordsB='axes fraction',
                 axesA=ax1, axesB=ax2,
-                linestyle='dashed', color='0.7', connectionstyle=ConnectionStyle('arc', angleA=0, angleB=180, armA=5, armB=5, rad=5),
+                linestyle='dashed', color='0.7',
+                connectionstyle=ConnectionStyle('arc', angleA=0, angleB=180, armA=5, armB=5, rad=5),
             )
         )
 
         chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
         chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
 
-
     def test_vendor_resilience(self):
-        # Any isolation
-        benchmarks = BenchmarkDB.all_by_tags(ProfileTags.CATEGORY_LOAD, ProfileTags.COMPONENT_NET)
-        benchmarks = [benchmark for benchmark in benchmarks if benchmark.artificial_load_network == 1000]
-        benchmarks.append(BenchmarkDB.BASE)
+        # Any isolation, Net/CPU component
+        for component, tag, max_load_level in [
+            (ResourceContentionComponent.NET, ProfileTags.COMPONENT_NET, 1000),
+            (ResourceContentionComponent.CPU, ProfileTags.COMPONENT_CPU, 100)
+        ]:
+            benchmarks = BenchmarkDB.all_by_tags(ProfileTags.CATEGORY_LOAD, tag)
+            # Only benchmarks with max load.
+            benchmarks = [
+                benchmark for benchmark in benchmarks
+                if benchmark.artificial_load_network == max_load_level
+                   or benchmark.artificial_load_cpu == max_load_level
+            ]
+            benchmarks.append(BenchmarkDB.BASE)
 
+            self.create_isolation_chart(benchmarks, component=component)
+
+    def create_isolation_chart(self, benchmarks, component: ResourceContentionComponent):
         frame = self.collect_quantile_data(benchmarks, clusters=[CLUSTER_PI])
-        frame["Benchmark"] = frame["Benchmark"].str.replace("Network 100% Load", "")
-
+        frame["Benchmark"] = frame["Benchmark"].str.replace(f"{component} 100% Load", "")
         figure = FigureContainer(
             axes_containers=[
                 AxisContainer(
@@ -148,26 +159,26 @@ class VendorComparisonCharts(TestCase):
                             column_hue='Vendor',
                         )
                     ],
-                    title="Isolation Mechanisms at 100% Network Load",
+                    title=f"Isolation Mechanisms at 100% {component} Load",
                     ylog=True,
                     yticks_interval=None,
                 )
             ]
         )
         figure.plot()
-
-        figure.save(MEASUREMENTS_DIR.joinpath("load").joinpath("isolation_comparison.png"))
-        figure.save(PAPER_GENERATED_RESOURCES_DIR.joinpath("isolation_comparison.pdf"))
-
+        figure.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"{component.id}_isolation_comparison.png"))
+        figure.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{component.id}_isolation_comparison.pdf"))
 
     def test_create_keys(self):
         data = BenchmarkSummary.objects.all()
         entries = []
         for item in data:
             for quantile, value in item.clock_quantiles().items():
-                entries.append(f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/q{int(quantile * 100)}/.initial={value},")
+                entries.append(
+                    f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/q{int(quantile * 100)}/.initial={value},")
             for quantile, value in item.path_delay_quantiles().items():
-                entries.append(f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/pd/q{int(quantile * 100)}/.initial={value},")
+                entries.append(
+                    f"    /ptpperf/{item.benchmark_id}/{item.cluster_id}/{item.vendor_id}/pd/q{int(quantile * 100)}/.initial={value},")
         entries.sort()
         PAPER_GENERATED_RESOURCES_DIR.joinpath("summary_keys.tex").write_text(
             "\\ptpperfLoadKeys{\n"
@@ -175,9 +186,9 @@ class VendorComparisonCharts(TestCase):
             + "}"
         )
 
-
     @staticmethod
-    def collect_quantile_data(benchmarks: List[Benchmark], vendors=None, clusters=config.clusters.values()) -> pd.DataFrame:
+    def collect_quantile_data(benchmarks: List[Benchmark], vendors=None,
+                              clusters=config.clusters.values()) -> pd.DataFrame:
         if vendors is None:
             vendors = VendorDB.ANALYZED_VENDORS
 

@@ -55,3 +55,11 @@ class Benchmark:
 
     def __str__(self):
         return f"{self.name}"
+
+    @property
+    def artificial_load(self):
+        if self.artificial_load_network is not None and self.artificial_load_cpu is not None:
+            raise RuntimeError("Multiple artificial loads specified, invalid")
+        if self.artificial_load_network is not None:
+            return self.artificial_load_network
+        return self.artificial_load_cpu

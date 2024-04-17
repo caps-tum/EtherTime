@@ -1,22 +1,40 @@
+from dataclasses import dataclass
 from datetime import timedelta
 from enum import Enum
-from typing import List
+from typing import List, ClassVar, Self
 
 from ptp_perf import config
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark, PTPConfig
 from ptp_perf.registry.base_registry import BaseRegistry
 
+@dataclass
+class NamedItem:
+    id: str
+    name: str
 
-class ResourceContentionType(str, Enum):
-    UNPRIORITIZED = "unprioritized"
-    PRIORITIZED = "prioritized"
-    ISOLATED = "isolated"
+    def __eq__(self, __value):
+        return isinstance(__value, NamedItem) and self.id == __value.id
 
-class ResourceContentionComponent(str, Enum):
-    CPU = "cpu"
-    NET = "net"
+    def __str__(self):
+        return self.name
 
+
+class ResourceContentionType(NamedItem):
+    UNPRIORITIZED: ClassVar["Self"]
+    PRIORITIZED: ClassVar["Self"]
+    ISOLATED: ClassVar["Self"]
+
+ResourceContentionType.UNPRIORITIZED = ResourceContentionType("unprioritized", "Unprioritized")
+ResourceContentionType.PRIORITIZED = ResourceContentionType("prioritized", "Prioritized")
+ResourceContentionType.ISOLATED = ResourceContentionType("isolated", "Isolated")
+
+class ResourceContentionComponent(NamedItem):
+    CPU: ClassVar["Self"]
+    NET: ClassVar["Self"]
+
+ResourceContentionComponent.CPU = ResourceContentionComponent("cpu", "CPU")
+ResourceContentionComponent.NET = ResourceContentionComponent("net", "Network")
 
 
 class BenchmarkDB(BaseRegistry[Benchmark]):
@@ -100,19 +118,17 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         :param load_level: Percentage of load of (assumed GBit) interface to apply."""
 
         benchmark_options = {
-            'id': f"load/{component.value}_{type.value}/load_{load_level}",
+            'id': f"load/{component.id}_{type.id}/load_{load_level}",
         }
         tags = [ProfileTags.CATEGORY_LOAD]
 
         # Set up component specific values
         if component == ResourceContentionComponent.NET:
-            component_name = "Network"
             tags.append(ProfileTags.COMPONENT_NET)
             benchmark_options.update(
                 artificial_load_network=load_level * 1000 // 100, # 1000 Mbit/s = 1 Gbit/s, load_level is percentage
             )
         elif component == ResourceContentionComponent.CPU:
-            component_name = "CPU"
             tags.append(ProfileTags.COMPONENT_CPU)
             benchmark_options.update(
                 artificial_load_cpu=load_level
@@ -161,7 +177,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
             raise RuntimeError(f"Unknown network contention type: {type}")
 
         return Benchmark(
-            name=f"{contention_name} {component_name} {load_level}% Load",
+            name=f"{contention_name} {component.name} {load_level}% Load",
             tags=tags,
             **benchmark_options,
         )
