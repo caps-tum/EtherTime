@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Optional
 
 import pandas as pd
+import seaborn
 from matplotlib import patheffects
 from matplotlib.ticker import EngFormatter
 
@@ -14,6 +15,7 @@ from ptp_perf.utilities import units
 class TimeseriesElement(DataElement):
     points: bool = True
     moving_average: bool = True
+    abs: bool = True
 
     color: Optional[str] = None
     annotate_out_of_bounds: bool = True
@@ -28,7 +30,7 @@ class TimeseriesElement(DataElement):
         assert isinstance(data_max_timestamp, timedelta)
 
         if axis_container.ylimit_top:
-            if not abs:
+            if not self.abs:
                 raise ValueError("Unsupported combination of ylimit_top with abs=False")
             scatter_data = data[data <= axis_container.ylimit_top]
             out_of_bounds_data = data[data > axis_container.ylimit_top]
@@ -82,3 +84,14 @@ class TimeseriesElement(DataElement):
                     horizontalalignment='center',
                     arrowprops=dict(arrowstyle='->'),
                 )
+
+
+class ScatterElement(DataElement):
+
+    def plot(self, axis_container: "AxisContainer"):
+        seaborn.scatterplot(
+            self.data,
+            x=self.column_x,
+            y=self.column_y,
+            hue=self.column_hue,
+        )

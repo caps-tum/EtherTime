@@ -137,7 +137,7 @@ Needless to say, a vendor that cannot deliver stable timing guarantees is risky 
 
 \section{Resource Contention}
 
-One aspect that influences how reliable PTP can operate is the outside interference originating from resource sharing. Through our research, we identified two key resources which need to be carefully managed so that PTP can provide synchronization even in the presence of stress: the network and the CPU.
+One aspect that influences how reliable PTP can operate is the outside interference originating from resource sharing. Through our research, we identified two key resources which need to be carefully managed so that PTP can provide synchronization even in the presence of stress: the network and the CPU.\todo{Update}
 
 \subsection{Network Contention}
 \begin{figure}
@@ -199,3 +199,32 @@ and \fRelative{\cmpMax} at the 95\textsuperscript{th} percentile, which is small
 TODO: What about \fRelative{\cmpMin} \fVendor{\cmpMinArg}?\todo{Determine}
 Interestingly, some level of load can actually boost performance relative to the baseline (we observed this on both the CPU and the network).
 We assume this occurs due to the hardware switching less into power saving states when more load is present, which may actually cause packets to be delivered faster.
+
+\section{Fault Tolerance}
+
+\begin{figure}
+    \begin{center}
+    \begin{tikzpicture}[component/.style={draw}, node distance=0.5cm]
+        \node[component, ] (master) {\faBug{} \faBolt{} Master};
+        \node[component, right=of master] (network) {\faBolt{} Network};
+        \node[component, right=of network] (primary-slave) {\faBug{} \faBolt{} Primary Slave};
+        \node[component, below=0.25cm of primary-slave] (secondary-slave) {Secondary Slave*};
+
+        \draw[-] (master) -- (network);
+        \draw[-] (network) -- (primary-slave);
+        \draw[-] (network) |- (secondary-slave);
+    \end{tikzpicture}
+    \end{center}
+
+    \scriptsize *: For certain outlined scenarios, the secondary slave gets promoted to a failover master when the master fails.
+
+    \caption{
+        Simple fault-setup consisting of three clients, where potential software (\faBug{}) or hardware (\faBolt{}) faults may occur. Since we exclude compound failures, only one fault can occur simultaneously, so no faults are triggered in the secondary slave.
+    }
+    \label{fig:fault_architecture}
+\end{figure}
+
+Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the network, a fault in the software, and a fault in the hardware. The software/hardware faults can either occur on a PTP slave, in which case they are less critical, or on the PTP master, in which case they are more critical. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine this scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard killing the PTP client in software, in reality such a fault might come from within due to e.g. a bug in the client or from without (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but hardware faults and system hang-ups can also come from other component failures.
+
+\subsection{Software Faults}
+
