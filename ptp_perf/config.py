@@ -101,11 +101,16 @@ MACHINE_RPISERV = Machine(
     ptp_interface="",
 )
 
+MACHINE_SWITCH = Machine(
+    id="switch", endpoint_type=EndpointType.SWITCH,
+    address=None, ptp_address=None, ptp_interface=None,
+)
+
 machines = {
     machine.id: machine for machine in [
         MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08,
         MACHINE_RPI56, MACHINE_RPI57, MACHINE_RPI58,
-        MACHINE_RPISERV
+        MACHINE_RPISERV, MACHINE_SWITCH,
     ]
 }
 

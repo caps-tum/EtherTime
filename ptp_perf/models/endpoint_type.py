@@ -7,3 +7,4 @@ class EndpointType(models.TextChoices):
     PRIMARY_SLAVE = 'PRIMARY_SLAVE'
     SECONDARY_SLAVE = 'SECONDARY_SLAVE'
     ORCHESTRATOR = 'ORCHESTRATOR'
+    SWITCH = "SWITCH"

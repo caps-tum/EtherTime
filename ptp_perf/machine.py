@@ -144,6 +144,14 @@ class Cluster:
     def machine_by_id(self, id: str):
         return unpack_one_value(machine for machine in self.machines if machine.id == id)
 
+    def machine_by_type(self, endpoint_type: EndpointType):
+        from config import MACHINE_SWITCH
+        # Switch is not a real machine and isn't part of the cluster.
+        if endpoint_type == EndpointType.SWITCH:
+            return MACHINE_SWITCH
+
+        return unpack_one_value(machine for machine in self.machines if machine.endpoint_type == endpoint_type)
+
     @property
     def ptp_master(self) -> Machine:
         return unpack_one_value([machine for machine in self.machines if machine.ptp_force_master])

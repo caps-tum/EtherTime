@@ -6,6 +6,7 @@ from typing import List, Optional, Literal
 
 from ptp_perf import constants
 from ptp_perf.constants import DEFAULT_BENCHMARK_DURATION
+from ptp_perf.models.endpoint_type import EndpointType
 
 
 @dataclass
@@ -50,7 +51,7 @@ class Benchmark:
     fault_hardware: bool = False
     fault_interval: Optional[timedelta] = None
     fault_duration: Optional[timedelta] = None
-    fault_machine: Optional[str] = None
+    fault_location: Optional[EndpointType] = None
     fault_failover: Optional[bool] = False
 
     @property

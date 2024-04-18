@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import List
 
 from ptp_perf import config
+from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark, PTPConfig
 from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
@@ -21,6 +22,12 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
     )
 
+    _FAULT_TIMING_SETTINGS = {
+        'duration': timedelta(minutes=10),
+        'fault_interval': timedelta(minutes=7),
+        'fault_duration': timedelta(seconds=30),
+    }
+
     # Software crash, once every 30 seconds
     # ALERT: RPI7 does not have a time shift so that the logs will not jump backward in time for this benchmark!
     SOFTWARE_FAULT_SLAVE = Benchmark(
@@ -29,20 +36,17 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         ptp_keepalive=True,
         fault_software=True,
-        fault_interval=timedelta(minutes=2),
-        fault_duration=timedelta(seconds=5),
-        fault_machine=config.MACHINE_RPI07.id,
+        fault_location=EndpointType.SECONDARY_SLAVE,
+        **_FAULT_TIMING_SETTINGS,
     )
 
     HARDWARE_FAULT_SWITCH = Benchmark(
         "fault/hardware_fault_switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         num_machines=3,
-        duration=timedelta(minutes=9),
         fault_hardware=True,
-        fault_interval=timedelta(minutes=7),
-        fault_duration=timedelta(seconds=10),
-        fault_machine='switch',
+        fault_location=EndpointType.SWITCH,
+        **_FAULT_TIMING_SETTINGS,
     )
 
     HARDWARE_FAULT_SLAVE = Benchmark(
@@ -50,11 +54,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         fault_hardware=True,
-        fault_interval=timedelta(minutes=2),
-        fault_duration=timedelta(seconds=5),
-        fault_machine='rpi07',
+        fault_location=EndpointType.SECONDARY_SLAVE,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
+        **_FAULT_TIMING_SETTINGS,
     )
 
     HARDWARE_FAULT_MASTER = Benchmark(
@@ -63,9 +66,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         fault_hardware=True,
         fault_interval=timedelta(minutes=2),
-        fault_machine='rpi06',
+        fault_location=EndpointType.MASTER,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
+        # **_FAULT_TIMING_SETTINGS,
     )
 
     HARDWARE_FAULT_MASTER_FAILOVER = Benchmark(
@@ -76,9 +80,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         fault_failover=True,
         fault_interval=timedelta(minutes=5),
         fault_duration=timedelta(minutes=2.5),
-        fault_machine='rpi06',
+        fault_location=EndpointType.MASTER,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
+        # **_FAULT_TIMING_SETTINGS,
     )
 
 
