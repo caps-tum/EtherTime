@@ -60,7 +60,7 @@ class StressNGPerformanceDegrader:
     async def run(self):
         target_load_cpu = self.endpoint.benchmark.artificial_load_cpu
 
-        stress_ng_command = ["stress-ng", "--metrics", "--timestamp", "--timeout", "0"]
+        stress_ng_command = ["stress-ng", "--metrics", "--timestamp", "--timeout", "1h"]
         if target_load_cpu > 0:
             stress_ng_command += [
                 '--cpu', str(self.endpoint.machine.plugin_settings.stress_ng_cpus),
