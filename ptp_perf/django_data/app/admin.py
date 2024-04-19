@@ -2,13 +2,13 @@ from io import StringIO
 from typing import List
 
 from django.contrib import admin
-from django.core import serializers
 from django.db import transaction
 from django.http import HttpResponse
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
 from ptp_perf.util import unpack_one_value
+from ptp_perf.utilities.units import format_time_offset
 
 
 class LogRecordInline(admin.TabularInline):
@@ -69,7 +69,7 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median', 'clock_diff_p95', 'path_delay_median', 'convergence_duration']
+    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted', 'convergence_duration']
     list_select_related = ['profile']
     list_filter = ['endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id']
     actions = [create_key_metric_variance_chart, create_timeseries]
@@ -86,6 +86,18 @@ class PTPEndpointAdmin(admin.ModelAdmin):
     def profile_id(self, endpoint: PTPEndpoint):
         return endpoint.profile.id
     # inlines = [LogRecordInline]
+
+    def clock_diff_median_formatted(self, endpoint: PTPEndpoint):
+        return format_time_offset(endpoint.clock_diff_median, auto_increase_places=True)
+    clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
+
+    def clock_diff_p95_formatted(self, endpoint: PTPEndpoint):
+        return format_time_offset(endpoint.clock_diff_p95, auto_increase_places=True)
+    clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
+
+    def path_delay_median_formatted(self, endpoint: PTPEndpoint):
+        return format_time_offset(endpoint.path_delay_median, auto_increase_places=True)
+    path_delay_median_formatted.admin_order_field = 'path_delay_median'
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
@@ -119,6 +131,13 @@ class ScheduleTaskAdmin(admin.ModelAdmin):
 
 @admin.register(BenchmarkSummary)
 class BenchmarkSummaryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median', 'clock_diff_p95']
+    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median_formatted', 'clock_diff_p95_formatted']
     list_filter = ['benchmark_id', 'vendor_id', 'cluster_id']
 
+    def clock_diff_median_formatted(self, summary: BenchmarkSummary):
+        return format_time_offset(summary.clock_diff_median, auto_increase_places=True)
+    clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
+
+    def clock_diff_p95_formatted(self, summary: BenchmarkSummary):
+        return format_time_offset(summary.clock_diff_median, auto_increase_places=True)
+    clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'

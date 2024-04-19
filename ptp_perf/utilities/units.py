@@ -1,3 +1,4 @@
+import math
 from datetime import timedelta
 from typing import Union, Iterable
 
@@ -30,14 +31,18 @@ def convert_all_units(factor: Union[float, int], iterable: Iterable):
     return [value * factor for value in iterable]
 
 
-def format_time_offset(value: float, unit: str = "s", places: int =  0):
+def format_time_offset(value: float, unit: str = "s", places: int =  0, auto_increase_places: bool = False) -> str:
     import matplotlib.ticker
+    if value is None:
+        return "-"
     if value >= 60:
         unit = "m"
         value /= 60
     if value >= 60:
         unit = "h"
         value /= 60
+    if auto_increase_places and abs(math.floor(math.log10(value))) % 3 == 0:
+        places += 1
     formatter = matplotlib.ticker.EngFormatter(unit=unit, places=places, usetex=False)
     return formatter.format_data(value)
 
