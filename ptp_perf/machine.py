@@ -9,7 +9,7 @@ from typing import Optional, List, Union
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.rpc.rpc_target import RPCTarget
-from ptp_perf.util import async_gather_with_progress, unpack_one_value
+from ptp_perf.util import async_gather_with_progress, unpack_one_value, unpack_one_value_or_error
 
 
 @dataclass
@@ -145,12 +145,15 @@ class Cluster:
         return unpack_one_value(machine for machine in self.machines if machine.id == id)
 
     def machine_by_type(self, endpoint_type: EndpointType):
-        from config import MACHINE_SWITCH
+        from ptp_perf.config import MACHINE_SWITCH
         # Switch is not a real machine and isn't part of the cluster.
         if endpoint_type == EndpointType.SWITCH:
             return MACHINE_SWITCH
 
-        return unpack_one_value(machine for machine in self.machines if machine.endpoint_type == endpoint_type)
+        return unpack_one_value_or_error(
+            (machine for machine in self.machines if machine.endpoint_type == endpoint_type),
+            f"Could not find correct number of machines of type {endpoint_type} in cluster {self}."
+        )
 
     @property
     def ptp_master(self) -> Machine:
