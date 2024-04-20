@@ -10,10 +10,12 @@ from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
 from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.models.schedule_task import ScheduleTask
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.util import user_prompt_confirmation
 from ptp_perf.vendor.registry import VendorDB
 
 QUEUE = ensure_directory_exists(LOCAL_DIR.joinpath("task_queue"))
 QUEUE_FILE = QUEUE.joinpath("task_queue.json")
+
 
 @dataclass
 class ScheduleQueue:
@@ -85,7 +87,7 @@ def queue_benchmarks(result):
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
-    clusters = [config.clusters[cluster_id] for cluster_id in result.cluster]
+    clusters = [config.clusters[cluster_id] for cluster_id in result.cluster] or config.ANALYZED_CLUSTERS
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
     else:
@@ -99,6 +101,7 @@ def queue_benchmarks(result):
     else:
         vendors = [VendorDB.get(vendor_id) for vendor_id in vendors]
 
+    tasks = []
     for benchmark in benchmarks:
         for cluster in clusters:
             for vendor in vendors:
@@ -128,10 +131,17 @@ def queue_benchmarks(result):
                     number_tasks_to_queue = 1
 
                 for i in range(number_tasks_to_queue):
-                    ScheduleQueue.queue_task(
+                    tasks.append(
                         ScheduleTask(
                             name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
                             command=command,
                             estimated_time=duration,
                         )
                     )
+                    print(tasks[-1])
+
+    if len(tasks) >= 5:
+        print(f'Expected runtime: {sum((task.estimated_time for task in tasks), start=timedelta(seconds=0))}')
+        user_prompt_confirmation(f'Do you want to schedule these {len(tasks)} tasks?')
+
+    ScheduleTask.objects.bulk_create(tasks)
