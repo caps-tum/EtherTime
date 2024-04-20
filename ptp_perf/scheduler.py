@@ -62,7 +62,7 @@ def queue_task(result):
 
 
 def info(result):
-    alignment_str = "{0: >4}  {1: <50}  {2: >20}  {3: >20}"
+    alignment_str = "{0: >4}  {1: <80}  {2: >20}  {3: >20}"
 
     now = timezone.now().replace(microsecond=0)
     eta = now
