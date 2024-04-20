@@ -1,18 +1,24 @@
 from io import StringIO
 from typing import List
+from urllib.parse import urlencode
 
+from admin_actions.admin import ActionsModelAdmin
 from django.contrib import admin
 from django.db import transaction
 from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
+from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
 from ptp_perf.util import unpack_one_value
-from ptp_perf.utilities.units import format_time_offset
+from ptp_perf.utilities.units import format_time_offset, format_relative
 
 
 class LogRecordInline(admin.TabularInline):
     model = LogRecord
+
 
 class PTPEndpointInline(admin.TabularInline):
     model = PTPEndpoint
@@ -59,17 +65,21 @@ def create_timeseries(modeladmin, request, queryset):
     return chart_to_http_response(chart)
 
 
-
 @admin.register(PTPProfile)
 class PTPProfileAdmin(admin.ModelAdmin):
-    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
-    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed', 'is_corrupted']
+    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
+                    'is_corrupted']
+    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
+                   'is_corrupted']
     # inlines = [PTPEndpointInline]
     actions = [delete_analysis_output]
 
+
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type', 'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted', 'convergence_duration']
+    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
+                    'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
+                    'convergence_duration']
     list_select_related = ['profile']
     list_filter = ['endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id']
     actions = [create_key_metric_variance_chart, create_timeseries]
@@ -85,33 +95,42 @@ class PTPEndpointAdmin(admin.ModelAdmin):
 
     def profile_id(self, endpoint: PTPEndpoint):
         return endpoint.profile.id
+
     # inlines = [LogRecordInline]
 
     def clock_diff_median_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.clock_diff_median, auto_increase_places=True)
+
     clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
 
     def clock_diff_p95_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.clock_diff_p95, auto_increase_places=True)
+
     clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
 
     def path_delay_median_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.path_delay_median, auto_increase_places=True)
+
     path_delay_median_formatted.admin_order_field = 'path_delay_median'
+
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'source', 'timestamp', 'message']
     list_filter = ['endpoint__profile', 'endpoint__machine_id', 'source']
 
+
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
     list_display = ['id', 'endpoint', "sample_type", "timestamp", 'value']
-    list_filter = ['endpoint__profile__benchmark_id', 'endpoint__profile__vendor_id', 'endpoint__machine_id', "sample_type"]
+    list_filter = ['endpoint__profile__benchmark_id', 'endpoint__profile__vendor_id', 'endpoint__machine_id',
+                   "sample_type"]
+
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     pass
+
 
 @admin.action(description="Toggle paused")
 def toggle_pause(modeladmin, request, queryset):
@@ -130,14 +149,46 @@ class ScheduleTaskAdmin(admin.ModelAdmin):
 
 
 @admin.register(BenchmarkSummary)
-class BenchmarkSummaryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median_formatted', 'clock_diff_p95_formatted']
-    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id']
+class BenchmarkSummaryAdmin(ActionsModelAdmin):
+    list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median_formatted',
+                    'vs_baseline', 'clock_diff_p95_formatted', 'p95_vs_baseline')
+    list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
+    actions_row = ('details', )
 
     def clock_diff_median_formatted(self, summary: BenchmarkSummary):
         return format_time_offset(summary.clock_diff_median, auto_increase_places=True)
+
     clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
+    clock_diff_median_formatted.short_description = 'Clock Diff Median'
 
     def clock_diff_p95_formatted(self, summary: BenchmarkSummary):
-        return format_time_offset(summary.clock_diff_median, auto_increase_places=True)
+        return format_time_offset(summary.clock_diff_p95, auto_increase_places=True)
+
     clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
+    clock_diff_p95_formatted.short_description = 'Clock Diff 95%'
+
+    def vs_baseline(self, summary: BenchmarkSummary):
+        baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
+                                                benchmark_id=BenchmarkDB.BASE.id)
+        return format_relative(summary.clock_diff_median / baseline.clock_diff_median)
+
+    def p95_vs_baseline(self, summary: BenchmarkSummary):
+        baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
+                                                benchmark_id=BenchmarkDB.BASE.id)
+        return format_relative(summary.clock_diff_p95 / baseline.clock_diff_p95)
+
+    p95_vs_baseline.short_description = 'Vs Baseline'
+
+    def details(self, request, pk):
+        summary = BenchmarkSummary.objects.get(pk=pk)
+        return redirect(
+            reverse_lazy('admin:app_ptpendpoint_changelist')
+            + '?' + urlencode({
+                'endpoint_type__exact': 'PRIMARY_SLAVE',
+                'profile__benchmark_id': summary.benchmark_id,
+                'profile__cluster_id': summary.cluster_id,
+                'profile__vendor_id': summary.vendor_id,
+            })
+        )
+    details.short_description = 'Details'
+    details.url_path = 'details'

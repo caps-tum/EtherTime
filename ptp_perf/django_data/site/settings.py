@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     "ptp_perf.django_data.app",
+    "admin_actions",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

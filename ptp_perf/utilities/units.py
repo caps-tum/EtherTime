@@ -41,7 +41,8 @@ def format_time_offset(value: float, unit: str = "s", places: int =  0, auto_inc
     if value >= 60:
         unit = "h"
         value /= 60
-    if auto_increase_places and abs(math.floor(math.log10(value))) % 3 == 0:
+    # Abs twice on purpose: Need positive value for log and then want to compare against positive value of exponent.
+    if auto_increase_places and value != 0 and math.floor(abs(math.log10(abs(value)))) % 3 == 2:
         places += 1
     formatter = matplotlib.ticker.EngFormatter(unit=unit, places=places, usetex=False)
     return formatter.format_data(value)
@@ -50,3 +51,6 @@ def format_time_delta(value: float):
     delta = timedelta(microseconds=abs(value) * NANOSECONDS_TO_MICROSECOND)
     formatted_duration = str(delta)
     return formatted_duration if value >= 0 else f"-{formatted_duration}"
+
+def format_relative(value: float, places: int = 1):
+    return f"{value:.{places}f}x"
