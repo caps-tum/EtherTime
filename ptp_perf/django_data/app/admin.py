@@ -57,12 +57,6 @@ def create_key_metric_variance_chart(modeladmin, request, queryset):
     return chart_to_http_response(chart)
 
 
-@admin.action(description="View timeseries")
-def create_timeseries(modeladmin, request, queryset):
-    endpoint: PTPEndpoint = unpack_one_value(queryset.all())
-    chart = endpoint.create_timeseries_chart_convergence()
-    chart.tight_layout = True
-    return chart_to_http_response(chart)
 
 
 @admin.register(PTPProfile)
@@ -76,13 +70,14 @@ class PTPProfileAdmin(admin.ModelAdmin):
 
 
 @admin.register(PTPEndpoint)
-class PTPEndpointAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
+class PTPEndpointAdmin(ActionsModelAdmin):
+    list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
                     'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
-                    'convergence_duration']
-    list_select_related = ['profile']
-    list_filter = ['endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id']
-    actions = [create_key_metric_variance_chart, create_timeseries]
+                    'convergence_duration')
+    list_select_related = ('profile',)
+    list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
+    actions = (create_key_metric_variance_chart,)
+    actions_row = ('create_timeseries', )
 
     def benchmark(self, endpoint: PTPEndpoint):
         return endpoint.profile.benchmark.name
@@ -100,18 +95,28 @@ class PTPEndpointAdmin(admin.ModelAdmin):
 
     def clock_diff_median_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.clock_diff_median, auto_increase_places=True)
-
     clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
+    clock_diff_median_formatted.short_description = 'Clock Diff Median'
 
     def clock_diff_p95_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.clock_diff_p95, auto_increase_places=True)
-
     clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
+    clock_diff_p95_formatted.short_description = 'Clock Diff 95%'
 
     def path_delay_median_formatted(self, endpoint: PTPEndpoint):
         return format_time_offset(endpoint.path_delay_median, auto_increase_places=True)
 
     path_delay_median_formatted.admin_order_field = 'path_delay_median'
+    clock_diff_p95_formatted.short_description = 'Path Delay Median'
+
+    def create_timeseries(self, request, pk):
+        endpoint: PTPEndpoint = PTPEndpoint.objects.get(pk=pk)
+        chart = endpoint.create_timeseries_chart_convergence()
+        chart.tight_layout = True
+        return chart_to_http_response(chart)
+    create_timeseries.short_description = 'Timeseries'
+    create_timeseries.url_path = 'timeseries'
+
 
 
 @admin.register(LogRecord)
