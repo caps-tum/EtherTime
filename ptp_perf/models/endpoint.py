@@ -23,6 +23,8 @@ if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
     from ptp_perf.charts.timeseries_chart import TimeseriesChart
 
+class ProfileCorruptError(Exception):
+    pass
 
 class PTPEndpoint(models.Model):
     id = models.AutoField(primary_key=True)
@@ -93,7 +95,7 @@ class PTPEndpoint(models.Model):
         from ptp_perf.models.sample import Sample
 
         entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                    remove_clock_step=False)
+                                                    remove_clock_step=False, normalize_time=False)
         if entire_series is None:
             return
 
@@ -112,35 +114,37 @@ class PTPEndpoint(models.Model):
                 f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}"
             )
 
-        # We don't normalize time automatically anymore.
-        # Normalize time: Move the origin to the epoch
-        # timestamps = timestamps - timestamps.min()
+        try:
+            # We don't normalize time automatically anymore.
+            # Normalize time: Move the origin to the epoch
+            # timestamps = timestamps - timestamps.min()
 
-        Timeseries._validate_series(entire_series, maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
+            Timeseries._validate_series(entire_series, maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
 
-        # Do some data post-processing to improve quality.
+            # Do some data post-processing to improve quality.
 
-        # Step 1: Remove the first big clock step.
+            # Step 1: Remove the first big clock step.
 
-        # Remove any beginning zero values (no clock_difference information yet) from start
-        # (first non-zero value makes cumulative sum >= 0)
-        crop_condition = (entire_series != 0).cumsum()
-        frame_no_leading_zeros = entire_series[crop_condition != 0]
+            # Remove any beginning zero values (no clock_difference information yet) from start
+            # (first non-zero value makes cumulative sum >= 0)
+            crop_condition = (entire_series != 0).cumsum()
+            frame_no_leading_zeros = entire_series[crop_condition != 0]
 
-        detected_clock_step = detect_clock_step(frame_no_leading_zeros, self.benchmark.analyze_limit_permissible_clock_steps)
-        self.clock_step_timestamp = detected_clock_step.time
-        self.clock_step_magnitude = detected_clock_step.magnitude
+            detected_clock_step = detect_clock_step(frame_no_leading_zeros, self.benchmark.analyze_limit_permissible_clock_steps)
+            self.clock_step_timestamp = detected_clock_step.time
+            self.clock_step_magnitude = detected_clock_step.magnitude
 
-        # Now crop after clock step
-        logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
-        frame_no_clock_step = frame_no_leading_zeros[frame_no_leading_zeros.index > detected_clock_step.time]
+            # Now crop after clock step
+            logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
+            frame_no_clock_step = frame_no_leading_zeros[frame_no_leading_zeros.index > detected_clock_step.time]
 
-        Timeseries._validate_series(frame_no_clock_step)
+            Timeseries._validate_series(frame_no_clock_step)
 
-        minimum_convergence_time = timedelta(seconds=1)
-        detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
+            minimum_convergence_time = timedelta(seconds=1)
+            detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
 
-        if detected_clock_convergence is not None:
+            if detected_clock_convergence is None:
+                raise ProfileCorruptError("No clock convergence detected.")
 
             remaining_benchmark_time = frame_no_clock_step.index.max() - detected_clock_convergence.timestamp
             if remaining_benchmark_time < self.benchmark.duration * 0.75:
@@ -155,6 +159,23 @@ class PTPEndpoint(models.Model):
             self.convergence_duration = detected_clock_convergence.duration
             self.convergence_rate = convergence_statistics.convergence_rate
             self.convergence_max_offset = convergence_statistics.convergence_max_offset
+
+            # If there was a fault, the convergence marker is moved to the fault
+            faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT, value=1)
+            if len(faults) > 0:
+                if len(faults) > 1:
+                    raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
+                fault = faults.get()
+                if fault.timestamp <= self.convergence_timestamp:
+                    raise ProfileCorruptError("Clock did not converge before the first fault.")
+                if fault.timestamp > max(frame_no_clock_step.index):
+                    raise RuntimeError("Fault occurred after last sample timestamp?")
+
+                print(f"Updating convergence timestamp: old {self.convergence_timestamp}, new {fault.timestamp}")
+                self.convergence_timestamp = fault.timestamp
+                self.convergence_duration = None
+                self.convergence_rate = None
+                self.convergence_max_offset = None
 
             # Now create the actual data
             converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]
@@ -171,10 +192,11 @@ class PTPEndpoint(models.Model):
             self.path_delay_p95 = path_delay_values.quantile(0.95)
             self.path_delay_std = path_delay_values.std()
 
-        else:
+        except ProfileCorruptError as e:
             # This profile is probably corrupt.
             self.profile.is_corrupted = True
             self.profile.save()
+            logging.exception(e)
             logging.warning("Profile marked as corrupt.")
 
         self.save()
@@ -240,8 +262,9 @@ class PTPEndpoint(models.Model):
         records = LogRecord.objects.filter(source="fault-generator", endpoint__profile=self.profile).all()
         parsed_faults = 0
         for record in records:
+            # We import faults either directly on the current endpoint or on the switch.
             match = re.search(
-                f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on {self.machine_id}.",
+                f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on ({self.machine_id}|switch).",
                 record.message
             )
             if match is not None:
@@ -255,6 +278,11 @@ class PTPEndpoint(models.Model):
                 parsed_faults += 1
         if parsed_faults > 0:
             logging.info(f"{self} parsed {parsed_faults} fault status records.")
+        else:
+            if self.benchmark.fault_location is not None and self.machine is not None:
+                fault_location = self.cluster.machine_by_type(self.benchmark.fault_location)
+                if fault_location.id == self.machine.id or fault_location.id == config.MACHINE_SWITCH.id:
+                    logging.warning(f"Benchmark {self.benchmark} should have faults on {self.machine} but no faults were found on profile {self.profile}")
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and

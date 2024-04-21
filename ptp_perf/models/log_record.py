@@ -15,3 +15,6 @@ class LogRecord(models.Model):
     class Meta:
         ordering = ('id',)
         app_label = 'app'
+
+    def __str__(self):
+        return f"{self.timestamp.strftime('%Y-%m-%d %H:%M:%S')} {self.endpoint.machine_id} {self.source} {self.message}"

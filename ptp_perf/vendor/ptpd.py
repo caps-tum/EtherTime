@@ -71,20 +71,17 @@ class PTPDVendor(Vendor):
             # Probably master node or other node without data.
             return []
 
-        filtered_log = csv_header_lines[0].message.lstrip("| ")
-        timezone = csv_header_lines[0].timestamp.tzinfo
+        # We insert the database timestamps into the CSV string so we can extract it later.
+        filtered_log = csv_header_lines[0].message.lstrip("| ").rstrip("\n") + ", DB Timestamp\n"
         # Actual data.
         filtered_log += str_join(
-            [log.message.lstrip("| ") for log in logs if ", slv, " in log.message],
+            [log.message.lstrip("| ") + f", {log.timestamp}" for log in logs if ", slv, " in log.message],
             separator='\n'
         )
 
         frame = pd.read_csv(
             io.StringIO(filtered_log), delimiter=",", skipinitialspace=True, parse_dates=True
         )
-        frame["# Timestamp"] = frame["# Timestamp"].astype('datetime64[ns]').dt.tz_localize(timezone)
-        # No longer necessary, the filtering is done above.
-        # frame = frame[frame["State"] == "slv"]
 
         # | # Timestamp, State, Clock ID, One Way Delay, Offset From Master, Slave to Master, Master to Slave, Observed Drift, Last packet Received, One Way Delay Mean, One Way Delay Std Dev, Offset From Master Mean, Offset From Master Std Dev, Observed Drift Mean, Observed Drift Std Dev, raw delayMS, raw delaySM
         # | 2024-03-06 19:32:49.655021, slv, dca632fffecdcf52(unknown)/1,  0.000062474, -0.000028681,  0.000092819,  0.000028279, -6677.771000000, D, 0.000061376, 221, -0.000044591, 10390, -5282, 392,  0.000028279,  0.000092819
@@ -94,7 +91,7 @@ class PTPDVendor(Vendor):
             samples.append(
                 Sample(
                     endpoint=endpoint,
-                    timestamp=row["# Timestamp"],
+                    timestamp=row["DB Timestamp"],
                     sample_type=Sample.SampleType.CLOCK_DIFF,
                     value=row["Offset From Master"] * units.NANOSECONDS_IN_SECOND,
                 )
@@ -102,7 +99,7 @@ class PTPDVendor(Vendor):
             samples.append(
                 Sample(
                     endpoint=endpoint,
-                    timestamp=row["# Timestamp"],
+                    timestamp=row["DB Timestamp"],
                     sample_type=Sample.SampleType.PATH_DELAY,
                     value=row["One Way Delay"] * units.NANOSECONDS_IN_SECOND,
                 )

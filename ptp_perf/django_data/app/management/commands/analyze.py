@@ -49,9 +49,8 @@ def convert_profile(profile: PTPProfile):
         parsed_samples = profile.vendor.parse_log_data(endpoint)
         logging.info(f"{endpoint} converted {len(parsed_samples)} samples.")
 
-        endpoint.process_timeseries_data()
-
         endpoint.process_fault_data()
+        endpoint.process_timeseries_data()
 
         total_samples += len(parsed_samples)
 
