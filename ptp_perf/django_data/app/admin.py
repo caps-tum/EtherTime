@@ -122,14 +122,14 @@ class PTPEndpointAdmin(ActionsModelAdmin):
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'source', 'timestamp', 'message']
-    list_filter = ['endpoint__profile', 'endpoint__machine_id', 'source']
+    list_filter = ['endpoint__machine_id', 'source', 'endpoint__profile']
 
 
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
     list_display = ['id', 'endpoint', "sample_type", "timestamp", 'value']
     list_filter = ['endpoint__profile__benchmark_id', 'endpoint__profile__vendor_id', 'endpoint__machine_id',
-                   "sample_type"]
+                   "sample_type", 'endpoint__profile']
 
 
 @admin.register(Tag)
