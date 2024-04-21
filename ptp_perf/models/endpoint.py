@@ -3,7 +3,7 @@ import re
 import typing
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 from django.db import models
@@ -53,6 +53,27 @@ class PTPEndpoint(models.Model):
     # Clock step
     clock_step_timestamp = models.DateTimeField(null=True)
     clock_step_magnitude = models.FloatField(null=True)
+    
+    # Fault Data
+    fault_clock_diff_pre_median = models.FloatField(null=True)
+    fault_clock_diff_pre_p05 = models.FloatField(null=True)
+    fault_clock_diff_pre_p95 = models.FloatField(null=True)
+    fault_path_delay_pre_median = models.FloatField(null=True)
+    fault_path_delay_pre_p05 = models.FloatField(null=True)
+    fault_path_delay_pre_p95 = models.FloatField(null=True)
+    
+    fault_clock_diff_post_median = models.FloatField(null=True)
+    fault_clock_diff_post_p05 = models.FloatField(null=True)
+    fault_clock_diff_post_p95 = models.FloatField(null=True)
+    fault_path_delay_post_median = models.FloatField(null=True)
+    fault_path_delay_post_p05 = models.FloatField(null=True)
+    fault_path_delay_post_p95 = models.FloatField(null=True)
+
+    # Fault Summaries
+    fault_actual_duration = models.DurationField(null=True)
+    fault_ratio_clock_diff_median = models.FloatField(null=True)
+    fault_ratio_clock_diff_p95 = models.FloatField(null=True)
+
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
@@ -163,37 +184,53 @@ class PTPEndpoint(models.Model):
             self.convergence_rate = convergence_statistics.convergence_rate
             self.convergence_max_offset = convergence_statistics.convergence_max_offset
 
-            # If there was a fault, the convergence marker is moved to the fault
-            faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT, value=1)
-            if len(faults) > 0:
-                if len(faults) > 1:
-                    raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
-                fault = faults.get()
-                if fault.timestamp <= self.convergence_timestamp:
-                    raise ProfileCorruptError("Clock did not converge before the first fault.")
-                if fault.timestamp > max(frame_no_clock_step.index):
-                    raise RuntimeError("Fault occurred after last sample timestamp?")
-
-                print(f"Updating convergence timestamp: old {self.convergence_timestamp}, new {fault.timestamp}")
-                self.convergence_timestamp = fault.timestamp
-                self.convergence_duration = calculate_convergence_duration(self.convergence_timestamp, frame_no_clock_step)
-                self.convergence_rate = None
-                self.convergence_max_offset = None
-
             # Now create the actual data
             converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]
             Timeseries._validate_series(converged_series)
 
             # self.summary_statistics = self.time_series.summarize()
             abs_clock_diff = converged_series.abs()
-            self.clock_diff_median = abs_clock_diff.median()
-            self.clock_diff_p05 = abs_clock_diff.quantile(0.05)
-            self.clock_diff_p95 = abs_clock_diff.quantile(0.95)
+            self.clock_diff_median, self.clock_diff_p05, self.clock_diff_p95 = self.calculate_quantiles(abs_clock_diff)
+
             path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True)
-            self.path_delay_median = path_delay_values.median()
-            self.path_delay_p05 = path_delay_values.quantile(0.05)
-            self.path_delay_p95 = path_delay_values.quantile(0.95)
+            self.path_delay_median, self.path_delay_p05, self.path_delay_p95 = self.calculate_quantiles(path_delay_values)
             self.path_delay_std = path_delay_values.std()
+
+            # If there was a fault, calculate fault statistics
+            faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT)
+            if len(faults) > 0:
+                if len(faults) > 2:
+                    raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
+                fault_start = faults.filter(value=1).get()
+                fault_end = faults.filter(value=0).get()
+                if fault_start.timestamp <= self.convergence_timestamp:
+                    raise ProfileCorruptError("Clock did not converge before the first fault.")
+                if fault_start.timestamp >= fault_end.timestamp:
+                    raise RuntimeError("Fault ended before it started?")
+                if fault_end.timestamp > max(frame_no_clock_step.index):
+                    raise RuntimeError("Fault occurred after last sample timestamp?")
+
+                pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
+                self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (
+                    self.calculate_quantiles(pre_fault_series)
+                )
+                pre_fault_path_delay = path_delay_values[path_delay_values.index <= fault_start.timestamp]
+                self.fault_path_delay_pre_median, self.fault_path_delay_pre_p05, self.fault_path_delay_pre_p95 = (
+                    self.calculate_quantiles(pre_fault_path_delay)
+                )
+                
+                post_fault_series = abs_clock_diff[abs_clock_diff.index >= fault_end.timestamp]
+                self.fault_clock_diff_post_median, self.fault_clock_diff_post_p05, self.fault_clock_diff_post_p95 = (
+                    self.calculate_quantiles(post_fault_series)
+                )
+                post_fault_path_delay = path_delay_values[path_delay_values.index >= fault_end.timestamp]
+                self.fault_path_delay_post_median, self.fault_path_delay_post_p05, self.fault_path_delay_post_p95 = (
+                    self.calculate_quantiles(post_fault_path_delay)
+                )
+
+                self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
+                self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_path_delay_pre_median
+                self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
 
         except ProfileCorruptError as e:
             # This profile is probably corrupt.
@@ -203,6 +240,11 @@ class PTPEndpoint(models.Model):
 
         self.save()
         return self
+
+    @staticmethod
+    def calculate_quantiles(series: pd.Series) -> Tuple[float, float, float]:
+        """Order of return values: median, p05, p95"""
+        return series.quantile([0.5, 0.05, 0.95]).values
 
     def create_timeseries_charts(self, force_regeneration: bool = False):
         from ptp_perf.charts.timeseries_chart import TimeseriesChart
