@@ -86,17 +86,22 @@ def detect_clock_convergence(series_with_convergence: pd.Series, minimum_converg
     # Initial convergence point
     # This is the first point where the converged value becomes 1.0
     convergence_timestamp = converged[converged == 1].index.min()
-    min_total_timestamp = series_with_convergence.index.min()
-    convergence_duration = convergence_timestamp - min_total_timestamp
+    convergence_duration = calculate_convergence_duration(convergence_timestamp, series_with_convergence)
 
     if convergence_duration < minimum_convergence_time:
         logging.warning(f"Convergence too fast: {convergence_duration}. Assuming 1 second.")
-        convergence_timestamp = min_total_timestamp + minimum_convergence_time
+        # Set convergence to start of profile + minimum convergence time
+        convergence_timestamp = series_with_convergence.index.min() + minimum_convergence_time
+        convergence_duration = calculate_convergence_duration(convergence_timestamp, series_with_convergence)
 
-    detected_convergence = DetectedClockConvergence(convergence_timestamp, convergence_timestamp - min_total_timestamp, converged)
+    detected_convergence = DetectedClockConvergence(convergence_timestamp, convergence_duration, converged)
 
     if detected_convergence.divergence_ratio is not None and detected_convergence.divergence_ratio > 0.1:
         logging.warning(f"Clock diverged {detected_convergence.divergence_counts}x after converging "
                         f"({detected_convergence.divergence_ratio * 100:.0f}% of samples in diverged state).")
 
     return detected_convergence
+
+
+def calculate_convergence_duration(convergence_timestamp: datetime, timeseries: pd.Series) -> timedelta:
+    return convergence_timestamp - timeseries.index.min()

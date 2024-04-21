@@ -14,7 +14,7 @@ from ptp_perf.machine import Machine, Cluster
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.models.exceptions import NoDataError
-from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
+from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence, calculate_convergence_duration
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics, SummaryStatistics
 from ptp_perf.utilities import units
@@ -176,7 +176,7 @@ class PTPEndpoint(models.Model):
 
                 print(f"Updating convergence timestamp: old {self.convergence_timestamp}, new {fault.timestamp}")
                 self.convergence_timestamp = fault.timestamp
-                self.convergence_duration = None
+                self.convergence_duration = calculate_convergence_duration(self.convergence_timestamp, frame_no_clock_step)
                 self.convergence_rate = None
                 self.convergence_max_offset = None
 
@@ -199,8 +199,7 @@ class PTPEndpoint(models.Model):
             # This profile is probably corrupt.
             self.profile.is_corrupted = True
             self.profile.save()
-            logging.exception(e)
-            logging.warning("Profile marked as corrupt.")
+            logging.warning(f"Profile marked as corrupt: {e}")
 
         self.save()
         return self
