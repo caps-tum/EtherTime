@@ -16,6 +16,7 @@ class ProfileQuery:
     vendor: Optional[Vendor] = None
     cluster: Optional[Cluster] = None
     is_processed: bool = True
+    filter_corrupted: bool = True
     tags: List[str] = field(default_factory=list)
 
 
@@ -24,6 +25,8 @@ class ProfileQuery:
 
         if self.is_processed:
             query = query.filter(is_processed=True)
+        if self.filter_corrupted:
+            query = query.filter(is_corrupted=False)
 
         if self.benchmark:
             query = query.filter(benchmark_id=self.benchmark.id)
