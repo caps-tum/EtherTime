@@ -40,9 +40,6 @@ class ChronyVendor(Vendor):
 
     async def run(self, endpoint: "PTPEndpoint"):
 
-        if endpoint.machine.ptp_failover_master:
-            raise NotImplementedError()
-
         self._process = Invocation.of_command(
             "chronyd",
             "-d",
@@ -86,8 +83,12 @@ class ChronyVendor(Vendor):
     def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
         if endpoint.machine.ptp_force_slave:
             return base_path.joinpath("chrony_template_slave.conf")
-        else:
+        elif endpoint.machine.ptp_force_master:
             return base_path.joinpath("chrony_template_master.conf")
+        elif endpoint.machine.ptp_failover_master:
+            return base_path.joinpath("chrony_template_failover_master.conf")
+        else:
+            raise RuntimeError(f"Could not resolve configuration template for {endpoint.machine}")
 
     @classmethod
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:

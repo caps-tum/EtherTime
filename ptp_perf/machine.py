@@ -159,5 +159,9 @@ class Cluster:
     def ptp_master(self) -> Machine:
         return unpack_one_value([machine for machine in self.machines if machine.ptp_force_master])
 
+    @property
+    def ptp_failover_master(self) -> Machine:
+        return unpack_one_value([machine for machine in self.machines if machine.ptp_failover_master])
+
     def __str__(self):
         return self.name
