@@ -1,5 +1,5 @@
 from io import StringIO
-from typing import List
+from typing import List, Callable, Any
 from urllib.parse import urlencode
 
 from admin_actions.admin import ActionsModelAdmin
@@ -139,6 +139,47 @@ class PTPEndpointAdmin(ActionsModelAdmin):
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
 
+def formatted_field(field: Callable[[Any], float], short_description: str, order_field: str):
+    def inner_function(self, value):
+        return format_time_offset(field(value), auto_increase_places=True)
+    inner_function.short_description = short_description
+    inner_function.admin_order_field = order_field
+    return inner_function
+
+def create_modeladmin(modeladmin, model, name = None):
+    # Stack-overflow https://stackoverflow.com/questions/2223375/multiple-modeladmins-views-for-same-model-in-django-admin
+    class  Meta:
+        proxy = True
+        app_label = model._meta.app_label
+
+    attrs = {'__module__': '', 'Meta': Meta}
+
+    newmodel = type(name, (model,), attrs)
+
+    admin.site.register(newmodel, modeladmin)
+    return modeladmin
+
+class PTPEndpointFaultAdmin(PTPEndpointAdmin):
+    list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
+                    'clock_diff_pre_median_formatted', 'clock_diff_post_median_formatted')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(fault_actual_duration__isnull=False)
+
+    clock_diff_pre_median_formatted = formatted_field(
+        lambda endpoint: endpoint.fault_clock_diff_pre_median,
+        "Pre Clock Diff Median", "fault_clock_diff_pre_median",
+    )
+
+    clock_diff_post_median_formatted = formatted_field(
+        lambda endpoint: endpoint.fault_clock_diff_post_median,
+        "Post Clock Diff Median", "fault_clock_diff_post_median",
+    )
+
+    def fault_ratio_clock_diff_median_formatted(self, endpoint):
+        return format_relative(endpoint.fault_ratio_clock_diff_median)
+
+create_modeladmin(PTPEndpointFaultAdmin, PTPEndpoint, "endpoint-fault")
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
