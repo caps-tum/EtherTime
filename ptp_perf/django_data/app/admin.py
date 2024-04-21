@@ -57,16 +57,27 @@ def create_key_metric_variance_chart(modeladmin, request, queryset):
     return chart_to_http_response(chart)
 
 
+def render_timeseries_to_http_response(endpoint: PTPEndpoint):
+    chart = endpoint.create_timeseries_chart_convergence()
+    chart.tight_layout = True
+    return chart_to_http_response(chart)
 
 
 @admin.register(PTPProfile)
-class PTPProfileAdmin(admin.ModelAdmin):
-    list_display = ['id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
-                    'is_corrupted']
-    list_filter = ['benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
-                   'is_corrupted']
+class PTPProfileAdmin(ActionsModelAdmin):
+    list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
+                    'is_corrupted')
+    list_filter = ('benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
+                   'is_corrupted')
     # inlines = [PTPEndpointInline]
-    actions = [delete_analysis_output]
+    actions = (delete_analysis_output,)
+    actions_row = ('create_timeseries_for_profile',)
+
+    def create_timeseries_for_profile(self, request, pk):
+        profile = PTPProfile.objects.get(pk=pk)
+        return render_timeseries_to_http_response(profile.endpoint_primary_slave)
+    create_timeseries_for_profile.short_description = 'Timeseries'
+    create_timeseries_for_profile.url_path = 'profile_timeseries'
 
 
 @admin.register(PTPEndpoint)
@@ -111,9 +122,7 @@ class PTPEndpointAdmin(ActionsModelAdmin):
 
     def create_timeseries(self, request, pk):
         endpoint: PTPEndpoint = PTPEndpoint.objects.get(pk=pk)
-        chart = endpoint.create_timeseries_chart_convergence()
-        chart.tight_layout = True
-        return chart_to_http_response(chart)
+        return render_timeseries_to_http_response(endpoint)
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
 

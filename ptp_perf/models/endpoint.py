@@ -55,7 +55,8 @@ class PTPEndpoint(models.Model):
     clock_step_magnitude = models.FloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
-                               remove_clock_step: bool = True, normalize_time: bool = False) -> Optional[pd.Series]:
+                               remove_clock_step: bool = True, remove_clock_step_force: bool = True,
+                               normalize_time: bool = False) -> Optional[pd.Series]:
         from ptp_perf.models import Sample
         sample_set = self.sample_set.filter(sample_type=sample_type)
 
@@ -66,8 +67,10 @@ class PTPEndpoint(models.Model):
 
         if remove_clock_step:
             if self.clock_step_timestamp is None:
-                raise RuntimeError("Requested clock step exclusion but no clock step timestamp is present.")
-            sample_set = sample_set.filter(timestamp__gte=self.clock_step_timestamp)
+                if remove_clock_step_force:
+                    raise RuntimeError("Requested clock step exclusion but no clock step timestamp is present.")
+            else:
+                sample_set = sample_set.filter(timestamp__gte=self.clock_step_timestamp)
 
         frame = pd.DataFrame(sample_set.values("timestamp", "value"))
         if frame.empty:
@@ -241,16 +244,18 @@ class PTPEndpoint(models.Model):
         from ptp_perf.charts.timeseries_chart import TimeseriesChart
         from ptp_perf.models.sample import Sample
         clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                 normalize_time=True)
+                                                 normalize_time=True, remove_clock_step_force=False)
         path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False,
-                                                 normalize_time=True)
+                                                 normalize_time=True, remove_clock_step_force=False)
         # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
         chart_convergence = TimeseriesChart(
             title=self.get_title("with Convergence"),
             summary_statistics=None,
         )
-        chart_convergence.add_path_delay(path_delay)
-        chart_convergence.add_clock_difference(clock_diff)
+        if path_delay is not None:
+            chart_convergence.add_path_delay(path_delay)
+        if clock_diff is not None:
+            chart_convergence.add_clock_difference(clock_diff)
         if self.convergence_duration is not None:
             chart_convergence.add_boundary(
                 chart_convergence.axes[0], self.convergence_duration
