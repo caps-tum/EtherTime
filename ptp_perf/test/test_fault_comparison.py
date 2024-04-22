@@ -60,6 +60,7 @@ class FaultComparisonCharts(TestCase):
                 ])
                 chart.plot()
                 chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.png"), make_parents=True)
+                chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.pdf"), make_parents=True)
             except NoDataError:
                 logging.info("Missing data.")
 

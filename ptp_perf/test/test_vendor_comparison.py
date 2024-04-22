@@ -1,13 +1,9 @@
 import itertools
 from typing import List
-from unittest import TestCase
 
 import pandas as pd
+from django.test import TestCase
 from matplotlib.patches import ConnectionPatch, ConnectionStyle
-
-from ptp_perf.utilities.django_utilities import bootstrap_django_environment
-
-bootstrap_django_environment()
 
 from ptp_perf import config
 from ptp_perf.charts.chart_container import ChartContainer
@@ -201,11 +197,12 @@ class VendorComparisonCharts(TestCase):
                 f"{prefix}/count/.initial={item.count},"
             )
             for quantile, value in item.clock_quantiles().items():
-                entries.append(
-                    f"{prefix}/q{int(quantile * 100)}/.initial={value},")
+                entries.append(f"{prefix}/q{int(quantile * 100)}/.initial={value},")
             for quantile, value in item.path_delay_quantiles().items():
-                entries.append(
-                    f"{prefix}/pd/q{int(quantile * 100)}/.initial={value},")
+                entries.append(f"{prefix}/pd/q{int(quantile * 100)}/.initial={value},")
+            entries.append(f"{prefix}/fault/post_max/max/.initial={item.fault_clock_diff_post_max_max},")
+            entries.append(f"{prefix}/fault/post_max/min/.initial={item.fault_clock_diff_post_max_min},")
+            entries.append(f"{prefix}/fault/ratio/avg/.initial={item.fault_ratio_clock_diff_post_max_pre_median_mean},")
         entries.sort()
         PAPER_GENERATED_RESOURCES_DIR.joinpath("summary_keys.tex").write_text(
             "\\ptpperfLoadKeys{\n"

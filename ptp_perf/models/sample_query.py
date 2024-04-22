@@ -27,6 +27,7 @@ class SampleQuery:
 
     profile: Optional[PTPProfile] = None
 
+    processed_only: bool = True
     converged_only: bool = True
     remove_clock_step: bool = True
     normalize_time: TimeNormalizationStrategy = TimeNormalizationStrategy.CONVERGENCE
@@ -72,7 +73,7 @@ class SampleQuery:
     def get_endpoint_query(self) -> QuerySet[PTPEndpoint]:
         # Don't allow unprocessed or corrupted.
         endpoint_query = PTPEndpoint.objects.filter(
-            profile__is_processed=True, profile__is_corrupted=False,
+            profile__is_processed=self.processed_only, profile__is_corrupted=False,
         )
 
         if self.benchmark is not None:

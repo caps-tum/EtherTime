@@ -164,7 +164,7 @@ def create_modeladmin(modeladmin, model, name = None):
 
 class PTPEndpointFaultAdmin(PTPEndpointAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
-                    'clock_diff_pre_median_formatted', 'clock_diff_post_median_formatted',
+                    'clock_diff_pre_median_formatted', 'clock_diff_post_max_formatted',
                     'fault_ratio_clock_diff_median_formatted', 'fault_actual_duration')
 
     def get_queryset(self, request):
@@ -175,14 +175,14 @@ class PTPEndpointFaultAdmin(PTPEndpointAdmin):
         "Pre Clock Diff Median", "fault_clock_diff_pre_median",
     )
 
-    clock_diff_post_median_formatted = formatted_field(
-        lambda endpoint: endpoint.fault_clock_diff_post_median,
-        "Post Clock Diff Median", "fault_clock_diff_post_median",
+    clock_diff_post_max_formatted = formatted_field(
+        lambda endpoint: endpoint.fault_clock_diff_post_max,
+        "Post Clock Diff Max", "fault_clock_diff_post_max",
     )
 
     fault_ratio_clock_diff_median_formatted = formatted_field(
-        lambda endpoint: endpoint.fault_ratio_clock_diff_median,
-        "Median Ratio", "fault_ratio_clock_diff_median",
+        lambda endpoint: endpoint.fault_ratio_clock_diff_post_max_pre_median,
+        "Max/Median Ratio", "fault_ratio_clock_diff_post_max_pre_median",
         format_function=format_relative,
     )
 

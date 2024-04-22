@@ -82,6 +82,8 @@ class PTPEndpoint(models.Model):
     fault_ratio_clock_diff_median = models.FloatField(null=True)
     fault_ratio_clock_diff_p95 = models.FloatField(null=True)
 
+    fault_clock_diff_post_max = models.FloatField(null=True)
+    fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
@@ -127,6 +129,7 @@ class PTPEndpoint(models.Model):
 
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
+        from ptp_perf.models.sample_query import SampleQuery
 
         entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
                                                     remove_clock_step=False, normalize_time=TimeNormalizationStrategy.NONE)
@@ -206,8 +209,13 @@ class PTPEndpoint(models.Model):
         self.path_delay_std = path_delay_values.std()
 
         # If there was a fault, calculate fault statistics
-        faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT)
-        if len(faults) > 0:
+        # We pull in faults from all locations so that every endpoint gets statistics
+        try:
+            # This raises nodataexception if no faults found
+            faults = Sample.objects.filter(
+                endpoint__profile_id=self.profile_id, sample_type=Sample.SampleType.FAULT
+            )
+
             if len(faults) > 2:
                 raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
             fault_start = faults.filter(value=1).get()
@@ -240,6 +248,13 @@ class PTPEndpoint(models.Model):
             self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
             self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
             self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
+
+            self.fault_clock_diff_post_max = post_fault_series.max()
+            self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
+
+        except NoDataError:
+            if self.benchmark.fault_location is not None:
+                raise ProfileCorruptError(f"Could not find fault for profile {self.profile} on benchmark {self.benchmark}")
 
         self.save()
         return self
@@ -315,9 +330,11 @@ class PTPEndpoint(models.Model):
         records = LogRecord.objects.filter(source="fault-generator", endpoint__profile=self.profile).all()
         parsed_faults = 0
         for record in records:
-            # We import faults either directly on the current endpoint or on the switch.
+            # We import faults either directly on the current endpoint.
+            # If we are the orchestrator, then we get faults from the switch.
+            location = self.machine_id if self.machine_id != 'orchestrator' else 'switch'
             match = re.search(
-                f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on ({self.machine_id}|switch).",
+                f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on ({location}).",
                 record.message
             )
             if match is not None:
@@ -331,11 +348,7 @@ class PTPEndpoint(models.Model):
                 parsed_faults += 1
         if parsed_faults > 0:
             logging.info(f"{self} parsed {parsed_faults} fault status records.")
-        else:
-            if self.benchmark.fault_location is not None and self.machine is not None:
-                fault_location = self.cluster.machine_by_type(self.benchmark.fault_location)
-                if fault_location.id == self.machine.id or fault_location.id == config.MACHINE_SWITCH.id:
-                    raise ProfileCorruptError(f"Benchmark {self.benchmark} should have faults on {self.machine} but no faults were found on profile {self.profile}")
+        return parsed_faults
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and

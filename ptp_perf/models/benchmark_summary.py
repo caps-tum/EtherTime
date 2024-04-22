@@ -1,5 +1,6 @@
 from typing import Dict
 
+import pandas as pd
 from django.db import models
 
 from ptp_perf.machine import Cluster
@@ -27,6 +28,11 @@ class BenchmarkSummary(models.Model):
     path_delay_p05 = models.FloatField(null=True)
     path_delay_p95 = models.FloatField(null=True)
     path_delay_std = models.FloatField(null=True)
+
+    # Fault statistics
+    fault_clock_diff_post_max_max = models.FloatField(null=True)
+    fault_clock_diff_post_max_min = models.FloatField(null=True)
+    fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
 
     @staticmethod
     def create(benchmark: Benchmark, vendor: Vendor, cluster: Cluster, force_update: bool = False):
@@ -71,6 +77,15 @@ class BenchmarkSummary(models.Model):
             path_delay_median=path_delay_quantiles[1],
             path_delay_p95=path_delay_quantiles[2],
         )
+
+        # Per-Endpoint summaries
+        endpoints = data_query.get_endpoint_query().all().values()
+        endpoint_frame = pd.DataFrame(endpoints)
+
+        instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
+        instance.fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
+        instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+
         instance.save()
 
     @staticmethod

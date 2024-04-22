@@ -44,22 +44,34 @@ def convert_profile(profile: PTPProfile):
     # )
 
     total_samples = 0
-    for endpoint in profile.ptpendpoint_set.all():
+    profile_endpoints = profile.ptpendpoint_set.all()
+    for endpoint in profile_endpoints:
         # Remove existing data
         endpoint.sample_set.all().delete()
         parsed_samples = profile.vendor.parse_log_data(endpoint)
         logging.info(f"{endpoint} converted {len(parsed_samples)} samples.")
-
-        try:
-            endpoint.process_fault_data()
-            endpoint.process_timeseries_data()
-        except ProfileCorruptError as e:
-            # This profile is probably corrupt.
-            endpoint.profile.is_corrupted = True
-            endpoint.profile.save()
-            logging.warning(f"Profile marked as corrupt: {e}")
-
         total_samples += len(parsed_samples)
+
+    try:
+        parsed_faults = 0
+        for endpoint in profile_endpoints:
+            parsed_faults += endpoint.process_fault_data()
+
+        if profile.benchmark.fault_location is not None and parsed_faults == 0:
+            raise ProfileCorruptError(
+                f"Benchmark {profile.benchmark} should have faults on {profile.benchmark.fault_location} "
+                f"but no faults were found on profile {profile}"
+            )
+
+        for endpoint in profile_endpoints:
+            endpoint.process_timeseries_data()
+
+    except ProfileCorruptError as e:
+        # This profile is probably corrupt.
+        profile.is_corrupted = True
+        profile.save()
+        logging.warning(f"Profile marked as corrupt: {e}")
+
 
     if total_samples == 0:
         logging.warning("No samples on entire profile, corrupt.")
@@ -89,6 +101,15 @@ def summarize(force: bool = False):
                 except NoDataError:
                     pass
 
+
+def run_analysis(force):
+    start_time = datetime.now()
+    converted_profiles = analyze(force=force)
+    summarize(force=force)
+    completion_time = datetime.now()
+    logging.info(f"Analysis of {converted_profiles} profiles completed in {completion_time - start_time}.")
+
+
 class Command(BaseCommand):
     help = "Analyzes profiles"
 
@@ -103,10 +124,4 @@ class Command(BaseCommand):
         force = options["force"]
 
         with util.StackTraceGuard():
-            start_time = datetime.now()
-
-            converted_profiles = analyze(force=force)
-            summarize(force=force)
-
-            completion_time = datetime.now()
-            logging.info(f"Analysis of {converted_profiles} profiles completed in {completion_time - start_time}.")
+            run_analysis(force)
