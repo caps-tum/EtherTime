@@ -34,6 +34,10 @@ class BenchmarkSummary(models.Model):
     fault_clock_diff_post_max_min = models.FloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
 
+    secondary_fault_clock_diff_post_max_max = models.FloatField(null=True)
+    secondary_fault_clock_diff_post_max_min = models.FloatField(null=True)
+    secondary_fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
+
     @staticmethod
     def create(benchmark: Benchmark, vendor: Vendor, cluster: Cluster, force_update: bool = False):
         query_existing_objects = BenchmarkSummary.get_query(benchmark, vendor, cluster)
@@ -78,13 +82,22 @@ class BenchmarkSummary(models.Model):
             path_delay_p95=path_delay_quantiles[2],
         )
 
-        # Per-Endpoint summaries
+        # Per-Endpoint summaries: Primary
         endpoints = data_query.get_endpoint_query().all().values()
         endpoint_frame = pd.DataFrame(endpoints)
 
         instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
         instance.fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
         instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+
+        # Per-Endpoint summaries: Secondary
+        data_query.endpoint_type = EndpointType.SECONDARY_SLAVE
+        endpoints = data_query.get_endpoint_query().all().values()
+        endpoint_frame = pd.DataFrame(endpoints)
+
+        instance.secondary_fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
+        instance.secondary_fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
+        instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
 
         instance.save()
 
