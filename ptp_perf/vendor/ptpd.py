@@ -6,6 +6,7 @@ from datetime import timedelta
 import pandas as pd
 
 from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.machine import MachineClientType
 from ptp_perf.util import str_join
 from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
@@ -37,6 +38,7 @@ class PTPDVendor(Vendor):
 
     async def run(self, endpoint: "PTPEndpoint"):
 
+        effective_client_type = endpoint.get_effective_client_type()
         self._process = Invocation.of_command(
             # Run PTPd through stdbuf line buffering so that we get log lines as they are emitted.
             "stdbuf", "-eL", "-oL",
@@ -44,9 +46,10 @@ class PTPDVendor(Vendor):
             "-i", endpoint.machine.ptp_interface,
             "--verbose",
         ).append_arg_if_present(
-            '--masteronly', endpoint.machine.ptp_force_master
+            # We don't supply this on failover
+            '--masteronly', effective_client_type.is_primary_master()
         ).append_arg_if_present(
-            '--slaveonly', endpoint.machine.ptp_force_slave_effective(endpoint.benchmark.fault_failover)
+            '--slaveonly', effective_client_type == MachineClientType.SLAVE
         ).as_privileged()
         self._process.keep_alive = endpoint.benchmark.ptp_keepalive
 

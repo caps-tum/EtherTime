@@ -3,6 +3,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from datetime import timedelta
+from enum import StrEnum
 from pathlib import Path
 from typing import Optional, List, Union
 
@@ -93,6 +94,21 @@ class PluginSettings:
     stress_ng_cpus: int = 0
     stress_ng_cpu_restrict_cores: str = None
 
+class MachineClientType(StrEnum):
+    MASTER = "master"
+    FAILOVER_MASTER = "failover_master"
+    SLAVE = "SLAVE"
+
+    def is_master_or_failover(self) -> bool:
+        return self == MachineClientType.MASTER or self == MachineClientType.FAILOVER_MASTER
+
+    def is_primary_master(self) -> bool:
+        return self == MachineClientType.MASTER
+
+    def is_slave(self) -> bool:
+        return self == MachineClientType.SLAVE
+
+
 @dataclass(kw_only=True)
 class Machine(RPCTarget):
     id: str
@@ -113,13 +129,12 @@ class Machine(RPCTarget):
 
     _ssh_session: Optional[Invocation] = None
 
-    def ptp_force_slave_effective(self, failover_active: bool = False):
-        if not failover_active:
-            return self.ptp_force_slave
-
-        # Check whether master or failover master
-        # This is not really a nice way of handling it
-        return not self.ptp_force_master and not self.ptp_failover_master
+    def get_effective_client_type(self, failover_active: bool = False) -> MachineClientType:
+        return {
+            EndpointType.MASTER: MachineClientType.MASTER,
+            EndpointType.PRIMARY_SLAVE: MachineClientType.SLAVE,
+            EndpointType.SECONDARY_SLAVE: MachineClientType.SLAVE if not failover_active else MachineClientType.FAILOVER_MASTER
+        }[self.endpoint_type]
 
     @property
     def ptp_timestamp_type(self):
@@ -165,11 +180,11 @@ class Cluster:
 
     @property
     def ptp_master(self) -> Machine:
-        return unpack_one_value([machine for machine in self.machines if machine.ptp_force_master])
+        return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.MASTER])
 
     @property
     def ptp_failover_master(self) -> Machine:
-        return unpack_one_value([machine for machine in self.machines if machine.ptp_failover_master])
+        return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.SECONDARY_SLAVE])
 
     def __str__(self):
         return self.name

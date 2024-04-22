@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.machine import MachineClientType
 from ptp_perf.utilities import units
 from ptp_perf.vendor.vendor import Vendor
 
@@ -81,14 +82,12 @@ class ChronyVendor(Vendor):
         await self._process.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
 
     def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
-        if endpoint.machine.ptp_force_slave:
-            return base_path.joinpath("chrony_template_slave.conf")
-        elif endpoint.machine.ptp_force_master:
-            return base_path.joinpath("chrony_template_master.conf")
-        elif endpoint.machine.ptp_failover_master:
-            return base_path.joinpath("chrony_template_failover_master.conf")
-        else:
-            raise RuntimeError(f"Could not resolve configuration template for {endpoint.machine}")
+        effective_client_type = endpoint.get_effective_client_type()
+        return {
+            MachineClientType.MASTER: base_path.joinpath("chrony_template_master.conf"),
+            MachineClientType.FAILOVER_MASTER: base_path.joinpath("chrony_template_failover_master.conf"),
+            MachineClientType.SLAVE: base_path.joinpath("chrony_template_slave.conf"),
+        }[effective_client_type]
 
     @classmethod
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.machine import MachineClientType
 from ptp_perf.utilities import units
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.vendor import Vendor
@@ -34,11 +35,12 @@ class LinuxPTPVendor(Vendor):
 
         background_tasks = MultiTaskController()
 
+        effective_client_type = machine.get_effective_client_type(failover_active=endpoint.benchmark.fault_failover)
         self._process_ptp4l = Invocation.of_command(
             "ptp4l", "-i", machine.ptp_interface, "-m",
             "-f", str(self.config_file_path), # Config file
         ).append_arg_if_present(
-            "-s", condition=machine.ptp_force_slave_effective(endpoint.benchmark.fault_failover),
+            "-s", condition=effective_client_type == MachineClientType.SLAVE,
         ).append_arg_if_present(
             "-S", condition=machine.ptp_software_timestamping
         ).as_privileged()
@@ -51,7 +53,7 @@ class LinuxPTPVendor(Vendor):
             ).append_arg_if_present(
                 # We append -r a *second* time on master.
                 # This allows not only phc --> sys but also sys --> phc, which we want on the master.
-                "-r", condition=machine.ptp_force_master,
+                "-r", condition=effective_client_type.is_master_or_failover(),
             ).as_privileged()
             self._process_phc2sys.keep_alive = endpoint.benchmark.ptp_keepalive
             background_tasks.add_task(self._process_phc2sys.run_as_task())

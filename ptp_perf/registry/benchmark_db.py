@@ -28,8 +28,6 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         'fault_duration': timedelta(seconds=30),
     }
 
-    # Software crash, once every 30 seconds
-    # ALERT: RPI7 does not have a time shift so that the logs will not jump backward in time for this benchmark!
     SOFTWARE_FAULT_SLAVE = Benchmark(
         "fault/software_fault_slave", "Software Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE, ProfileTags.FAULT_LOCATION_SLAVE],

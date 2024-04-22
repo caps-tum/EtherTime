@@ -11,7 +11,7 @@ from django.db import models
 from django.db.models import CASCADE
 
 from ptp_perf import config
-from ptp_perf.machine import Machine, Cluster
+from ptp_perf.machine import Machine, Cluster, MachineClientType
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.models.exceptions import NoDataError
@@ -374,6 +374,8 @@ class PTPEndpoint(models.Model):
     def __str__(self):
         return f"{self.machine_id} (#{self.id}, {self.profile})"
 
+    def get_effective_client_type(self) -> MachineClientType:
+        return self.machine.get_effective_client_type(failover_active=self.benchmark.fault_failover)
 
     class Meta:
         app_label = 'app'

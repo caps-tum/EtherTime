@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from ptp_perf.invoke.invocation import Invocation
+from ptp_perf.machine import MachineClientType
 from ptp_perf.vendor.vendor import Vendor
 
 if typing.TYPE_CHECKING:
@@ -33,18 +34,22 @@ class SPTPVendor(Vendor):
 
     async def run(self, endpoint: "PTPEndpoint"):
 
-        if endpoint.machine.ptp_failover_master:
+        effective_client_type = endpoint.get_effective_client_type()
+        if effective_client_type == MachineClientType.FAILOVER_MASTER:
             raise NotImplementedError()
 
+        executable = {
+            MachineClientType.MASTER: "ptp4u",
+            MachineClientType.SLAVE: "sptp",
+        }[effective_client_type]
         self._process = Invocation.of_command(
-            "ptp4u" if endpoint.machine.ptp_force_master else "sptp",
-            "-iface", endpoint.machine.ptp_interface,
+            executable, "-iface", endpoint.machine.ptp_interface,
         ).set_environment_variable("PATH", f"/home/rpi/go/bin/", extend=True).as_privileged()
 
-        if endpoint.machine.ptp_force_master:
+        if effective_client_type.is_primary_master():
             self._process.append_arg_if_present("--timestamptype", endpoint.machine.ptp_software_timestamping)
             self._process.append_arg_if_present("software", endpoint.machine.ptp_software_timestamping)
-        elif endpoint.machine.ptp_force_slave:
+        elif effective_client_type.is_slave():
             self._process.append_arg_if_present("-config")
             self._process.append_arg_if_present(str(self.config_file_path)),
             self._process.append_arg_if_present(endpoint.cluster.ptp_master.ptp_address)
@@ -61,10 +66,11 @@ class SPTPVendor(Vendor):
         await self._process.restart(kill, ignore_return_code=True, restart_delay=restart_delay)
 
     def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
-        if endpoint.machine.ptp_force_slave:
-            return base_path.joinpath("sptp_template_slave.conf")
-        else:
-            return base_path.joinpath("sptp_template_master.conf")
+        effective_client_type = endpoint.get_effective_client_type()
+        return {
+            MachineClientType.MASTER: base_path.joinpath("sptp_template_slave.conf"),
+            MachineClientType.SLAVE: base_path.joinpath("sptp_template_master.conf"),
+        }[effective_client_type]
 
     @classmethod
     def parse_log_data(cls, endpoint: "PTPEndpoint") -> typing.List["Sample"]:
