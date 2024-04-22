@@ -9,6 +9,7 @@ from pandas import MultiIndex
 
 from ptp_perf.machine import Machine, Cluster
 from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.benchmark import Benchmark
@@ -28,7 +29,7 @@ class SampleQuery:
 
     converged_only: bool = True
     remove_clock_step: bool = True
-    normalize_time: bool = True
+    normalize_time: TimeNormalizationStrategy = TimeNormalizationStrategy.CONVERGENCE
 
     timestamp_merge_append: bool = True
     timestamp_merge_gap: timedelta = timedelta(seconds=1)

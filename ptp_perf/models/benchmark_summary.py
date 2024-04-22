@@ -4,6 +4,7 @@ from django.db import models
 
 from ptp_perf.machine import Cluster
 from ptp_perf.models import Sample
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
@@ -41,7 +42,7 @@ class BenchmarkSummary(models.Model):
             vendor=vendor,
             cluster=cluster,
             endpoint_type=EndpointType.PRIMARY_SLAVE,
-            normalize_time=False, timestamp_merge_append=False
+            normalize_time=TimeNormalizationStrategy.NONE, timestamp_merge_append=False
         )
 
         quantiles = [0.05, 0.5, 0.95]

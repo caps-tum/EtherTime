@@ -1,12 +1,12 @@
 from datetime import timedelta
 from unittest import TestCase
 
-from ptp_perf.charts.timeseries_element import ScatterElement
-from ptp_perf.utilities import units
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
-
 bootstrap_django_environment()
 
+from ptp_perf.charts.timeseries_element import ScatterElement
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
+from ptp_perf.utilities import units
 from ptp_perf import config
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
@@ -25,6 +25,7 @@ class FaultComparisonCharts(TestCase):
                 cluster=cluster,
                 endpoint_type=EndpointType.PRIMARY_SLAVE,
                 timestamp_merge_append=False,
+                normalize_time=TimeNormalizationStrategy.PROFILE_START,
             )
 
             frame = query.run(Sample.SampleType.CLOCK_DIFF).reset_index()
@@ -45,7 +46,6 @@ class FaultComparisonCharts(TestCase):
                                 column_x='timestamp',
                                 column_y='value',
                                 column_hue='Vendor',
-
                             ),
                         ],
                         title="Hardware Fault Switch",

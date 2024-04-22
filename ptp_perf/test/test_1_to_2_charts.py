@@ -7,6 +7,7 @@ from unittest import TestCase
 import pandas as pd
 from matplotlib.patches import FancyArrowPatch
 
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.utilities import units
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 
@@ -97,12 +98,12 @@ class Test1To2Charts(TestCase):
             for vendor in VendorDB.ANALYZED_VENDORS:
                 for machine in [MACHINE_RPI07, MACHINE_RPI08]:
                     try:
-                        query = SampleQuery(benchmark, vendor, machine, normalize_time=False, timestamp_merge_append=False)
+                        query = SampleQuery(benchmark, vendor, machine, normalize_time=TimeNormalizationStrategy.PROFILE_START, timestamp_merge_append=False)
                         clock_diffs = query.run(Sample.SampleType.CLOCK_DIFF)
 
                         fault_location = benchmark.fault_location
                         # On master failure, there is no convergence time to query.
-                        fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=False, timestamp_merge_append=False, converged_only=False, remove_clock_step=False)
+                        fault_query = SampleQuery(benchmark, vendor, fault_location, normalize_time=TimeNormalizationStrategy.PROFILE_START, timestamp_merge_append=False, converged_only=False, remove_clock_step=False)
                         fault_records = fault_query.run(Sample.SampleType.FAULT)
 
                         faults = fault_records.index.get_level_values("timestamp")[fault_records == 1]

@@ -94,4 +94,8 @@ class ScatterElement(DataElement):
             x=self.column_x,
             y=self.column_y,
             hue=self.column_hue,
+            # Default color and border palette.
+            palette={key: value + '55' for key, value in self.color_map.items()},
+            edgecolors=self.data[self.column_hue].map({key: value + 'AA' for key, value in self.color_map.items()}),
+            legend=False,
         )

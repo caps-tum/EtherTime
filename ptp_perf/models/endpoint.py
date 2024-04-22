@@ -2,6 +2,7 @@ import logging
 import re
 import typing
 from datetime import timedelta
+from enum import StrEnum
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -25,6 +26,13 @@ if typing.TYPE_CHECKING:
 
 class ProfileCorruptError(Exception):
     pass
+
+class TimeNormalizationStrategy(StrEnum):
+    NONE = "none"
+    PROFILE_START = "profile_start"
+    CLOCK_STEP = "clock_step"
+    CONVERGENCE = "convergence"
+
 
 class PTPEndpoint(models.Model):
     id = models.AutoField(primary_key=True)
@@ -77,7 +85,7 @@ class PTPEndpoint(models.Model):
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
-                               normalize_time: bool = False) -> Optional[pd.Series]:
+                               normalize_time: TimeNormalizationStrategy = TimeNormalizationStrategy.CONVERGENCE) -> Optional[pd.Series]:
         from ptp_perf.models import Sample
         sample_set = self.sample_set.filter(sample_type=sample_type)
 
@@ -107,11 +115,13 @@ class PTPEndpoint(models.Model):
         if sample_type == Sample.SampleType.CLOCK_DIFF or sample_type == Sample.SampleType.PATH_DELAY:
             series *= units.NANOSECONDS_TO_SECONDS
 
-        if normalize_time:
-            if converged_only:
-                series.index -= self.convergence_timestamp
-            else:
-                series.index -= self.clock_step_timestamp
+        if normalize_time != TimeNormalizationStrategy.NONE:
+            reference_points = {
+                TimeNormalizationStrategy.PROFILE_START: self.profile.start_time,
+                TimeNormalizationStrategy.CLOCK_STEP: self.clock_step_timestamp,
+                TimeNormalizationStrategy.CONVERGENCE: self.convergence_timestamp,
+            }
+            series.index -= reference_points[normalize_time]
 
         return series
 
@@ -119,7 +129,7 @@ class PTPEndpoint(models.Model):
         from ptp_perf.models.sample import Sample
 
         entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                    remove_clock_step=False, normalize_time=False)
+                                                    remove_clock_step=False, normalize_time=TimeNormalizationStrategy.NONE)
         if entire_series is None:
             return
 
@@ -253,8 +263,8 @@ class PTPEndpoint(models.Model):
         # We create multiple charts:
         # one only showing the filtered data and one showing the entire convergence trajectory
         if self.convergence_timestamp is not None:
-            clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, normalize_time=True)
-            path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, normalize_time=True)
+            clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, normalize_time=TimeNormalizationStrategy.CONVERGENCE)
+            path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, normalize_time=TimeNormalizationStrategy.CONVERGENCE)
 
             if clock_diff is None or path_delay is None:
                 raise NoDataError()
@@ -284,10 +294,14 @@ class PTPEndpoint(models.Model):
     def create_timeseries_chart_convergence(self) -> "TimeseriesChart":
         from ptp_perf.charts.timeseries_chart import TimeseriesChart
         from ptp_perf.models.sample import Sample
-        clock_diff = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                 normalize_time=True, remove_clock_step_force=False)
-        path_delay = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=False,
-                                                 normalize_time=True, remove_clock_step_force=False)
+        clock_diff = self.load_samples_to_series(
+            Sample.SampleType.CLOCK_DIFF,
+            converged_only=False, remove_clock_step_force=False, normalize_time=TimeNormalizationStrategy.CLOCK_STEP,
+        )
+        path_delay = self.load_samples_to_series(
+            Sample.SampleType.PATH_DELAY,
+            converged_only=False, remove_clock_step_force=False, normalize_time=TimeNormalizationStrategy.CLOCK_STEP,
+        )
         # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
         chart_convergence = TimeseriesChart(
             title=self.get_title("with Convergence"),
