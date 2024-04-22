@@ -115,9 +115,6 @@ class Machine(RPCTarget):
     ptp_interface: str
     ptp_address: str
     endpoint_type: EndpointType
-    ptp_force_master: bool = False
-    ptp_failover_master: bool = False
-    ptp_force_slave: bool = False
     ptp_software_timestamping: bool = False
     ptp_use_phc2sys: bool = True
     ptp_priority_1: int = 128

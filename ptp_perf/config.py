@@ -19,15 +19,12 @@ RASPBERRY_PI_5_PTP_SETTINGS = {
 }
 
 PTP_SLAVE_SETTINGS = {
-    'ptp_force_master': False,
-    'ptp_force_slave': True,
     'initial_clock_offset': timedelta(minutes=-1),
 }
 
 MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.6",
-    ptp_force_master=True,
     endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_4_PTP_SETTINGS,
     ptp_priority_1=1,
@@ -52,7 +49,6 @@ MACHINE_RPI07 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_4_PTP_SETTINGS,
-    ptp_failover_master=True,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
@@ -62,7 +58,6 @@ MACHINE_RPI07 = Machine(
 MACHINE_RPI56 = Machine(
     id="rpi56", address="rpi56", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.56",
-    ptp_force_master=True,
     endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_5_PTP_SETTINGS,
     ptp_priority_1=1,
@@ -87,7 +82,6 @@ MACHINE_RPI57 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_5_PTP_SETTINGS,
-    ptp_failover_master=True,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.57", iperf_secondary_address="192.168.1.157",
