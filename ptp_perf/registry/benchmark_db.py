@@ -23,9 +23,9 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     _FAULT_TIMING_SETTINGS = {
-        'duration': timedelta(minutes=10),
-        'fault_interval': timedelta(minutes=7),
-        'fault_duration': timedelta(seconds=30),
+        'duration': timedelta(minutes=15),
+        'fault_interval': timedelta(minutes=10),
+        'fault_duration': timedelta(minutes=1),
     }
 
     SOFTWARE_FAULT_SLAVE = Benchmark(
@@ -34,7 +34,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         ptp_keepalive=True,
         fault_software=True,
-        fault_location=EndpointType.SECONDARY_SLAVE,
+        fault_location=EndpointType.PRIMARY_SLAVE,
         **_FAULT_TIMING_SETTINGS,
     )
 
@@ -52,7 +52,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         fault_hardware=True,
-        fault_location=EndpointType.SECONDARY_SLAVE,
+        fault_location=EndpointType.PRIMARY_SLAVE,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
         **_FAULT_TIMING_SETTINGS,
