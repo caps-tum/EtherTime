@@ -65,11 +65,10 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
         fault_hardware=True,
-        fault_interval=timedelta(minutes=2),
         fault_location=EndpointType.MASTER,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
-        # **_FAULT_TIMING_SETTINGS,
+        **_FAULT_TIMING_SETTINGS,
     )
 
     HARDWARE_FAULT_MASTER_FAILOVER = Benchmark(
@@ -78,12 +77,12 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
         fault_hardware=True,
         fault_failover=True,
-        fault_interval=timedelta(minutes=5),
-        fault_duration=timedelta(minutes=2.5),
+        # fault_interval=timedelta(minutes=5),
+        # fault_duration=timedelta(minutes=2.5),
         fault_location=EndpointType.MASTER,
         fault_ssh_keepalive=True,
         analyze_limit_permissible_clock_steps=None,
-        # **_FAULT_TIMING_SETTINGS,
+        **_FAULT_TIMING_SETTINGS,
     )
 
 
