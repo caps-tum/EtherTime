@@ -101,10 +101,8 @@ async def run_orchestration(benchmark_id: str, vendor_id: str, cluster_id: str,
     benchmark = BenchmarkDB.get(benchmark_id)
     vendor = VendorDB.get(vendor_id)
 
-    configuration = config.subset_cluster(
-        config.get_configuration_by_cluster_name(cluster_id),
-        benchmark.num_machines,
-    )
+    configuration = config.get_configuration_by_cluster_name(cluster_id)
+    configuration = configuration.subset_cluster_configuration(benchmark.num_machines)
     await configuration.cluster.synchronize_repositories()
 
     if not test_mode:

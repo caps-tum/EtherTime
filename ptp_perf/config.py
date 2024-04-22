@@ -145,7 +145,11 @@ ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5]
 @dataclass
 class Configuration:
     cluster: Cluster = None
-    machine: Optional[Machine] = None
+
+    def subset_cluster_configuration(self, num_machines: int):
+        return Configuration(
+            cluster=self.cluster.subset_cluster(num_machines)
+        )
 
 
 def verify(configuration: Configuration):
@@ -169,12 +173,3 @@ def get_configuration_by_cluster_name(name: str) -> Configuration:
     verify(configuration)
     return configuration
 
-
-def subset_cluster(configuration: Configuration, num_machines: int) -> Configuration:
-    new_config = copy.deepcopy(configuration)
-    new_config.cluster = Cluster(
-        id=configuration.cluster.id,
-        name=configuration.cluster.name,
-        machines=new_config.cluster.machines[0:num_machines],
-    )
-    return new_config

@@ -141,6 +141,14 @@ class Cluster:
             label="Synchronizing repositories",
         )
 
+    def subset_cluster(self, num_machines):
+        """Return a new cluster that is identical except it contains only the specified number of machines."""
+        return Cluster(
+            id=self.id,
+            name=self.name,
+            machines=self.machines[0:num_machines],
+        )
+
     def machine_by_id(self, id: str):
         return unpack_one_value(machine for machine in self.machines if machine.id == id)
 
