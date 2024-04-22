@@ -202,7 +202,7 @@ class PTPEndpoint(models.Model):
             abs_clock_diff = converged_series.abs()
             self.clock_diff_median, self.clock_diff_p05, self.clock_diff_p95 = self.calculate_quantiles(abs_clock_diff)
 
-            path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True)
+            path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True, normalize_time=TimeNormalizationStrategy.NONE)
             self.path_delay_median, self.path_delay_p05, self.path_delay_p95 = self.calculate_quantiles(path_delay_values)
             self.path_delay_std = path_delay_values.std()
 
