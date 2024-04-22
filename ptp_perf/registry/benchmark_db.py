@@ -29,7 +29,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     }
 
     SOFTWARE_FAULT_SLAVE = Benchmark(
-        "fault/software_fault_slave", "Software Fault (Slave)",
+        "fault/software/slave", "Software Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_SOFTWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         ptp_keepalive=True,
@@ -39,7 +39,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     HARDWARE_FAULT_SWITCH = Benchmark(
-        "fault/hardware_fault_switch", "Hardware Fault (Switch)",
+        "fault/hardware/switch", "Hardware Fault (Switch)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SWITCH],
         num_machines=3,
         fault_hardware=True,
@@ -48,7 +48,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     HARDWARE_FAULT_SLAVE = Benchmark(
-        "fault/hardware_fault_slave", "Hardware Fault (Slave)",
+        "fault/hardware/slave", "Hardware Fault (Slave)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_SLAVE],
         num_machines=3,
         fault_hardware=True,
@@ -59,7 +59,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     HARDWARE_FAULT_MASTER = Benchmark(
-        "fault/hardware_fault_master", "Hardware Fault (Master)",
+        "fault/hardware/master", "Hardware Fault (Master)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
         fault_hardware=True,
@@ -70,7 +70,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     )
 
     HARDWARE_FAULT_MASTER_FAILOVER = Benchmark(
-        "fault/hardware_fault_master_failover", "Hardware Fault (Failover)",
+        "fault/hardware/master_failover", "Hardware Fault (Failover)",
         tags=[ProfileTags.CATEGORY_FAULT, ProfileTags.FAULT_HARDWARE, ProfileTags.FAULT_LOCATION_MASTER],
         num_machines=3,
         fault_hardware=True,
