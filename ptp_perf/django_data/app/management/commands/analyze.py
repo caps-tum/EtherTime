@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand
 from ptp_perf import util, constants, config
 from ptp_perf.models import PTPProfile
 from ptp_perf.models.benchmark_summary import BenchmarkSummary
+from ptp_perf.models.endpoint import ProfileCorruptError
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.vendor.registry import VendorDB
@@ -49,8 +50,14 @@ def convert_profile(profile: PTPProfile):
         parsed_samples = profile.vendor.parse_log_data(endpoint)
         logging.info(f"{endpoint} converted {len(parsed_samples)} samples.")
 
-        endpoint.process_fault_data()
-        endpoint.process_timeseries_data()
+        try:
+            endpoint.process_fault_data()
+            endpoint.process_timeseries_data()
+        except ProfileCorruptError as e:
+            # This profile is probably corrupt.
+            endpoint.profile.is_corrupted = True
+            endpoint.profile.save()
+            logging.warning(f"Profile marked as corrupt: {e}")
 
         total_samples += len(parsed_samples)
 

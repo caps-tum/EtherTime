@@ -148,105 +148,98 @@ class PTPEndpoint(models.Model):
                 f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}"
             )
 
-        try:
-            # We don't normalize time automatically anymore.
-            # Normalize time: Move the origin to the epoch
-            # timestamps = timestamps - timestamps.min()
+        # We don't normalize time automatically anymore.
+        # Normalize time: Move the origin to the epoch
+        # timestamps = timestamps - timestamps.min()
 
-            Timeseries._validate_series(entire_series, maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
+        Timeseries._validate_series(entire_series, maximum_allowable_time_jump=timedelta(minutes=1, seconds=10))
 
-            # Do some data post-processing to improve quality.
+        # Do some data post-processing to improve quality.
 
-            # Step 1: Remove the first big clock step.
+        # Step 1: Remove the first big clock step.
 
-            # Remove any beginning zero values (no clock_difference information yet) from start
-            # (first non-zero value makes cumulative sum >= 0)
-            crop_condition = (entire_series != 0).cumsum()
-            frame_no_leading_zeros = entire_series[crop_condition != 0]
+        # Remove any beginning zero values (no clock_difference information yet) from start
+        # (first non-zero value makes cumulative sum >= 0)
+        crop_condition = (entire_series != 0).cumsum()
+        frame_no_leading_zeros = entire_series[crop_condition != 0]
 
-            detected_clock_step = detect_clock_step(frame_no_leading_zeros, self.benchmark.analyze_limit_permissible_clock_steps)
-            self.clock_step_timestamp = detected_clock_step.time
-            self.clock_step_magnitude = detected_clock_step.magnitude
+        detected_clock_step = detect_clock_step(frame_no_leading_zeros, self.benchmark.analyze_limit_permissible_clock_steps)
+        self.clock_step_timestamp = detected_clock_step.time
+        self.clock_step_magnitude = detected_clock_step.magnitude
 
-            # Now crop after clock step
-            logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
-            frame_no_clock_step = frame_no_leading_zeros[frame_no_leading_zeros.index > detected_clock_step.time]
+        # Now crop after clock step
+        logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
+        frame_no_clock_step = frame_no_leading_zeros[frame_no_leading_zeros.index > detected_clock_step.time]
 
-            Timeseries._validate_series(frame_no_clock_step)
+        Timeseries._validate_series(frame_no_clock_step)
 
-            minimum_convergence_time = timedelta(seconds=1)
-            detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
+        minimum_convergence_time = timedelta(seconds=1)
+        detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
 
-            if detected_clock_convergence is None:
-                raise ProfileCorruptError("No clock convergence detected.")
+        if detected_clock_convergence is None:
+            raise ProfileCorruptError("No clock convergence detected.")
 
-            remaining_benchmark_time = frame_no_clock_step.index.max() - detected_clock_convergence.timestamp
-            if remaining_benchmark_time < self.benchmark.duration * 0.75:
-                logging.warning(
-                    f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+        remaining_benchmark_time = frame_no_clock_step.index.max() - detected_clock_convergence.timestamp
+        if remaining_benchmark_time < self.benchmark.duration * 0.75:
+            logging.warning(
+                f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
 
-            # Create some convergence statistics
-            convergence_series = frame_no_clock_step[frame_no_clock_step.index <= detected_clock_convergence.timestamp]
-            convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence,
-                                                                                   convergence_series)
-            self.convergence_timestamp = detected_clock_convergence.timestamp
-            self.convergence_duration = detected_clock_convergence.duration
-            self.convergence_rate = convergence_statistics.convergence_rate
-            self.convergence_max_offset = convergence_statistics.convergence_max_offset
+        # Create some convergence statistics
+        convergence_series = frame_no_clock_step[frame_no_clock_step.index <= detected_clock_convergence.timestamp]
+        convergence_statistics = ConvergenceStatistics.from_convergence_series(detected_clock_convergence,
+                                                                               convergence_series)
+        self.convergence_timestamp = detected_clock_convergence.timestamp
+        self.convergence_duration = detected_clock_convergence.duration
+        self.convergence_rate = convergence_statistics.convergence_rate
+        self.convergence_max_offset = convergence_statistics.convergence_max_offset
 
-            # Now create the actual data
-            converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]
-            Timeseries._validate_series(converged_series)
+        # Now create the actual data
+        converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]
+        Timeseries._validate_series(converged_series)
 
-            # self.summary_statistics = self.time_series.summarize()
-            abs_clock_diff = converged_series.abs()
-            self.clock_diff_median, self.clock_diff_p05, self.clock_diff_p95 = self.calculate_quantiles(abs_clock_diff)
+        # self.summary_statistics = self.time_series.summarize()
+        abs_clock_diff = converged_series.abs()
+        self.clock_diff_median, self.clock_diff_p05, self.clock_diff_p95 = self.calculate_quantiles(abs_clock_diff)
 
-            path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True, normalize_time=TimeNormalizationStrategy.NONE)
-            self.path_delay_median, self.path_delay_p05, self.path_delay_p95 = self.calculate_quantiles(path_delay_values)
-            self.path_delay_std = path_delay_values.std()
+        path_delay_values = self.load_samples_to_series(Sample.SampleType.PATH_DELAY, converged_only=True, normalize_time=TimeNormalizationStrategy.NONE)
+        self.path_delay_median, self.path_delay_p05, self.path_delay_p95 = self.calculate_quantiles(path_delay_values)
+        self.path_delay_std = path_delay_values.std()
 
-            # If there was a fault, calculate fault statistics
-            faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT)
-            if len(faults) > 0:
-                if len(faults) > 2:
-                    raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
-                fault_start = faults.filter(value=1).get()
-                fault_end = faults.filter(value=0).get()
-                if fault_start.timestamp <= self.convergence_timestamp:
-                    raise ProfileCorruptError("Clock did not converge before the first fault.")
-                if fault_start.timestamp >= fault_end.timestamp:
-                    raise RuntimeError("Fault ended before it started?")
-                if fault_end.timestamp > max(frame_no_clock_step.index):
-                    raise RuntimeError("Fault occurred after last sample timestamp?")
+        # If there was a fault, calculate fault statistics
+        faults = self.sample_set.filter(sample_type=Sample.SampleType.FAULT)
+        if len(faults) > 0:
+            if len(faults) > 2:
+                raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
+            fault_start = faults.filter(value=1).get()
+            fault_end = faults.filter(value=0).get()
+            if fault_start.timestamp <= self.convergence_timestamp:
+                raise ProfileCorruptError("Clock did not converge before the first fault.")
+            if fault_start.timestamp >= fault_end.timestamp:
+                raise RuntimeError("Fault ended before it started?")
+            if fault_end.timestamp > max(frame_no_clock_step.index):
+                raise RuntimeError("Fault occurred after last sample timestamp?")
 
-                pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
-                self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (
-                    self.calculate_quantiles(pre_fault_series)
-                )
-                pre_fault_path_delay = path_delay_values[path_delay_values.index <= fault_start.timestamp]
-                self.fault_path_delay_pre_median, self.fault_path_delay_pre_p05, self.fault_path_delay_pre_p95 = (
-                    self.calculate_quantiles(pre_fault_path_delay)
-                )
-                
-                post_fault_series = abs_clock_diff[abs_clock_diff.index >= fault_end.timestamp]
-                self.fault_clock_diff_post_median, self.fault_clock_diff_post_p05, self.fault_clock_diff_post_p95 = (
-                    self.calculate_quantiles(post_fault_series)
-                )
-                post_fault_path_delay = path_delay_values[path_delay_values.index >= fault_end.timestamp]
-                self.fault_path_delay_post_median, self.fault_path_delay_post_p05, self.fault_path_delay_post_p95 = (
-                    self.calculate_quantiles(post_fault_path_delay)
-                )
+            pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
+            self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (
+                self.calculate_quantiles(pre_fault_series)
+            )
+            pre_fault_path_delay = path_delay_values[path_delay_values.index <= fault_start.timestamp]
+            self.fault_path_delay_pre_median, self.fault_path_delay_pre_p05, self.fault_path_delay_pre_p95 = (
+                self.calculate_quantiles(pre_fault_path_delay)
+            )
 
-                self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
-                self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
-                self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
+            post_fault_series = abs_clock_diff[abs_clock_diff.index >= fault_end.timestamp]
+            self.fault_clock_diff_post_median, self.fault_clock_diff_post_p05, self.fault_clock_diff_post_p95 = (
+                self.calculate_quantiles(post_fault_series)
+            )
+            post_fault_path_delay = path_delay_values[path_delay_values.index >= fault_end.timestamp]
+            self.fault_path_delay_post_median, self.fault_path_delay_post_p05, self.fault_path_delay_post_p95 = (
+                self.calculate_quantiles(post_fault_path_delay)
+            )
 
-        except ProfileCorruptError as e:
-            # This profile is probably corrupt.
-            self.profile.is_corrupted = True
-            self.profile.save()
-            logging.warning(f"Profile marked as corrupt: {e}")
+            self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
+            self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
+            self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
 
         self.save()
         return self
@@ -342,7 +335,7 @@ class PTPEndpoint(models.Model):
             if self.benchmark.fault_location is not None and self.machine is not None:
                 fault_location = self.cluster.machine_by_type(self.benchmark.fault_location)
                 if fault_location.id == self.machine.id or fault_location.id == config.MACHINE_SWITCH.id:
-                    logging.warning(f"Benchmark {self.benchmark} should have faults on {self.machine} but no faults were found on profile {self.profile}")
+                    raise ProfileCorruptError(f"Benchmark {self.benchmark} should have faults on {self.machine} but no faults were found on profile {self.profile}")
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and
