@@ -67,7 +67,7 @@ class FaultComparisonCharts(TestCase):
     def prepare_multi_vendor_scatter_data(self,
                                           benchmark: Benchmark, cluster: Cluster,
                                           endpoint_type=EndpointType.PRIMARY_SLAVE,
-                                          context: timedelta = timedelta(minutes=1.5)) -> pd.DataFrame:
+                                          context: timedelta = timedelta(minutes=2.5)) -> pd.DataFrame:
         query = SampleQuery(
             benchmark=benchmark,
             cluster=cluster,
@@ -81,7 +81,10 @@ class FaultComparisonCharts(TestCase):
                    for endpoint_id in frame["endpoint_id"].unique().tolist()}
 
         center_timestamp = benchmark.fault_interval + (benchmark.fault_duration / 2)
-        frame = frame[center_timestamp - context <= frame['timestamp'] <= center_timestamp + context]
+        frame = frame[
+            (center_timestamp - context <= frame['timestamp'])
+            & (frame['timestamp'] <= center_timestamp + context)
+        ]
         frame['Vendor'] = frame["endpoint_id"].map(vendors)
         frame['value'] = frame['value'].abs()
         frame['timestamp'] = frame['timestamp'] * units.NANOSECONDS_TO_SECONDS

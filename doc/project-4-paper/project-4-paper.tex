@@ -45,12 +45,14 @@
 \newcommand{\ptpKeyPrefix}{/ptpperf}
 \newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
 \newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
+\newcommand{\fTimeMS}[2][0]{\fpeval{round((#2) * 10e2, #1)}\,ms}
 \newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
 \newcommand{\fNum}[2][0]{\fpeval{round(#2, #1)}}
 \newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
 \newcommand{\fPercentage}[2][0]{\fpeval{round(100*(#2), #1)}\%}
 \newcommand{\fRelative}[2][0]{\fpeval{round(100*(#2)-100, #1)}\%}
+\newcommand{\fRelativeInverted}[2][0]{\fpeval{100-round(100*(#2), #1)}\%}
 
 % Format vendor ids to names
 \pgfkeys{
@@ -62,9 +64,19 @@
     /ptpperf/clusters/.cd,
     rpi-4/.initial={Raspberry-Pi 4},
     rpi-5/.initial={Raspberry-Pi 5},
+    /ptpperf/vendorcluster/.cd,
+    ptpd/rpi-4/.initial={PTPd on Raspberry-Pi 4},
+    linuxptp/rpi-4/.initial={LinuxPTP on Raspberry-Pi 4},
+    sptp/rpi-4/.initial={SPTP on Raspberry-Pi 4},
+    chrony/rpi-4/.initial={Chrony on Raspberry-Pi 4},
+    ptpd/rpi-5/.initial={PTPd on Raspberry-Pi 5},
+    linuxptp/rpi-5/.initial={LinuxPTP on Raspberry-Pi 5},
+    sptp/rpi-5/.initial={SPTP on Raspberry-Pi 5},
+    chrony/rpi-5/.initial={Chrony on Raspberry-Pi 5},
 }
 \newcommand{\fVendor}[1]{\pgfkeysvalueof{/ptpperf/vendors/#1}}
 \newcommand{\fCluster}[1]{\pgfkeysvalueof{/ptpperf/clusters/#1}}
+\newcommand{\fVendorCluster}[1]{\pgfkeysvalueof{/ptpperf/vendorcluster/#1}}
 \newcommand{\vendors}{ptpd,linuxptp,sptp,chrony}
 
 % Comparison Tools
@@ -109,14 +121,26 @@
 }
 
 \newcommand{\cmpSearchVendor}[1]{\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{#1}}
+\newcommand{\cmpSearchVendorCluster}[1]{\cmpSearch{\vendor/\cluster}{ptpd/rpi-4,linuxptp/rpi-4,sptp/rpi-4,chrony/rpi-4,ptpd/rpi-5,linuxptp/rpi-5,sptp/rpi-5,chrony/rpi-5}{#1}}
 \newcommand{\cmpSave}[1]{%
     \pgfkeys{
+        \ptpKeyPrefix/cmp/.cd,
         #1/min/.initial/.expanded={\cmpMin},
         #1/minarg/.initial/.expanded={\cmpMinArg},
         #1/max/.initial/.expanded={\cmpMax},
         #1/maxarg/.initial/.expanded={\cmpMaxArg},
+        #1/mean/.initial/.expanded={\cmpMean},
     }%
 }
+\newcommand{\cmpLoad}[1]{%
+    \xdef\cmpMin{\ptpKey{cmp/#1/min}}%
+    \xdef\cmpMinArg{\ptpKey{cmp/#1/minarg}}%
+    \xdef\cmpMax{\ptpKey{cmp/#1/max}}%
+    \xdef\cmpMaxArg{\ptpKey{cmp/#1/maxarg}}%
+    \xdef\cmpMean{\ptpKey{cmp/#1/mean}}%
+}
+\newcommand{\cmpKey}[2]{\ptpKey{cmp/#1/#2}}
+\newcommand{\cmpRatioVendorClusterVsBaseline}[1]{\ptpKey{#1/\cluster/\vendor/q50}/\ptpKey{base/\cluster/\vendor/q50}}
 
 \newcommand{\assertError}[1]{\textbf{\textcolor{red}{ASSERTION ERROR: #1}}\errmessage{ASSERTION ERROR: #1}}
 % Raise an error if #2 != #3, with optional message #1.

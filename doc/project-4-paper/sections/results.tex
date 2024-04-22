@@ -63,9 +63,9 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
 \end{table}
 
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q50}}
-\cmpSave{/ptpperf/cmp/base/rpi-5}
+\cmpSave{base/rpi-5}
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}}
-\cmpSave{/ptpperf/cmp/base/rpi-4}
+\cmpSave{base/rpi-4}
 
 % Best and worst vendors are the same
 \assert{\ptpKey{cmp/base/rpi-4/minarg}}{\ptpKey{cmp/base/rpi-5/minarg}}
@@ -179,12 +179,12 @@ Theoretically, the only interference that could cross the isolation barrier is l
 The software-only solution, however, cannot quite achieve the same level of performance on our testbed. Prioritization is achieved through differentiated services (via the Differentiated Services Code Point, DSCP), and requires prioritization support on every networking software and hardware component on the critical path to perform optimally. While our switch and operating system claim to support the technology, this does not appear to be sufficient for complete traffic segregation.
 \cmpSearchVendor{\ptpKey{load/net_unprioritized/load_100/rpi-4/\vendor/q50}/\ptpKey{load/net_prioritized/load_100/rpi-4/\vendor/q50}}
 Compared to no traffic prioritization, activating DSCP results in performance improvements up to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}.
-However, one outlier exists, which is \fVendor{\cmpMinArg}, where the median vendor performance actually decreases by \fRatio{1/\cmpMin}, while the 5\textsuperscript{th} and 95\textsuperscript{th} percentiles remain the within 10\% of each other.
-\assertRange{\cmpMin}{0.1}{0.2}
-\assertRange{\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/q95}/\ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/q95}}{0.9}{1.1}
-\assertRange{\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/q5}/\ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/q5}}{0.9}{1.1}
+However, one anomaly exists, which is \fVendor{\cmpMinArg}, where the median vendor performance actually decreases by \fRatio{1/\cmpMin}, while the 5\textsuperscript{th} and 95\textsuperscript{th} percentiles remain the within 3$\times$ the baseline.
+\assertRange{\cmpMin}{0.01}{0.1}%
+\assertRange{\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/q95}/\ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/q95}}{0.3}{1.0}%
+\assertRange{\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/q5}/\ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/q5}}{0.3}{1.0}%
 %
-\newcommand{\numTrials}{min(\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/count}, \ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/count})}
+\newcommand{\numTrials}{min(\ptpKey{load/net_unprioritized/load_100/rpi-4/linuxptp/count}, \ptpKey{load/net_prioritized/load_100/rpi-4/linuxptp/count})}%
 We have examined the affected profiles in more detail and can confirm that this effect is visible on all \fNum{\numTrials} trials encompassing approximately \fNum{\numTrials * 20 * 60} samples, so while we are confident of the validity of the observation, the reason why it occurs is currently unknown.
 
 \todo{Perhaps recommendations}
@@ -192,15 +192,59 @@ We have examined the affected profiles in more detail and can confirm that this 
 \subsection{Other shared resources}
 
 \cmpSearchVendor{\ptpKey{load/cpu_unprioritized/load_100/rpi-4/\vendor/q50}/\ptpKey{base/rpi-4/\vendor/q50}}
-We have examined the effect of contention on other shared resources, and fortunately none of them cause synchronization quality degradation at the level that network congestion does. For a fully loaded CPU, congestion causes a maximum observed median degradation of just \fRelative{\cmpMax} (\fVendor{\cmpMaxArg})%
-\cmpSearchVendor{\ptpKey{load/cpu_unprioritized/load_100/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q95}}%
-and \fRelative{\cmpMax} at the 95\textsuperscript{th} percentile, which is small enough not to make a practical difference.
+\cmpSave{q50}
+\cmpSearchVendor{\ptpKey{load/cpu_unprioritized/load_100/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q95}}
+\cmpSave{q95}
+
+We have examined the effect of contention on other shared resources, and fortunately none of them cause synchronization quality degradation at the level that network congestion does.
+An educated guess for the next most important shared resource could be CPU, as difficulties to get scheduled timely intuitively could cause delays in packet processing.
+However, our data shows this is not the case on the Raspberry-Pi 4, as CPU contention only causes a maximum observed median degradation of just \cmpLoad{q50}\fRelative{\cmpMax} (\fVendor{\cmpMaxArg}) and \cmpLoad{q95}\fRelative{\cmpMax} at the 95\textsuperscript{th} percentile on the Raspberry-Pi 4, which is small enough not to make a practical difference.
 \assert{\cmpMaxArg}{chrony}
-TODO: What about \fRelative{\cmpMin} \fVendor{\cmpMinArg}?\todo{Determine}
-Interestingly, some level of load can actually boost performance relative to the baseline (we observed this on both the CPU and the network).
-We assume this occurs due to the hardware switching less into power saving states when more load is present, which may actually cause packets to be delivered faster.
+Interestingly, CPU load can actually boost performance relative to the baseline for \cmpLoad{q50}\fVendor{\cmpMinArg} by around \fRelativeInverted{\cmpMin} for the median value and \cmpLoad{q95}\fRelativeInverted{\cmpMin} for the 95\textsuperscript{th} percentile (\ptpKey{load/cpu_unprioritized/load_100/rpi-4/\cmpMinArg/count} trials, $\sim$\fNum{\ptpKey{load/cpu_unprioritized/load_100/rpi-4/\cmpMinArg/count} * 20 * 60} samples).%
+\cmpLoad{q50}\assertRange{\cmpMin}{0}{0.8}% Anything below 1 is decrease
+\cmpLoad{q95}\assertRange{\cmpMin}{0}{0.8}% Anything below 1 is decrease
+\assert{\ptpKey{cmp/q50/minarg}}{\ptpKey{cmp/q95/minarg}}%
+%
+We assume that this benefit originates from less scheduling variance when the processor is kept busy due to less power saving.
+\cmpSearch{\vendor}{chrony,linuxptp}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+\assertRange{\cmpMax}{1.0}{1.2}%
+On the Raspberry-Pi 5, things look a little different. While Chrony and LinuxPTP are mostly unaffected (up to just \fRelative{\cmpMax} overhead),
+\cmpSearch{\vendor}{sptp,ptpd}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+\assertRange{\cmpMin}{1.6}{3.0}%
+SPTP and PTPd have a more noticeable degradation in synchronization performance of up to \fRatio[1]{\cmpMax}, which is however not nearly as critical as the previous degradation through network congestion.
+
+\cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_cache/load_100}}%
+\cmpSave{cache}%
+The third principal hardware component where contention can occur is the memory hierarchy. Generally, PTP does not require a huge amount of resources, and we can see this reflected in the sensitivities against cache contention (between \fRatio[1]{\cmpMin} with \fVendorCluster{\cmpMaxArg} and \fRatio[1]{\cmpMax} with \fVendorCluster{\cmpMaxArg})\todo{Await results},%
+\cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_memory/load_100}}%
+\cmpSave{memory}%
+which is slightly higher than what we observe for memory bandwidth contention (up to \fRatio{\cmpMax} with \fVendorCluster{\cmpMaxArg}).
+\assertRange{\cmpKey{memory}{max}}{0}{\cmpKey{cache}{max}*0.75}%
+In the end, both memory bandwidth contention and cache contention turn out to be more important the CPU contention.%
+% q50 is cpu_unprioritized, ugh.
+\assertRange{\cmpKey{q50}{max}}{0}{\cmpKey{memory}{max}*0.75}%
+
+We have put the PTP clients through further stress tests (leveraging the capabilities provided by Stress-NG) and observe the following:%
+\begin{itemize}
+    \item Stressing time-related kernel features such as timers or alarms do not impact PTP performance significantly (with a maximum deviation from the baseline of under 50\%).
+    \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_timer/load_100}}%
+    \assertRange{\cmpMax}{0.5}{1.5}%
+    \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_alarm/load_100}}%
+    \assertRange{\cmpMax}{0.5}{1.5}%
+    \item Installing cyclic tasks with a deadline in the schedule, which might cause PTP to get deferred when a real-time task needs to be scheduled, also do not cause significant adverse effects. This is good news as applications that require precise notions of time will often also be time-critical, and thus they usually use a real-time scheduling policy. However, note that things will likely start to fall apart when real-time tasks hog almost all available compute, as this will make it difficult for PTP to get scheduled at all unless it is promoted to a corresponding scheduling policy itself.
+    \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_cyclic/load_100}}%
+    \assertRange{\cmpMax}{0.5}{1.5}%
+    \item Finally, all PTP implementations also show good resilience against excessive context switching, which places stress on multiple software and hardware components simultaneously.
+    \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_switch/load_100}}%
+    \assertRange{\cmpMax}{0.5}{1.5}%
+\end{itemize}
+
+
+%Interestingly, some level of load can actually boost performance relative to the baseline (we observed this on both the CPU and the network).
+%We assume this occurs due to the hardware switching less into power saving states when more load is present, which may actually cause packets to be delivered faster.
 
 \section{Fault Tolerance}
+\newcommand{\faultLength}{30 seconds}
 
 \begin{figure}
     \begin{center}
@@ -224,7 +268,21 @@ We assume this occurs due to the hardware switching less into power saving state
     \label{fig:fault_architecture}
 \end{figure}
 
-Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the network, a fault in the software, and a fault in the hardware. The software/hardware faults can either occur on a PTP slave, in which case they are less critical, or on the PTP master, in which case they are more critical. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine this scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard killing the PTP client in software, in reality such a fault might come from within due to e.g. a bug in the client or from without (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but hardware faults and system hang-ups can also come from other component failures.
+Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the network, a fault in the software, and a fault in the hardware. The software/hardware faults can either occur on a PTP slave, in which case they are less critical as the expectation is that the failure will be relatively contained within a single node, or on the PTP master, in which case they are more critical as the failure needs to be contained within the PTP domain. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine this scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard terminating the PTP client in software -- in reality such a fault might come from within the client due to e.g. a bug or from an external source (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but hardware faults and system hang-ups can also come from other component failures.
 
 \subsection{Software Faults}
 
+\cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/count}}
+\xdef\bSoftwareFaultNumProfiles{\cmpMax}
+
+\begin{figure}
+    \includegraphics[width=\linewidth]{res/generated/fault/software/slave_rpi-4_peer_comparison.pdf}
+    \caption{Faults induced by a software crash on Raspberry-Pi 4, with a faulty client (shown on the left) and a second client as a control (right). Just after the fault, an increased offset can be observed as PTP tries to resynchronize the clock. Since these offsets occur randomly, we superimpose \fNum{\bSoftwareFaultNumProfiles} trials for each vendor so that the worst case can be seen.}
+    \label{fig:software_fault}
+\end{figure}
+
+The simplest possible fault is a PTP client crashing, because the only state that is lost is the state within the PTP slave client application (such as the state of the servo disciplining the clock). While the PTP application is down, the clock will continue to drift at the real clock drift rate minus the compensation rate that was last set by the PTP application. When the synchronization before the crash was stable, this observed drift rate is expected to be comparatively low. However, in the worst case when the clock slew is at the maximum rate (as will often be the case in the early stages of synchronization), the software-driven drift can be up to 0.05\%~\cite{adjtimex}, which can cause a software-induced drift of \fTime{0.05/100} per second of downtime, or \fTimeMS{60*(0.05/100)} per minute. We wish to determine empirically how big the offset is from a software fault when the clock is stable.
+
+\cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/fault/post_max/max}}
+
+From the results (Figure~\ref{fig:software_fault}), we can determine that the maximum observed offset among \fNum{\bSoftwareFaultNumProfiles} trials is \fTime{\cmpMax} for \fVendor{\cmpMaxArg}
