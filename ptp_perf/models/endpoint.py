@@ -229,7 +229,7 @@ class PTPEndpoint(models.Model):
                 )
 
                 self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
-                self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_path_delay_pre_median
+                self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
                 self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
 
         except ProfileCorruptError as e:
