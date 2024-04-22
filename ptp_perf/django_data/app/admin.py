@@ -139,9 +139,12 @@ class PTPEndpointAdmin(ActionsModelAdmin):
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
 
-def formatted_field(field: Callable[[Any], float], short_description: str, order_field: str):
+def format_time_offset_for_admin(value: float) -> str:
+    return format_time_offset(value, auto_increase_places=True)
+
+def formatted_field(field: Callable[[Any], float], short_description: str, order_field: str, format_function: Callable = format_time_offset_for_admin):
     def inner_function(self, value):
-        return format_time_offset(field(value), auto_increase_places=True)
+        return format_function(field(value))
     inner_function.short_description = short_description
     inner_function.admin_order_field = order_field
     return inner_function
@@ -161,7 +164,8 @@ def create_modeladmin(modeladmin, model, name = None):
 
 class PTPEndpointFaultAdmin(PTPEndpointAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
-                    'clock_diff_pre_median_formatted', 'clock_diff_post_median_formatted')
+                    'clock_diff_pre_median_formatted', 'clock_diff_post_median_formatted',
+                    'fault_ratio_clock_diff_median_formatted', 'fault_actual_duration')
 
     def get_queryset(self, request):
         return super().get_queryset(request).filter(fault_actual_duration__isnull=False)
@@ -176,8 +180,11 @@ class PTPEndpointFaultAdmin(PTPEndpointAdmin):
         "Post Clock Diff Median", "fault_clock_diff_post_median",
     )
 
-    def fault_ratio_clock_diff_median_formatted(self, endpoint):
-        return format_relative(endpoint.fault_ratio_clock_diff_median)
+    fault_ratio_clock_diff_median_formatted = formatted_field(
+        lambda endpoint: endpoint.fault_ratio_clock_diff_median,
+        "Median Ratio", "fault_ratio_clock_diff_median",
+        format_function=format_relative,
+    )
 
 create_modeladmin(PTPEndpointFaultAdmin, PTPEndpoint, "endpoint-fault")
 
