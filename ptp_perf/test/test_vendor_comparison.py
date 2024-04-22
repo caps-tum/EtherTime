@@ -5,21 +5,22 @@ from unittest import TestCase
 import pandas as pd
 from matplotlib.patches import ConnectionPatch, ConnectionStyle
 
+from ptp_perf.utilities.django_utilities import bootstrap_django_environment
+
+bootstrap_django_environment()
+
 from ptp_perf import config
 from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.config import CLUSTER_PI
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
-from ptp_perf.models import Sample, BenchmarkSummary
-from ptp_perf.models.endpoint_type import EndpointType
-from ptp_perf.models.exceptions import NoDataError
-from ptp_perf.models.sample_query import SampleQuery
+from ptp_perf.models import BenchmarkSummary
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
+from ptp_perf.profiles.taxonomy import ResourceContentionComponent
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentionComponent
-from ptp_perf.util import str_join, unpack_one_value
+from ptp_perf.util import str_join
 from ptp_perf.utilities import units, colors
 from ptp_perf.vendor.registry import VendorDB
 
