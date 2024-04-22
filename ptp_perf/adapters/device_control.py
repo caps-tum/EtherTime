@@ -54,15 +54,15 @@ class DeviceControl(Adapter):
 
 
     async def run(self):
-        machine = self.endpoint.cluster.machine_by_type(self.endpoint.benchmark.fault_location)
+        machine = self.configuration.cluster.machine_by_type(self.endpoint.benchmark.fault_location)
         interval = self.endpoint.benchmark.fault_interval
         duration = self.endpoint.benchmark.fault_duration
 
         self.log(f"Scheduling hardware faults every {interval} on {machine}")
 
         if self.endpoint.benchmark.fault_ssh_keepalive:
+            self.log(f"Turning SSH session keep-alive on")
             machine._ssh_session.keep_alive = True
-            self.log(f"SSH session now on keep-alive")
         else:
             self.log(f"Not engaging SSH session keep-alive")
 
