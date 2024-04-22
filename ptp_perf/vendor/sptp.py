@@ -68,8 +68,8 @@ class SPTPVendor(Vendor):
     def config_file_source_path(self, base_path: Path, endpoint: "PTPEndpoint") -> Path:
         effective_client_type = endpoint.get_effective_client_type()
         return {
-            MachineClientType.MASTER: base_path.joinpath("sptp_template_slave.conf"),
-            MachineClientType.SLAVE: base_path.joinpath("sptp_template_master.conf"),
+            MachineClientType.MASTER: base_path.joinpath("sptp_template_master.conf"),
+            MachineClientType.SLAVE: base_path.joinpath("sptp_template_slave.conf"),
         }[effective_client_type]
 
     @classmethod
