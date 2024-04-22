@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# ALERT: Tests run AGAINST THE PRODUCTION DATABASE
+# The tests are actually more like batch jobs
+TEST_RUNNER = 'ptp_perf.test.test_runner.ProductionDBTestRunner'
 
 # Application definition
 

@@ -90,7 +90,8 @@ class ScatterElement(DataElement):
 
     def plot(self, axis_container: "AxisContainer"):
         seaborn.scatterplot(
-            self.data,
+            ax=axis_container.axis,
+            data=self.data,
             x=self.column_x,
             y=self.column_y,
             hue=self.column_hue,

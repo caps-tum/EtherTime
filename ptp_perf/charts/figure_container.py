@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from io import StringIO
 from pathlib import Path
-from typing import Optional, List, Union, Dict, Tuple, Iterable
+from typing import Optional, List, Union, Dict, Tuple, Iterable, Self
 
 import matplotlib
 import matplotlib.ticker
@@ -34,10 +34,16 @@ class DataElement:
     def plot(self, axis_container: "AxisContainer"):
         raise NotImplementedError()
 
+    def configure_for_timeseries_input(self, by_vendor: bool = True) -> Self:
+        self.column_x = 'timestamp'
+        self.column_y = 'value'
+        if by_vendor:
+            self.column_hue = 'Vendor'
+        return self
 
 @dataclass
 class AxisContainer:
-    data_elements: List[DataElement]
+    data_elements: List[DataElement] = field(default_factory=list)
 
     axis: plt.Axes = None
 
@@ -70,6 +76,8 @@ class AxisContainer:
     def plot(self):
         for data_element in self.data_elements:
             data_element.plot(self)
+
+    def decorate(self):
         self.decorate_axes()
 
     def decorate_axes(self):
@@ -134,6 +142,10 @@ class AxisContainer:
             color='tab:red'
         )
 
+    def add_elements(self, *elements: DataElement) -> Self:
+        self.data_elements += elements
+        return self
+
 
 @dataclass
 class FigureContainer:
@@ -166,6 +178,9 @@ class FigureContainer:
             axis_container.axis = axis
             axis_container.plot()
 
+        for axis_container in self.axes_containers:
+            axis_container.decorate()
+
     def save(self, path: Union[Path, str, StringIO], make_parents: bool = False, format: str = None):
         if self.tight_layout:
             self.figure.tight_layout()
@@ -184,3 +199,9 @@ class FigureContainer:
 
         self.figure.savefig(path, format=format)
         plt.close(self.figure)
+
+@dataclass
+class TimeseriesAxisContainer(AxisContainer):
+    """Axis container with sensible defaults for time series"""
+    xticklabels_format_time: bool = True
+    yticklabels_format_time: bool = True
