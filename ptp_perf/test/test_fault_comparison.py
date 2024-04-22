@@ -43,8 +43,8 @@ class FaultComparisonCharts(TestCase):
         for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
             try:
                 benchmark = BenchmarkDB.SOFTWARE_FAULT_SLAVE
-                frame_faulty = self.prepare_multi_vendor_scatter_data(benchmark, cluster, endpoint_type=EndpointType.SECONDARY_SLAVE)
-                frame_faultless = self.prepare_multi_vendor_scatter_data(benchmark, cluster)
+                frame_faulty = self.prepare_multi_vendor_scatter_data(benchmark, cluster)
+                frame_faultless = self.prepare_multi_vendor_scatter_data(benchmark, cluster, endpoint_type=EndpointType.SECONDARY_SLAVE)
 
                 chart = FigureContainer([
                     TimeseriesAxisContainer(
@@ -64,8 +64,10 @@ class FaultComparisonCharts(TestCase):
             except NoDataError:
                 logging.info("Missing data.")
 
-    def prepare_multi_vendor_scatter_data(self, benchmark: Benchmark, cluster: Cluster,
-                                          endpoint_type=EndpointType.PRIMARY_SLAVE) -> pd.DataFrame:
+    def prepare_multi_vendor_scatter_data(self,
+                                          benchmark: Benchmark, cluster: Cluster,
+                                          endpoint_type=EndpointType.PRIMARY_SLAVE,
+                                          context: timedelta = timedelta(minutes=1.5)) -> pd.DataFrame:
         query = SampleQuery(
             benchmark=benchmark,
             cluster=cluster,
@@ -77,7 +79,9 @@ class FaultComparisonCharts(TestCase):
         frame = query.run(Sample.SampleType.CLOCK_DIFF).reset_index()
         vendors = {endpoint_id: PTPEndpoint.objects.get(id=endpoint_id).profile.vendor_id
                    for endpoint_id in frame["endpoint_id"].unique().tolist()}
-        frame = frame[frame['timestamp'] >= timedelta(minutes=5)]
+
+        center_timestamp = benchmark.fault_interval + (benchmark.fault_duration / 2)
+        frame = frame[center_timestamp - context <= frame['timestamp'] <= center_timestamp + context]
         frame['Vendor'] = frame["endpoint_id"].map(vendors)
         frame['value'] = frame['value'].abs()
         frame['timestamp'] = frame['timestamp'] * units.NANOSECONDS_TO_SECONDS
