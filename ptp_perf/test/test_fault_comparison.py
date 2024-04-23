@@ -25,23 +25,36 @@ class FaultComparisonCharts(TestCase):
     def test_hardware_fault_cluster_comparison_chart(self):
         for benchmark, log_scale in [
             (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
+            (BenchmarkDB.HARDWARE_FAULT_MASTER, True),
             (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
         ]:
-            frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
-            frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
+            axis_containers = []
 
-            chart = FigureContainer([
-                TimeseriesAxisContainer(
-                    title="Raspberry-Pi 4",
-                ).add_elements(
-                    ScatterElement(data=frame).configure_for_timeseries_input()
-                ),
-                TimeseriesAxisContainer(
-                    title="Raspberry-Pi 5",
-                ).add_elements(
-                    ScatterElement(data=frame_pi5).configure_for_timeseries_input()
+            try:
+                frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
+                axis_containers.append(
+                    TimeseriesAxisContainer(
+                        title="Raspberry-Pi 4",
+                    ).add_elements(
+                        ScatterElement(data=frame).configure_for_timeseries_input()
+                    )
                 )
-            ])
+            except NoDataError:
+                logging.info(f"No data: {benchmark}")
+
+            try:
+                frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
+                axis_containers.append(
+                    TimeseriesAxisContainer(
+                        title="Raspberry-Pi 5",
+                    ).add_elements(
+                        ScatterElement(data=frame_pi5).configure_for_timeseries_input()
+                    )
+                )
+            except NoDataError:
+                logging.info(f"No data: {benchmark}")
+
+            chart = FigureContainer(axis_containers)
             if log_scale:
                 for axis in chart.axes_containers:
                     axis.ylog = True
