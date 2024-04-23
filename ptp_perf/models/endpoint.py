@@ -225,7 +225,11 @@ class PTPEndpoint(models.Model):
             if fault_start.timestamp >= fault_end.timestamp:
                 raise RuntimeError("Fault ended before it started?")
             if fault_end.timestamp > max(frame_no_clock_step.index):
-                raise RuntimeError("Fault occurred after last sample timestamp?")
+                raise RuntimeError(
+                    f"Fault occurred after last sample timestamp? "
+                    f"Data interval: [{min(frame_no_clock_step.index)}, {max(frame_no_clock_step.index)}], "
+                    f"Fault interval: [{fault_start.timestamp}, {fault_end.timestamp}]"
+                )
 
             pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
             self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (

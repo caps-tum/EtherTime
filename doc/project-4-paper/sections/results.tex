@@ -270,10 +270,11 @@ We have put the PTP clients through further stress tests (leveraging the capabil
 
 Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the network, a fault in the software, and a fault in the hardware. The software/hardware faults can either occur on a PTP slave, in which case they are less critical as the expectation is that the failure will be relatively contained within a single node, or on the PTP master, in which case they are more critical as the failure needs to be contained within the PTP domain. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine this scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard terminating the PTP client in software -- in reality such a fault might come from within the client due to e.g. a bug or from an external source (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but hardware faults and system hang-ups can also come from other component failures.
 
-\subsection{Software Faults}
+\subsection{Software Fault -- Slave}
 
 \cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/count}}
 \xdef\bSoftwareFaultNumProfiles{\cmpMax}
+\newcommand{\windowOfUncertaintyOneMinute}{(60*(0.05/100))}
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/fault/software/slave_rpi-4_peer_comparison.pdf}
@@ -281,8 +282,35 @@ Apart from resource contention, faults are another key threat to the functioning
     \label{fig:software_fault}
 \end{figure}
 
-The simplest possible fault is a PTP client crashing, because the only state that is lost is the state within the PTP slave client application (such as the state of the servo disciplining the clock). While the PTP application is down, the clock will continue to drift at the real clock drift rate minus the compensation rate that was last set by the PTP application. When the synchronization before the crash was stable, this observed drift rate is expected to be comparatively low. However, in the worst case when the clock slew is at the maximum rate (as will often be the case in the early stages of synchronization), the software-driven drift can be up to 0.05\%~\cite{adjtimex}, which can cause a software-induced drift of \fTime{0.05/100} per second of downtime, or \fTimeMS{60*(0.05/100)} per minute. We wish to determine empirically how big the offset is from a software fault when the clock is stable.
+The simplest possible fault is a PTP client crashing, because the only state that is lost is the state within the PTP slave client application (such as the state of the servo disciplining the clock). While the PTP application is down, the clock will continue to drift at the real clock drift rate minus the compensation rate that was last set by the PTP application. When the synchronization before the crash was stable, this observed drift rate is expected to be comparatively low. However, in the worst case when the clock slew is at the maximum rate (as will often be the case in the early stages of synchronization), the software-driven drift can be up to 0.05\%~\cite{adjtimex}, which can cause a software-induced drift of \fTime{0.05/100} per second of downtime, or \fTimeMS{\windowOfUncertaintyOneMinute} per minute. We wish to determine empirically how big the offset is from a software fault when the clock is stable.
 
 \cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/fault/post_max/max}}
 
-From the results (Figure~\ref{fig:software_fault}), we can determine that the maximum observed offset among \fNum{\bSoftwareFaultNumProfiles} trials is \fTime{\cmpMax} for \fVendor{\cmpMaxArg}
+From the results (Figure~\ref{fig:software_fault} left), we can determine that the maximum observed offset after a 1-minute software fault among \fNum{\bSoftwareFaultNumProfiles} trials is \fTime{\cmpMax} for \fVendor{\cmpMaxArg}, which is around \fRatio{\cmpMax/\ptpKey{base/rpi-4/\cmpMaxArg/q50}} worse than the median baseline performance. While this drift is definitely noticeable, it is fortunately not even close to the worst-case window of uncertainty of \fTimeMS{\windowOfUncertaintyOneMinute}, representing just \fPercentage[2]{\cmpMax/\windowOfUncertaintyOneMinute} of the worst-case software induced drift. We also observe that it is possible to get lucky: in some trials there is very little observed offset (just \fTime{\cmpMin} with \fVendor{\cmpMinArg}). In any case, all PTP implementations can quickly reconverge on the clock signal within a few seconds of restarting. Due to a quirk in how the PTP protocol works (slaves request synchronization signal leases from the master with a predetermined expiry), the master node will keep sending synchronization messages to the dead peer, which combined with the second lease that is issued when the PTP slave is restarted can help the peer synchronize quicker due to the higher influx of synchronization messages.
+
+In high reliability deployments, replication is frequently applied to increase dependability. However, in order for replication to be useful, we need to ensure that a failure can be contained to the node of origin. In terms of PTP, this means that the fault on one slave should not affect the quality of synchronization of the other slave. To verify that this is the case, we attached a second control node to the same master (Figure~\ref{fig:software_fault} right), which shows us that there is no meaningful degradation of the performance of other nodes.
+
+One important caveat is to be noted for PTPd: when multiple software faults start occurring (not necessarily in close proximity to each other), problems can start propagating. On our test systems, we observe that upon exactly the third software fault, PTPd will cause the network interface to fail. In fact, no amount of manually bringing the network down and back up or reloading the network interface driver can solve this problem, up until the system is restarted by hand. This is especially critical as it implies that not only will the timing system fail, but it will simultaneously bring down any applications that need to communicate over the interface as well. Ironically, in this case rather than support the deployment high-reliability distributed systems, PTPd will actually harm said reliability. We thus advise caution when deploying PTPd or any of its derivatives that may contain the same bug.
+
+\subsection{Hardware Fault -- Slave}
+\cmpSearchVendor{\ptpKey{fault/hardware/slave/rpi-4/\vendor/fault/post_max/max}}
+\xdef\maxPiFour{\cmpMax}
+\cmpSave{hw_slave_rpi-4}
+
+\cmpSearchVendor{\ptpKey{fault/hardware/slave/rpi-5/\vendor/fault/post_max/max}}
+\xdef\maxPiFive{\cmpMax}
+\cmpSave{hw_slave_rpi-5}
+
+
+\begin{figure}
+    \includegraphics[width=\linewidth]{res/generated/fault/hardware/slave_cluster_comparison.pdf}
+    \caption{A hardware fault on the slave of the Raspberry-Pi 4 cluster (left) and the Raspberry-Pi 5 cluster (right). Both slaves need to fully resynchronize after rebooting, but the Raspberry-Pi 5 has an advantage due to its hardware clock.}
+    \label{fig:hardware_fault_slave}
+\end{figure}
+
+A slightly more difficult scenario is a hardware fault on the slave, as not only will the internal PTP state be lost, but also the kernel state containing the current system time and the clock drift. This implies that PTP will need to fully reconverge, using the standard step-and-slew approach seen in the baseline. Because the Raspberry-Pi 4 (Figure~\ref{fig:hardware_fault_slave} left) does not contain a real-time clock to preserve the system time across reboots, after a reboot a node will have a system time equal the last time that the time was persisted to disk if fake-hwclock~\cite{fake-hwclock-manpage} is active or a default value (e.g. the epoch in 1970) if fake-hwclock is not active. On our system (Raspbian, which bases on Debian), fake-hwclock is configured, so we observe a temporary deviation of just \cmpLoad{hw_slave_rpi-4}\fTimeMin{\cmpMax} (on \fVendor{\cmpMaxArg}). To fix the large offset, PTP needs to step the clock (breaking invariant I2) and then takes some minutes to reconverge on the previous level of accuracy (in the case of PTPd, the other vendors are generally faster). On the other hand, the Raspberry-Pi 5 can maintain the current time using the hardware clock while it is not running. While the RTC generally has lower resolution than the internal oscillator (a common resolution is 1/32768), it generally has good long-term stability\todo{cite}. This advantage shows itself in the observed maximum offset, which is a comparatively tiny \cmpLoad{hw_slave_rpi-5}\fTime{\cmpMax} (\fVendor{\cmpMaxArg}), a full \fNum{ln(\maxPiFour/\maxPiFive)/ln(10)} orders of magnitude smaller that can easily be compensated by clock slew only. A fault on a system without a hardware clock will thus cause an application to encounter large inconsistencies in timing in a place where it might not expect it (right in the middle of a run), while a simple RTC can mitigate this problem entirely. For deployments that are stuck on systems where an RTC is not viable (e.g. due to cost reasons), it is recommended to configure a delay for the application relaunch to allow PTP to resynchronize first.
+
+
+\subsection{Network Fault}
+
+Another possible root cause for a fault is the network. While a network outage is generally bad news for reliable distributed systems that need to communicate, a total network outage is ironically easier for PTP to handle than a functioning network with high levels of congestion. Since no state is lost,

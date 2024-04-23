@@ -109,7 +109,8 @@ class AxisContainer:
             self.decorate_axis_time_formatter(self.axis.yaxis)
 
         if self.yminorticks:
-            self.axis.yaxis.set_minor_locator(MultipleLocator(self.yminorticks_interval))
+            if self.yminorticks_interval:
+                self.axis.yaxis.set_minor_locator(MultipleLocator(self.yminorticks_interval))
             if self.yminorticklabels:
                 self.decorate_axis_time_formatter(self.axis.yaxis, major=False)
 
@@ -128,9 +129,7 @@ class AxisContainer:
     def decorate_axis_time_formatter(axis, major: bool = True):
         formatter = matplotlib.ticker.FuncFormatter(lambda value, _: units.format_time_offset(value))
         if major:
-            axis.set_major_formatter(
-                formatter
-            )
+            axis.set_major_formatter(formatter)
         else:
             axis.set_minor_formatter(formatter)
 

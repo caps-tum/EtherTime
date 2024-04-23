@@ -46,6 +46,7 @@
 \newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
 \newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
 \newcommand{\fTimeMS}[2][0]{\fpeval{round((#2) * 10e2, #1)}\,ms}
+\newcommand{\fTimeMin}[2][0]{\fpeval{round((#2) / 60, #1)}\,min}
 \newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
 \newcommand{\fNum}[2][0]{\fpeval{round(#2, #1)}}
