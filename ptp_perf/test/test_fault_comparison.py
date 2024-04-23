@@ -23,33 +23,32 @@ from ptp_perf.registry.benchmark_db import BenchmarkDB
 class FaultComparisonCharts(TestCase):
 
     def test_hardware_fault_cluster_comparison_chart(self):
-        benchmark = BenchmarkDB.HARDWARE_FAULT_SLAVE
-        frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
-        frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
+        for benchmark, log_scale in [
+            (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
+            (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
+        ]:
+            frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
+            frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
 
-        chart = FigureContainer([
-            TimeseriesAxisContainer(
-                title="Raspberry-Pi 4",
-                ylog=True,
-                yticks_interval=None,
-                # yminorticks=True,
-                # yminorticks_interval=None,
-            ).add_elements(
-                ScatterElement(data=frame).configure_for_timeseries_input()
-            ),
-            TimeseriesAxisContainer(
-                title="Raspberry-Pi 5",
-                ylog=True,
-                yticks_interval=None,
-                # yminorticks=True,
-                # yminorticks_interval=None,
-            ).add_elements(
-                ScatterElement(data=frame_pi5).configure_for_timeseries_input()
-            )
-        ])
-        chart.plot()
-        chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_cluster_comparison.png"), make_parents=True)
-        chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_cluster_comparison.pdf"), make_parents=True)
+            chart = FigureContainer([
+                TimeseriesAxisContainer(
+                    title="Raspberry-Pi 4",
+                ).add_elements(
+                    ScatterElement(data=frame).configure_for_timeseries_input()
+                ),
+                TimeseriesAxisContainer(
+                    title="Raspberry-Pi 5",
+                ).add_elements(
+                    ScatterElement(data=frame_pi5).configure_for_timeseries_input()
+                )
+            ])
+            if log_scale:
+                for axis in chart.axes_containers:
+                    axis.ylog = True
+                    axis.yticks_interval = None
+            chart.plot()
+            chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_cluster_comparison.png"), make_parents=True)
+            chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_cluster_comparison.pdf"), make_parents=True)
 
     def test_software_fault_peer_comparison(self):
         for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
