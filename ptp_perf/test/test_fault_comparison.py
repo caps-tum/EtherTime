@@ -27,6 +27,7 @@ class FaultComparisonCharts(TestCase):
             (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
             (BenchmarkDB.HARDWARE_FAULT_MASTER, True),
             (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
+            (BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, False),
         ]:
             axis_containers = []
 
