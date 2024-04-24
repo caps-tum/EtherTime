@@ -11,7 +11,7 @@ from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.charts.timeseries_element import ScatterElement
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.utilities import units
-from ptp_perf import config
+from ptp_perf import config, util
 from ptp_perf.charts.figure_container import FigureContainer, TimeseriesAxisContainer
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.models import Sample, PTPEndpoint
@@ -30,6 +30,8 @@ class FaultComparisonCharts(TestCase):
         ]:
             axis_containers = []
 
+            frame = None
+            frame_pi5 = None
             try:
                 frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
                 axis_containers.append(
@@ -60,6 +62,22 @@ class FaultComparisonCharts(TestCase):
                     axis.ylog = True
                     axis.yticks_interval = None
             chart.plot()
+
+            if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE and frame is not None:
+                outliers = frame[frame["value"] > 1]
+                first_outlier = outliers.iloc[0]
+                chart.axes_containers[0].axis.annotate(
+                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$  ", xy=((first_outlier.loc['timestamp'] * units.NANOSECONDS_IN_SECOND).total_seconds(), first_outlier.loc['value']),
+                    horizontalalignment='right', verticalalignment='center',
+                )
+
+                first_outlier = frame_pi5.iloc[frame_pi5["value"].argmax()]
+                chart.axes_containers[1].axis.annotate(
+                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$   ", xy=((first_outlier.loc['timestamp'] * units.NANOSECONDS_IN_SECOND).total_seconds(), first_outlier.loc['value']),
+                    horizontalalignment='right', verticalalignment='center',
+                )
+
+
             chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_cluster_comparison.png"), make_parents=True)
             chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_cluster_comparison.pdf"), make_parents=True)
 
