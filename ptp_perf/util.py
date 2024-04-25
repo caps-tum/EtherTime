@@ -41,7 +41,8 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a', log_file_formatter: logging.Formatter = None):
+def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a', log_file_formatter: logging.Formatter = None,
+                  level=logging.INFO):
     handlers = [
         logging.StreamHandler()
     ]
@@ -59,7 +60,7 @@ def setup_logging(log_file=None, log_invocation_command=False, log_file_mode='a'
     # https://youtrack.jetbrains.com/issue/PY-39762
     # noinspection PyArgumentList
     logging.basicConfig(
-        level=logging.INFO,
+        level=level,
         handlers=handlers,
         force=True,
     )

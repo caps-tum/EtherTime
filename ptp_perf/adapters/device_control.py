@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import List, Dict, Tuple
 
 from tinytuya import OutletDevice
@@ -41,16 +42,25 @@ class DeviceControl(Adapter):
                 dev_id="eb44349e87ad1b54086akt",
                 address="192.168.1.201",
                 local_key="H.BBK_VnvCu}O53%",
-                version=3.3,
+                version=3.4,
             ),
         ]
 
     def toggle_machine(self, machine: Machine, state: bool):
         try:
             power_strip_id, port = self.machine_socket_map[machine.id]
-            self.power_strips[power_strip_id].set_status(state, switch=port)
         except KeyError:
             raise RuntimeError(f"Machine {machine} is not assigned to a power strip socket.")
+
+        logging.debug(f"Sending device control message to power strip port {port}@{power_strip_id}: {state}")
+        result_data = self.power_strips[power_strip_id].set_status(state, switch=port)
+
+        # Sample response (run this code with debug logging)
+        # set_status received data={'protocol': 4, 't': 1714081639, 'data': {'dps': {'6': True}, 'type': 'query'}, 'dps': {'6': True}}
+        new_port_state = result_data['dps'][str(port)]
+        logging.debug(f"Tuya Result: {new_port_state}")
+        if state != new_port_state:
+            raise RuntimeError(f"Failed to actuate the power strip (new state {new_port_state} != target {state}, response data: {result_data})")
 
 
     async def run(self):
