@@ -1,0 +1,138 @@
+
+% Key-system
+
+\newcommand{\ptpperfLoadKeys}[1]{\pgfkeys{#1}}
+\newcommand{\ptpKeyPrefix}{/ptpperf}
+\newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
+\newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
+\newcommand{\fTimeMS}[2][0]{\fpeval{round((#2) * 10e2, #1)}\,ms}
+\newcommand{\fTimeMin}[2][0]{\fpeval{round((#2) / 60, #1)}\,min}
+\newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
+\newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
+\newcommand{\fNum}[2][0]{\fpeval{round(#2, #1)}}
+\newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}
+\newcommand{\fPercentage}[2][0]{\fpeval{round(100*(#2), #1)}\%}
+\newcommand{\fRelative}[2][0]{\fpeval{round(100*(#2)-100, #1)}\%}
+\newcommand{\fRelativeInverted}[2][0]{\fpeval{100-round(100*(#2), #1)}\%}
+
+\definecolor{color-ptpd}{HTML}{1f77b4}
+\definecolor{color-linuxptp}{HTML}{ff7f0e}
+\definecolor{color-sptp}{HTML}{2ca02c}
+\definecolor{color-chrony}{HTML}{d62728}
+\definecolor{color-border}{HTML}{cccccc}
+
+
+% Format vendor ids to names
+\pgfkeys{
+    /ptpperf/vendors/.cd,
+    ptpd/.initial={PTPd},
+    ptpd/color/.initial={color-ptpd},
+    linuxptp/.initial={LinuxPTP},
+    linuxptp/color/.initial={color-linuxptp},
+    sptp/.initial={SPTP},
+    sptp/color/.initial={color-sptp},
+    chrony/.initial={Chrony},
+    chrony/color/.initial={color-chrony},
+    /ptpperf/clusters/.cd,
+    rpi-4/.initial={Raspberry-Pi 4},
+    rpi-5/.initial={Raspberry-Pi 5},
+    /ptpperf/vendorcluster/.cd,
+    ptpd/rpi-4/.initial={PTPd on Raspberry-Pi 4},
+    linuxptp/rpi-4/.initial={LinuxPTP on Raspberry-Pi 4},
+    sptp/rpi-4/.initial={SPTP on Raspberry-Pi 4},
+    chrony/rpi-4/.initial={Chrony on Raspberry-Pi 4},
+    ptpd/rpi-5/.initial={PTPd on Raspberry-Pi 5},
+    linuxptp/rpi-5/.initial={LinuxPTP on Raspberry-Pi 5},
+    sptp/rpi-5/.initial={SPTP on Raspberry-Pi 5},
+    chrony/rpi-5/.initial={Chrony on Raspberry-Pi 5},
+}
+\newcommand{\fVendor}[1]{\pgfkeysvalueof{/ptpperf/vendors/#1}}
+\newcommand{\fCluster}[1]{\pgfkeysvalueof{/ptpperf/clusters/#1}}
+\newcommand{\fVendorCluster}[1]{\pgfkeysvalueof{/ptpperf/vendorcluster/#1}}
+\newcommand{\vendors}{ptpd,linuxptp,sptp,chrony}
+
+% Comparison Tools
+
+\newcommand{\cmpMin}{}
+\newcommand{\cmpMinArg}{}
+\newcommand{\cmpMax}{}
+\newcommand{\cmpMaxArg}{}
+\newcommand{\cmpMean}{}
+\newcommand{\cmpCount}{}
+
+% Search for a value: #1: counter macro, #2: values, #3: optimization functio (min/max), #4: Function value to calculate
+\newcommand{\cmpSearch}[3]{%
+    \xdef\cmpMin{}%
+    \xdef\cmpMinArg{}%
+    \xdef\cmpMax{}%
+    \xdef\cmpMaxArg{}%
+    \xdef\cmpMean{}%
+    \xdef\cmpCount{0}%
+    % Loop across values searching for the best one
+    \foreach #1 in {#2}{%
+        \xdef\currentValue{\fpeval{#3}}%
+        %
+        % If first iteration, then define best value.
+        \ifundef{\cmpMin}{\xdef\cmpMin{\currentValue}}{}%
+        \ifundef{\cmpMax}{\xdef\cmpMax{\currentValue}}{}%
+        %
+        % Update best value and if changed, then also update best argument.
+        \xdef\cmpMin{\fpeval{min(\currentValue, \cmpMin)}}%
+        \strcmpfullexpand{\currentValue}{\cmpMin}{\xdef\cmpMinArg{#1}}{}%
+        %
+        % Same for max.
+        \xdef\cmpMax{\fpeval{max(\currentValue, \cmpMax)}}%
+        \strcmpfullexpand{\currentValue}{\cmpMax}{\xdef\cmpMaxArg{#1}}{}%
+        %
+        \xdef\cmpMean{\fpeval{\cmpMean + \currentValue}}%
+        \xdef\cmpCount{\fpeval{\cmpCount + 1}}%
+%        Trace: \vendor, \currentValue, \cmpValue, \cmpArg\\
+    }%
+    %
+    \xdef\cmpMean{\fpeval{\cmpMean/\cmpCount}}
+}
+
+\newcommand{\cmpSearchVendor}[1]{\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{#1}}
+\newcommand{\cmpSearchVendorCluster}[1]{\cmpSearch{\vendor/\cluster}{ptpd/rpi-4,linuxptp/rpi-4,sptp/rpi-4,chrony/rpi-4,ptpd/rpi-5,linuxptp/rpi-5,sptp/rpi-5,chrony/rpi-5}{#1}}
+\newcommand{\cmpSave}[1]{%
+    \pgfkeys{
+        \ptpKeyPrefix/cmp/.cd,
+        #1/min/.initial/.expanded={\cmpMin},
+        #1/minarg/.initial/.expanded={\cmpMinArg},
+        #1/max/.initial/.expanded={\cmpMax},
+        #1/maxarg/.initial/.expanded={\cmpMaxArg},
+        #1/mean/.initial/.expanded={\cmpMean},
+    }%
+}
+\newcommand{\cmpLoad}[1]{%
+    \xdef\cmpMin{\ptpKey{cmp/#1/min}}%
+    \xdef\cmpMinArg{\ptpKey{cmp/#1/minarg}}%
+    \xdef\cmpMax{\ptpKey{cmp/#1/max}}%
+    \xdef\cmpMaxArg{\ptpKey{cmp/#1/maxarg}}%
+    \xdef\cmpMean{\ptpKey{cmp/#1/mean}}%
+}
+\newcommand{\cmpKey}[2]{\ptpKey{cmp/#1/#2}}
+\newcommand{\cmpRatioVendorClusterVsBaseline}[1]{\ptpKey{#1/\cluster/\vendor/q50}/\ptpKey{base/\cluster/\vendor/q50}}
+
+\newcommand{\assertError}[1]{\textbf{\textcolor{red}{ASSERTION ERROR: #1}}\errmessage{ASSERTION ERROR: #1}}
+% Raise an error if #2 != #3, with optional message #1.
+\newcommand{\assert}[3][]{\strcmpfullexpand{#2}{#3}{}{\assertError{\strcmpfullexpand{#1}{}{#2 != #3}{#1}}}}
+\newcommand{\assertRange}[3]{\pgfmathparse{ifthenelse(and(\fpeval{#1} >= #2, \fpeval{#1} <= #3),"1","0")}\assert[\fpeval{#1} not in range (#2, #3)]{\pgfmathresult}{1}}
+
+% Utility
+
+\makeatletter
+\newcommand*{\strcmpfullexpand}[4]{%
+  \ifnum\pdf@strcmp{#1}{#2}=\z@#3\else#4\fi%
+}
+\makeatother
+
+\newcommand{\legend}{
+    \begin{tikzpicture}[start chain=legend going right]
+        \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{
+            \node[node distance=1em, on chain=legend, draw, fill=\ptpKey{vendors/\vendor/color}] {};
+            \node[node distance=0cm, on chain=legend, text depth=0cm] {\sffamily\scriptsize\fVendor{\vendor}};
+        }
+%        \node[fit=(legend-begin)(legend-end), inner xsep=1mm, inner ysep=0mm, draw=color-border, rounded corners=5pt] {};
+    \end{tikzpicture}
+}

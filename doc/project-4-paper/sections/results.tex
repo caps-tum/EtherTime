@@ -7,7 +7,7 @@ We start by establishing a baseline for each tested system and vendor which we c
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/base/rpi08-convergence_2.pdf}
-    \caption{A sample run of PTPd in its default configuration. Clock synchronization can follow different convergence trajectories, which needs to be accounted for when calculating statistics. Because PTP uses path delay compensation, the final clock synchronization accuracy is much better than the one-way path delay.}
+    \caption{A sample run of PTPd in its default configuration (left: scattered raw signal and denoised moving average, right: kernel density estimates). Clock synchronization can follow different convergence trajectories, which needs to be accounted for when calculating statistics. Because PTP uses path delay compensation, the final clock synchronization accuracy is much better than the one-way path delay.}
     \label{fig:baseline_sample}
 \end{figure}
 
@@ -143,7 +143,9 @@ One aspect that influences how reliable PTP can operate is the outside interfere
 
 \subsection{Network Contention}
 \begin{figure}
+    \centering
     \includegraphics[width=\linewidth]{res/generated/net_unprioritized_trend_rpi-4.pdf}
+    \legend
     \caption{Clock synchronization accuracy at different levels of network load. All vendors experience degradation at higher network loads, though the degree to which they are affected differs. Apart from a change in median clock offset, the 95\textsuperscript{th} percentile is heavily affected, signaling larger and more frequent outliers.}
     \label{fig:network_load}
 \end{figure}
@@ -167,6 +169,9 @@ The 95\textsuperscript{th} percentiles reflect the behavior of the outliers, and
     \begin{center}
     \vspace{-0.5cm}
     \sffamily\scriptsize \textbf{U}: Unprioritized \quad\textbf{P}: Prioritized \quad\textbf{I}: Isolated \quad\textbf{B}: Baseline
+    \end{center}
+    \begin{center}
+    \legend
     \end{center}
     \caption{Different possibilities of isolating the network load, compared to the baseline with no load. Both prioritization and physical isolation can often improve performance over the unprioritized default, however only isolation can match the performance of the baseline without resource contention.}
     \label{fig:net_isolation_comparison}
@@ -284,7 +289,9 @@ Apart from resource contention, faults are another key threat to the functioning
 \newcommand{\windowOfUncertaintyOneMinute}{(60*(\maxClockSlew))}
 
 \begin{figure}
+    \centering
     \includegraphics[width=\linewidth]{res/generated/fault/software/slave_rpi-4_peer_comparison.pdf}
+    \legend
     \caption{Faults induced by a software crash on Raspberry-Pi 4, with a faulty client (shown on the left) and a second client as a control (right). Just after the fault, an increased offset can be observed as PTP tries to resynchronize the clock. Since these offsets occur randomly, we superimpose \fNum{\bSoftwareFaultNumProfiles} trials for each vendor so that the worst case can be seen.}
     \label{fig:software_fault}
 \end{figure}
@@ -310,7 +317,9 @@ One important caveat is to be noted for PTPd: when multiple software faults star
 
 
 \begin{figure}
+    \centering
     \includegraphics[width=\linewidth]{res/generated/fault/hardware/slave_cluster_comparison.pdf}
+    \legend
     \caption{A hardware fault on the slave of the Raspberry-Pi 4 cluster (left) and the Raspberry-Pi 5 cluster (right). Both slaves need to fully resynchronize after rebooting, but the Raspberry-Pi 5 has an advantage due to its hardware clock.}
     \label{fig:hardware_fault_slave}
 \end{figure}
@@ -320,7 +329,9 @@ A slightly more difficult scenario is a hardware fault on the slave, as not only
 \subsection{Hardware Fault -- Master}
 
 \begin{figure}
+    \centering
     \includegraphics[width=\linewidth]{res/generated/fault/hardware/master_cluster_comparison.pdf}
+    \legend
     \caption{A hardware fault on the master of the Raspberry-Pi 4 cluster (left) and the Raspberry-Pi 5 cluster (right). Slaves cannot compensate for unexpected changes in the announced time without correct configuration, so large clock offsets may be present practically indefinitely.}
     \label{fig:hardware_fault_master}
 \end{figure}
