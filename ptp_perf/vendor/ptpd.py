@@ -110,3 +110,6 @@ class PTPDVendor(Vendor):
 
         Sample.objects.bulk_create(samples)
         return samples
+
+    def get_processes(self) -> typing.Iterable[Invocation]:
+        return (self._process,)

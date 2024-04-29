@@ -54,6 +54,8 @@ class Benchmark:
     fault_location: Optional[EndpointType] = None
     fault_failover: Optional[bool] = False
 
+    monitor_resource_consumption: bool = False
+
     @property
     def storage_base_path(self) -> Path:
         return constants.MEASUREMENTS_DIR.joinpath(self.id)

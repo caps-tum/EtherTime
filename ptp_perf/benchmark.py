@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from ptp_perf import util
 from ptp_perf.adapters.fault_generators import SoftwareFaultGenerator
 from ptp_perf.adapters.performance_degraders import NetworkPerformanceDegrader, StressNGPerformanceDegrader
+from ptp_perf.adapters.resource_monitor import ResourceMonitor
 from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.machine import Machine
@@ -56,6 +57,9 @@ async def benchmark(endpoint_id: str):
             if fault_machine.id == endpoint.machine_id:
                 fault_generator = SoftwareFaultGenerator(endpoint)
                 background_tasks.add_coroutine(fault_generator.run())
+
+        if profile.benchmark.monitor_resource_consumption:
+            background_tasks.add_coroutine(ResourceMonitor(endpoint).run())
 
         logging.info(f"Starting {profile.vendor}...")
         background_tasks.add_coroutine(

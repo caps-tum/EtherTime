@@ -100,3 +100,8 @@ class LinuxPTPVendor(Vendor):
         if self._process_ptp4l is not None:
             return self._process_ptp4l.running
         return False
+
+    def get_processes(self) -> typing.Iterable[Invocation]:
+        if self._process_phc2sys is not None:
+            return self._process_ptp4l, self._process_phc2sys
+        return (self._process_ptp4l,)

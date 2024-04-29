@@ -12,6 +12,7 @@ class ProfileTags:
     CATEGORY_CONFIGURATION = "category_configuration"
     CATEGORY_FAULT = "category_fault"
     CATEGORY_LOAD = "category_load"
+    CATEGORY_RESOURCE_CONSUMPTION = "category_resource_consumption"
 
     # Component
     COMPONENT_CPU = ResourceContentionComponent.CPU.tag

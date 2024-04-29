@@ -1,0 +1,49 @@
+import asyncio
+import json
+import logging
+from asyncio import CancelledError
+
+import psutil
+
+from ptp_perf.adapters.adapter import Adapter
+from ptp_perf.util import unpack_one_value
+
+
+class ResourceMonitor(Adapter):
+    log_source = 'resource_monitor'
+
+    async def run(self):
+        try:
+            while True:
+                system_data = {
+                    'cpu_times': psutil.cpu_times(),
+                    'cpu_percent': psutil.cpu_percent(),
+                    'cpu_stats': psutil.cpu_stats(),
+                    'cpu_freq': psutil.cpu_freq(),
+                    'virtual_memory': psutil.virtual_memory(),
+                    'disk_io_counters': psutil.disk_io_counters(),
+                    'net_io_counters': psutil.net_io_counters(pernic=True),
+                    'sensors_temperature': psutil.sensors_temperatures(),
+                }
+
+                process_data = {}
+                invocation = unpack_one_value(self.endpoint.profile.vendor.get_processes())
+                if invocation is not None and invocation._process is not None:
+                    pid = invocation._process.pid
+                    try:
+                        process = psutil.Process(pid)
+                        process_data = process.as_dict(
+                            ["cpu_times", "cpu_percent", 'io_counters', 'memory_full_info', 'num_ctx_switches', 'num_threads']
+                        )
+                    except psutil.NoSuchProcess:
+                        logging.info(f"Resource monitor: Process {pid} not found.")
+
+                all_data = {
+                    'system': system_data,
+                    'process': process_data,
+                }
+                logging.info(json.dumps(all_data))
+
+                await asyncio.sleep(1)
+        except CancelledError:
+            pass

@@ -43,6 +43,9 @@ class Vendor:
     def uninstall(self):
         raise NotImplementedError()
 
+    def get_processes(self) -> typing.Iterable[Invocation]:
+        raise NotImplementedError()
+
     def __eq__(self, other):
         return self.id == other.id
 

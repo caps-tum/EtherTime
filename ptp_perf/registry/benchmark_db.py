@@ -83,6 +83,12 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         **_FAULT_TIMING_SETTINGS,
     )
 
+    RESOURCE_CONSUMPTION = Benchmark(
+        "resource_consumption", "Resource Consumption",
+        tags=[ProfileTags.CATEGORY_RESOURCE_CONSUMPTION],
+        monitor_resource_consumption=True,
+    )
+
 
     @staticmethod
     def resource_contention(component: ResourceContentionComponent, type: ResourceContentionType, load_level: int):
@@ -183,6 +189,7 @@ BenchmarkDB.register_all(
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,
     BenchmarkDB.NO_SWITCH,
+    BenchmarkDB.RESOURCE_CONSUMPTION,
 )
 
 for component in [ResourceContentionComponent.NET, ResourceContentionComponent.CPU]:

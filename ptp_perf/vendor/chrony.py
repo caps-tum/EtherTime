@@ -103,3 +103,6 @@ class ChronyVendor(Vendor):
             pattern='\d+-\d+-\d+ \d+:\d+:\d+ \d+\.\d+\.\d+\.\d+ .* (?P<master_offset>' + scientific_number + ')\s*(?P<path_delay>' + scientific_number + ')\s*' + scientific_number + '\s+' + scientific_number + '\s+' + scientific_number + '\s+',
             number_conversion=lambda x: int(float(x) * units.NANOSECONDS_IN_SECOND)
         )
+
+    def get_processes(self) -> typing.Iterable[Invocation]:
+        return (self._process,)
