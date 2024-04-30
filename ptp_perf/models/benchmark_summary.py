@@ -9,6 +9,9 @@ from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
+from ptp_perf.utilities.django_utilities import FormattedFloatField, DataFormatFloatField, GenericEngineeringFloatField, \
+    PercentageFloatField, TimeFormatFloatField
+from ptp_perf.utilities.units import format_time_offset
 from ptp_perf.vendor.vendor import Vendor
 
 
@@ -21,22 +24,41 @@ class BenchmarkSummary(models.Model):
     count = models.IntegerField()
 
     # Summary statistics
-    clock_diff_median = models.FloatField(null=True)
-    clock_diff_p05 = models.FloatField(null=True)
-    clock_diff_p95 = models.FloatField(null=True)
-    path_delay_median = models.FloatField(null=True)
-    path_delay_p05 = models.FloatField(null=True)
-    path_delay_p95 = models.FloatField(null=True)
-    path_delay_std = models.FloatField(null=True)
+    clock_diff_median = TimeFormatFloatField(null=True)
+    clock_diff_p05 = TimeFormatFloatField(null=True)
+    clock_diff_p95 = TimeFormatFloatField(null=True)
+    path_delay_median = TimeFormatFloatField(null=True)
+    path_delay_p05 = TimeFormatFloatField(null=True)
+    path_delay_p95 = TimeFormatFloatField(null=True)
+    path_delay_std = TimeFormatFloatField(null=True)
 
     # Fault statistics
-    fault_clock_diff_post_max_max = models.FloatField(null=True)
-    fault_clock_diff_post_max_min = models.FloatField(null=True)
+    fault_clock_diff_post_max_max = TimeFormatFloatField(null=True)
+    fault_clock_diff_post_max_min = TimeFormatFloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
 
-    secondary_fault_clock_diff_post_max_max = models.FloatField(null=True)
-    secondary_fault_clock_diff_post_max_min = models.FloatField(null=True)
+    secondary_fault_clock_diff_post_max_max = TimeFormatFloatField(null=True)
+    secondary_fault_clock_diff_post_max_min = TimeFormatFloatField(null=True)
     secondary_fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
+
+    # Resource consumption data
+    proc_cpu_percent = PercentageFloatField(null=True)
+    proc_cpu_percent_system = PercentageFloatField(null=True)
+    proc_cpu_percent_user = PercentageFloatField(null=True)
+    proc_mem_rss = DataFormatFloatField(null=True)
+    proc_mem_vms = DataFormatFloatField(null=True)
+    proc_io_write_count = GenericEngineeringFloatField(null=True)
+    proc_io_write_bytes = DataFormatFloatField(null=True)
+    proc_io_read_count = GenericEngineeringFloatField(null=True)
+    proc_io_read_bytes = DataFormatFloatField(null=True)
+    proc_ctx_switches_involuntary = GenericEngineeringFloatField(null=True)
+    proc_ctx_switches_voluntary = GenericEngineeringFloatField(null=True)
+
+    sys_net_ptp_iface_bytes_sent = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_sent = GenericEngineeringFloatField(null=True)
+    sys_net_ptp_iface_bytes_received = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_received = GenericEngineeringFloatField(null=True)
+
 
     @staticmethod
     def create(benchmark: Benchmark, vendor: Vendor, cluster: Cluster, force_update: bool = False):
@@ -82,22 +104,34 @@ class BenchmarkSummary(models.Model):
             path_delay_p95=path_delay_quantiles[2],
         )
 
+        # Fault tolerance
         # Per-Endpoint summaries: Primary
-        endpoints = data_query.get_endpoint_query().all().values()
-        endpoint_frame = pd.DataFrame(endpoints)
+        endpoints_primary = data_query.get_endpoint_query().all().values()
+        endpoint_frame = pd.DataFrame(endpoints_primary)
 
-        instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
-        instance.fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
-        instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+        try:
+            instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
+            instance.fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
+            instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+        except KeyError:
+            pass
 
         # Per-Endpoint summaries: Secondary
         data_query.endpoint_type = EndpointType.SECONDARY_SLAVE
-        endpoints = data_query.get_endpoint_query().all().values()
-        endpoint_frame = pd.DataFrame(endpoints)
+        endpoints_secondary = data_query.get_endpoint_query().all().values()
+        endpoint_frame = pd.DataFrame(endpoints_secondary)
 
-        instance.secondary_fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
-        instance.secondary_fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
-        instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+        try:
+            instance.secondary_fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
+            instance.secondary_fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
+            instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+        except KeyError:
+            pass
+
+        # Resource consumption data
+        for field in instance.__dict__.keys():
+            if field.startswith('proc_') or field.startswith('sys_'):
+                instance.__dict__[field] = sum(endpoint_dict[field] for endpoint_dict in endpoints_primary if endpoint_dict[field] is not None) / len(endpoints_primary)
 
         instance.save()
 

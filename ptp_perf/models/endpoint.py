@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import typing
@@ -13,12 +14,12 @@ from django.db.models import CASCADE
 from ptp_perf import config
 from ptp_perf.machine import Machine, Cluster, MachineClientType
 from ptp_perf.models.endpoint_type import EndpointType
-from ptp_perf.models.profile import PTPProfile
 from ptp_perf.models.exceptions import NoDataError
-from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence, calculate_convergence_duration
+from ptp_perf.models.profile import PTPProfile
+from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics, SummaryStatistics
-from ptp_perf.utilities import units
+from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics
+from ptp_perf.utilities import units, psutil_utilities
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
@@ -61,7 +62,7 @@ class PTPEndpoint(models.Model):
     # Clock step
     clock_step_timestamp = models.DateTimeField(null=True)
     clock_step_magnitude = models.FloatField(null=True)
-    
+
     # Fault Data
     fault_clock_diff_pre_median = models.FloatField(null=True)
     fault_clock_diff_pre_p05 = models.FloatField(null=True)
@@ -69,7 +70,7 @@ class PTPEndpoint(models.Model):
     fault_path_delay_pre_median = models.FloatField(null=True)
     fault_path_delay_pre_p05 = models.FloatField(null=True)
     fault_path_delay_pre_p95 = models.FloatField(null=True)
-    
+
     fault_clock_diff_post_median = models.FloatField(null=True)
     fault_clock_diff_post_p05 = models.FloatField(null=True)
     fault_clock_diff_post_p95 = models.FloatField(null=True)
@@ -84,6 +85,24 @@ class PTPEndpoint(models.Model):
 
     fault_clock_diff_post_max = models.FloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
+
+    # Resource consumption data
+    proc_cpu_percent = models.FloatField(null=True)
+    proc_cpu_percent_system = models.FloatField(null=True)
+    proc_cpu_percent_user = models.FloatField(null=True)
+    proc_mem_rss = models.FloatField(null=True)
+    proc_mem_vms = models.FloatField(null=True)
+    proc_io_write_count = models.FloatField(null=True)
+    proc_io_write_bytes = models.FloatField(null=True)
+    proc_io_read_count = models.FloatField(null=True)
+    proc_io_read_bytes = models.FloatField(null=True)
+    proc_ctx_switches_involuntary = models.FloatField(null=True)
+    proc_ctx_switches_voluntary = models.FloatField(null=True)
+
+    sys_net_ptp_iface_bytes_sent = models.FloatField(null=True)
+    sys_net_ptp_iface_packets_sent = models.FloatField(null=True)
+    sys_net_ptp_iface_bytes_received = models.FloatField(null=True)
+    sys_net_ptp_iface_packets_received = models.FloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
@@ -129,7 +148,7 @@ class PTPEndpoint(models.Model):
 
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
-        from ptp_perf.models.sample_query import SampleQuery
+        from ptp_perf.models.log_record import LogRecord
 
         entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
                                                     remove_clock_step=False, normalize_time=TimeNormalizationStrategy.NONE)
@@ -223,9 +242,10 @@ class PTPEndpoint(models.Model):
             if fault_start.timestamp <= self.convergence_timestamp:
                 raise ProfileCorruptError("Clock did not converge before the first fault.")
             if fault_start.timestamp >= fault_end.timestamp:
-                raise RuntimeError("Fault ended before it started?")
+                raise ProfileCorruptError("Fault ended before it started?")
             if fault_end.timestamp > max(frame_no_clock_step.index):
-                raise RuntimeError(
+                # TODO: Investigate fault corruption
+                raise ProfileCorruptError(
                     f"Fault occurred after last sample timestamp? "
                     f"Data interval: [{min(frame_no_clock_step.index)}, {max(frame_no_clock_step.index)}], "
                     f"Fault interval: [{fault_start.timestamp}, {fault_end.timestamp}]"
@@ -256,7 +276,7 @@ class PTPEndpoint(models.Model):
             self.fault_clock_diff_post_max = post_fault_series.max()
             self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
 
-        except NoDataError:
+        except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:
                 raise ProfileCorruptError(f"Could not find fault for profile {self.profile} on benchmark {self.benchmark}")
 
@@ -353,6 +373,51 @@ class PTPEndpoint(models.Model):
         if parsed_faults > 0:
             logging.info(f"{self} parsed {parsed_faults} fault status records.")
         return parsed_faults
+
+
+    def process_system_metrics_data(self):
+        from ptp_perf.models import LogRecord
+        from ptp_perf.adapters.resource_monitor import ResourceMonitor
+        records = LogRecord.objects.filter(
+            source=ResourceMonitor.log_source, endpoint__profile=self.profile
+        ).exclude(
+            message__contains='"process": {}'
+        ).order_by('id').all()
+
+        # Check if any data available
+        if len(records) != 0:
+
+            # Difference data: data based on counter can be subtracted and converted into a rate where applicable.
+            first_record: LogRecord = records.first()
+            last_record: LogRecord = records.last()
+
+            first_last_difference = psutil_utilities.hierarchical_apply(
+                json.loads(last_record.message), json.loads(first_record.message),
+                lambda x, y: x - y,
+            )
+            measurement_timedelta = last_record.timestamp - first_record.timestamp
+            self.proc_cpu_percent_system = first_last_difference["process"]["cpu_times"]["system"] / measurement_timedelta.total_seconds()
+            self.proc_cpu_percent_user = first_last_difference["process"]["cpu_times"]["user"] / measurement_timedelta.total_seconds()
+            self.proc_cpu_percent = self.proc_cpu_percent_system + self.proc_cpu_percent_user
+
+            memory_frame = pd.DataFrame(json.loads(record.message)["process"]["memory_full_info"] for record in records)
+            self.proc_mem_vms = memory_frame["vms"].max()
+            self.proc_mem_rss = memory_frame["rss"].max()
+
+            self.proc_ctx_switches_voluntary = first_last_difference["process"]["num_ctx_switches"]["voluntary"]
+            self.proc_ctx_switches_involuntary = first_last_difference["process"]["num_ctx_switches"]["involuntary"]
+
+            self.proc_io_read_count = first_last_difference["process"]["io_counters"]["read_count"]
+            self.proc_io_read_bytes = first_last_difference["process"]["io_counters"]["read_bytes"]
+            self.proc_io_write_count = first_last_difference["process"]["io_counters"]["write_count"]
+            self.proc_io_write_bytes = first_last_difference["process"]["io_counters"]["write_bytes"]
+
+            interface_stats = first_last_difference["system"]["net_io_counters"]["eth0"]
+            self.sys_net_ptp_iface_bytes_sent = interface_stats["bytes_sent"]
+            self.sys_net_ptp_iface_packets_sent = interface_stats["packets_sent"]
+            self.sys_net_ptp_iface_bytes_received = interface_stats["bytes_recv"]
+            self.sys_net_ptp_iface_packets_received = interface_stats["packets_recv"]
+
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and

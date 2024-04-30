@@ -64,6 +64,9 @@ def convert_profile(profile: PTPProfile):
             )
 
         for endpoint in profile_endpoints:
+            endpoint.process_system_metrics_data()
+
+        for endpoint in profile_endpoints:
             endpoint.process_timeseries_data()
 
     except ProfileCorruptError as e:
@@ -102,12 +105,15 @@ def summarize(force: bool = False):
                     pass
 
 
-def run_analysis(force):
-    start_time = datetime.now()
-    converted_profiles = analyze(force=force)
-    summarize(force=force)
-    completion_time = datetime.now()
-    logging.info(f"Analysis of {converted_profiles} profiles completed in {completion_time - start_time}.")
+def run_analysis(force: bool, run_analyze: bool = True, run_summarize: bool = True):
+
+    if run_analyze:
+        start_time = datetime.now()
+        converted_profiles = analyze(force=force)
+        completion_time = datetime.now()
+        logging.info(f"Analysis of {converted_profiles} profiles completed in {completion_time - start_time}.")
+    if run_summarize:
+        summarize(force=force)
 
 
 class Command(BaseCommand):

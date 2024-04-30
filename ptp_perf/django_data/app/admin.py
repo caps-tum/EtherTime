@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 from admin_actions.admin import ActionsModelAdmin
 from django.contrib import admin
+from django.contrib.admin import ModelAdmin
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
@@ -14,6 +15,7 @@ from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
 from ptp_perf.util import unpack_one_value
+from ptp_perf.utilities.django_utilities import CustomFormatsAdmin
 from ptp_perf.utilities.units import format_time_offset, format_relative
 
 
@@ -86,6 +88,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
         return HttpResponseRedirect(
             get_endpoint_admin_link(profile.benchmark_id, profile.vendor_id, profile.cluster_id, profile.id)
         )
+
     get_endpoints.short_description = 'Endpoints'
     get_endpoints.url_path = 'endpoints'
 
@@ -139,19 +142,24 @@ class PTPEndpointAdmin(ActionsModelAdmin):
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
 
+
 def format_time_offset_for_admin(value: float) -> str:
     return format_time_offset(value, auto_increase_places=True)
 
-def formatted_field(field: Callable[[Any], float], short_description: str, order_field: str, format_function: Callable = format_time_offset_for_admin):
+
+def formatted_field(field: Callable[[Any], float], short_description: str, order_field: str,
+                    format_function: Callable = format_time_offset_for_admin):
     def inner_function(self, value):
         return format_function(field(value))
+
     inner_function.short_description = short_description
     inner_function.admin_order_field = order_field
     return inner_function
 
-def create_modeladmin(modeladmin, model, name = None):
+
+def create_modeladmin(modeladmin, model, name=None):
     # Stack-overflow https://stackoverflow.com/questions/2223375/multiple-modeladmins-views-for-same-model-in-django-admin
-    class  Meta:
+    class Meta:
         proxy = True
         app_label = model._meta.app_label
 
@@ -161,6 +169,7 @@ def create_modeladmin(modeladmin, model, name = None):
 
     admin.site.register(newmodel, modeladmin)
     return modeladmin
+
 
 class PTPEndpointFaultAdmin(PTPEndpointAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
@@ -186,7 +195,9 @@ class PTPEndpointFaultAdmin(PTPEndpointAdmin):
         format_function=format_relative,
     )
 
+
 create_modeladmin(PTPEndpointFaultAdmin, PTPEndpoint, "endpoint-fault")
+
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
@@ -238,23 +249,11 @@ def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int
 
 
 @admin.register(BenchmarkSummary)
-class BenchmarkSummaryAdmin(ActionsModelAdmin):
-    list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median_formatted',
-                    'vs_baseline', 'clock_diff_p95_formatted', 'p95_vs_baseline')
+class BenchmarkSummaryAdmin(CustomFormatsAdmin):
+    list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
+                    'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
     actions_row = ('details',)
-
-    def clock_diff_median_formatted(self, summary: BenchmarkSummary):
-        return format_time_offset(summary.clock_diff_median, auto_increase_places=True)
-
-    clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
-    clock_diff_median_formatted.short_description = 'Clock Diff Median'
-
-    def clock_diff_p95_formatted(self, summary: BenchmarkSummary):
-        return format_time_offset(summary.clock_diff_p95, auto_increase_places=True)
-
-    clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
-    clock_diff_p95_formatted.short_description = 'Clock Diff 95%'
 
     def vs_baseline(self, summary: BenchmarkSummary):
         baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
@@ -274,5 +273,24 @@ class BenchmarkSummaryAdmin(ActionsModelAdmin):
             get_endpoint_admin_link(summary.benchmark_id, summary.vendor_id, summary.cluster_id,
                                     endpoint_type=EndpointType.PRIMARY_SLAVE)
         )
+
     details.short_description = 'Details'
     details.url_path = 'details'
+
+
+class ResourceConsumptionSummaryAdmin(CustomFormatsAdmin):
+    list_display = (
+        'id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
+        'proc_cpu_percent',
+        'proc_mem_rss', 'proc_mem_vms',
+        'sys_net_ptp_iface_packets_sent', 'sys_net_ptp_iface_bytes_sent',
+        'sys_net_ptp_iface_packets_received', 'sys_net_ptp_iface_bytes_received',
+        'proc_ctx_switches_voluntary', 'proc_ctx_switches_involuntary',
+    )
+    list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(proc_cpu_percent__isnull=False)
+
+
+create_modeladmin(ResourceConsumptionSummaryAdmin, BenchmarkSummary, "summary-resources-consumption")

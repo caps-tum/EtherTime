@@ -54,3 +54,33 @@ def format_time_delta(value: float):
 
 def format_relative(value: float, places: int = 1):
     return f"{value:.{places}f}x"
+
+
+def format_engineering(value: float, unit: str = "") -> str:
+    if value == 0:
+        return f"{value}{unit}"
+    log_value = math.floor(math.log10(abs(value)))
+    print(log_value)
+    suffix, multiplier, places = {
+        0: ('', 1, 1),
+        1: ('', 1, 0),
+        2: ('', 1, 0),
+        3: ('K', 1e-3, 0),
+        4: ('K', 1e-3, 0),
+        5: ('K', 1e-3, 0),
+        6: ('M', 1e-6, 0),
+        7: ('M', 1e-6, 0),
+        8: ('M', 1e-6, 0),
+        9: ('G', 1e-9, 0),
+        10: ('G', 1e-9, 0),
+        11: ('G', 1e-9, 0),
+    }[log_value]
+    return f"{value * multiplier:.{places}f}{suffix}{unit}"
+
+
+def format_percentage(x: float) -> str:
+    if x == 0:
+        return "0%"
+    percentage = x * 100
+    num_additional_places = 0 if abs(percentage) >= 1 else abs(math.floor(math.log10(abs(percentage))))
+    return f"{percentage:.{num_additional_places}f}%"

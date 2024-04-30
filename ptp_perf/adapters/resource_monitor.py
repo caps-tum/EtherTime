@@ -1,12 +1,9 @@
-import asyncio
 import json
 import logging
-from asyncio import CancelledError
 
 import psutil
 
-from ptp_perf import utilities
-from ptp_perf.adapters.adapter import Adapter, IntervalActionAdapter
+from ptp_perf.adapters.adapter import IntervalActionAdapter
 from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import psutil_utilities
 
@@ -44,4 +41,4 @@ class ResourceMonitor(IntervalActionAdapter):
         }
 
         all_data = psutil_utilities.recursive_namedtuple_to_dict(all_data)
-        logging.info(json.dumps(all_data))
+        self.log(json.dumps(all_data))
