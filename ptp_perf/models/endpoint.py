@@ -420,6 +420,8 @@ class PTPEndpoint(models.Model):
             self.sys_net_ptp_iface_bytes_received = interface_stats["bytes_recv"]
             self.sys_net_ptp_iface_packets_received = interface_stats["packets_recv"]
 
+            self.save()
+
 
     def log(self, message: str, source: str):
         """Log to a logger with the name 'source'. Message will be intercepted by the log to database adapter and
