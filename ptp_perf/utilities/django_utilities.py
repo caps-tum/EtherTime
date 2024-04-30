@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Callable
 
+from admin_actions.admin import ActionsModelAdmin
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
 from django.db import connection, models
@@ -53,7 +54,7 @@ class PercentageFloatField(FormattedFloatField):
     format_function = lambda x: units.format_percentage(x)
 
 
-class CustomFormatsAdmin(admin.ModelAdmin):
+class CustomFormatsAdmin(ActionsModelAdmin):
     def __new__(cls, model, admin_site):
         for field in model._meta.fields:
             if isinstance(field, FormattedFloatField):

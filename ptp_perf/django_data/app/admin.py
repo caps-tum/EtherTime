@@ -94,7 +94,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 
 
 @admin.register(PTPEndpoint)
-class PTPEndpointAdmin(ActionsModelAdmin):
+class PTPEndpointAdmin(CustomFormatsAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
                     'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
                     'convergence_duration')
@@ -277,10 +277,26 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     details.short_description = 'Details'
     details.url_path = 'details'
 
+class ResourceConsumptionEndpointAdmin(PTPEndpointAdmin):
+    list_display = (
+        'id', 'benchmark', 'vendor', 'cluster',
+        'clock_diff_median',
+        'proc_cpu_percent',
+        'proc_mem_rss', 'proc_mem_vms',
+        'sys_net_ptp_iface_packets_sent', 'sys_net_ptp_iface_bytes_sent',
+        'sys_net_ptp_iface_packets_received', 'sys_net_ptp_iface_bytes_received',
+        'proc_ctx_switches_voluntary', 'proc_ctx_switches_involuntary',
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(proc_cpu_percent__isnull=False)
+
+create_modeladmin(ResourceConsumptionEndpointAdmin, PTPEndpoint, "endpoint-resource-consumption")
 
 class ResourceConsumptionSummaryAdmin(CustomFormatsAdmin):
     list_display = (
-        'id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
+        'id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count',
+        'clock_diff_median',
         'proc_cpu_percent',
         'proc_mem_rss', 'proc_mem_vms',
         'sys_net_ptp_iface_packets_sent', 'sys_net_ptp_iface_bytes_sent',
@@ -293,4 +309,4 @@ class ResourceConsumptionSummaryAdmin(CustomFormatsAdmin):
         return super().get_queryset(request).filter(proc_cpu_percent__isnull=False)
 
 
-create_modeladmin(ResourceConsumptionSummaryAdmin, BenchmarkSummary, "summary-resources-consumption")
+create_modeladmin(ResourceConsumptionSummaryAdmin, BenchmarkSummary, "summary-resource-consumption")

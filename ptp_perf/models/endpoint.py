@@ -20,6 +20,8 @@ from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergen
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics
 from ptp_perf.utilities import units, psutil_utilities
+from ptp_perf.utilities.django_utilities import TimeFormatFloatField, PercentageFloatField, DataFormatFloatField, \
+    GenericEngineeringFloatField
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
@@ -45,13 +47,13 @@ class PTPEndpoint(models.Model):
     endpoint_type = models.CharField(choices=EndpointType, max_length=32, default=EndpointType.UNKNOWN)
 
     # Summary statistics
-    clock_diff_median = models.FloatField(null=True)
-    clock_diff_p05 = models.FloatField(null=True)
-    clock_diff_p95 = models.FloatField(null=True)
-    path_delay_median = models.FloatField(null=True)
-    path_delay_p05 = models.FloatField(null=True)
-    path_delay_p95 = models.FloatField(null=True)
-    path_delay_std = models.FloatField(null=True)
+    clock_diff_median = TimeFormatFloatField(null=True)
+    clock_diff_p05 = TimeFormatFloatField(null=True)
+    clock_diff_p95 = TimeFormatFloatField(null=True)
+    path_delay_median = TimeFormatFloatField(null=True)
+    path_delay_p05 = TimeFormatFloatField(null=True)
+    path_delay_p95 = TimeFormatFloatField(null=True)
+    path_delay_std = TimeFormatFloatField(null=True)
 
     # Convergence statistics
     convergence_timestamp = models.DateTimeField(null=True)
@@ -87,22 +89,22 @@ class PTPEndpoint(models.Model):
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
 
     # Resource consumption data
-    proc_cpu_percent = models.FloatField(null=True)
-    proc_cpu_percent_system = models.FloatField(null=True)
-    proc_cpu_percent_user = models.FloatField(null=True)
-    proc_mem_rss = models.FloatField(null=True)
-    proc_mem_vms = models.FloatField(null=True)
-    proc_io_write_count = models.FloatField(null=True)
-    proc_io_write_bytes = models.FloatField(null=True)
-    proc_io_read_count = models.FloatField(null=True)
-    proc_io_read_bytes = models.FloatField(null=True)
-    proc_ctx_switches_involuntary = models.FloatField(null=True)
-    proc_ctx_switches_voluntary = models.FloatField(null=True)
+    proc_cpu_percent = PercentageFloatField(null=True)
+    proc_cpu_percent_system = PercentageFloatField(null=True)
+    proc_cpu_percent_user = PercentageFloatField(null=True)
+    proc_mem_rss = DataFormatFloatField(null=True)
+    proc_mem_vms = DataFormatFloatField(null=True)
+    proc_io_write_count = GenericEngineeringFloatField(null=True)
+    proc_io_write_bytes = DataFormatFloatField(null=True)
+    proc_io_read_count = GenericEngineeringFloatField(null=True)
+    proc_io_read_bytes = DataFormatFloatField(null=True)
+    proc_ctx_switches_involuntary = GenericEngineeringFloatField(null=True)
+    proc_ctx_switches_voluntary = GenericEngineeringFloatField(null=True)
 
-    sys_net_ptp_iface_bytes_sent = models.FloatField(null=True)
-    sys_net_ptp_iface_packets_sent = models.FloatField(null=True)
-    sys_net_ptp_iface_bytes_received = models.FloatField(null=True)
-    sys_net_ptp_iface_packets_received = models.FloatField(null=True)
+    sys_net_ptp_iface_bytes_sent = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_sent = GenericEngineeringFloatField(null=True)
+    sys_net_ptp_iface_bytes_received = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_received = GenericEngineeringFloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
