@@ -379,7 +379,7 @@ class PTPEndpoint(models.Model):
         from ptp_perf.models import LogRecord
         from ptp_perf.adapters.resource_monitor import ResourceMonitor
         records = LogRecord.objects.filter(
-            source=ResourceMonitor.log_source, endpoint__profile=self.profile
+            source=ResourceMonitor.log_source, endpoint=self
         ).exclude(
             message__contains='"process": {}'
         ).order_by('id').all()
