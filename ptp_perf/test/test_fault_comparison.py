@@ -26,8 +26,8 @@ class FaultComparisonCharts(TestCase):
         for benchmark, log_scale in [
             (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
             (BenchmarkDB.HARDWARE_FAULT_MASTER, True),
-            (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
-            (BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, False),
+            (BenchmarkDB.HARDWARE_FAULT_SWITCH, True),
+            (BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, True),
         ]:
             axis_containers = []
 
