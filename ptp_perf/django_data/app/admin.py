@@ -279,10 +279,12 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
 
 class ResourceConsumptionEndpointAdmin(PTPEndpointAdmin):
     list_display = (
-        'id', 'benchmark', 'vendor', 'cluster',
+        'id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
         'clock_diff_median',
-        'proc_cpu_percent',
-        'proc_mem_rss', 'proc_mem_vms',
+        'proc_cpu_percent', 'proc_cpu_percent_system', 'proc_cpu_percent_user',
+        'sys_cpu_frequency', 'sys_sensors_temperature_cpu',
+        'proc_mem_uss', 'proc_mem_pss',  'proc_mem_rss', 'proc_mem_vms',
+        'sys_net_ptp_iface_packets_total', 'sys_net_ptp_iface_bytes_total',
         'sys_net_ptp_iface_packets_sent', 'sys_net_ptp_iface_bytes_sent',
         'sys_net_ptp_iface_packets_received', 'sys_net_ptp_iface_bytes_received',
         'proc_ctx_switches_voluntary', 'proc_ctx_switches_involuntary',
@@ -297,8 +299,10 @@ class ResourceConsumptionSummaryAdmin(CustomFormatsAdmin):
     list_display = (
         'id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count',
         'clock_diff_median',
-        'proc_cpu_percent',
-        'proc_mem_rss', 'proc_mem_vms',
+        'proc_cpu_percent', 'proc_cpu_percent_system', 'proc_cpu_percent_user',
+        'sys_cpu_frequency', 'sys_sensors_temperature_cpu',
+        'proc_mem_uss', 'proc_mem_pss',  'proc_mem_rss', 'proc_mem_vms',
+        'sys_net_ptp_iface_packets_total', 'sys_net_ptp_iface_bytes_total',
         'sys_net_ptp_iface_packets_sent', 'sys_net_ptp_iface_bytes_sent',
         'sys_net_ptp_iface_packets_received', 'sys_net_ptp_iface_bytes_received',
         'proc_ctx_switches_voluntary', 'proc_ctx_switches_involuntary',

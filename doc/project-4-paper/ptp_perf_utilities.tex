@@ -127,9 +127,9 @@
 }
 \makeatother
 
-\newcommand{\legend}{
+\newcommand{\legend}[1][ptpd,linuxptp,sptp,chrony]{
     \begin{tikzpicture}[start chain=legend going right]
-        \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{
+        \foreach \vendor in {#1}{
             \node[node distance=1em, on chain=legend, draw, fill=\ptpKey{vendors/\vendor/color}] {};
             \node[node distance=0cm, on chain=legend, text depth=0cm] {\sffamily\scriptsize\fVendor{\vendor}};
         }

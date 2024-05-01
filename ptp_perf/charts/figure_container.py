@@ -56,12 +56,14 @@ class AxisContainer:
     xticklabels_format_percent: bool = False
     xaxis_invert: bool = False
 
-    ylabel: str = "Clock Offset"
+    ylabel: Optional[str] = None
     ylog: bool = False
     ylimit_top: Optional[float] = None
     ylimit_bottom: Optional[float] = None
-    yticklabels_format_time: bool = True
-    yticks_interval: Optional[float] = 10 * units.us
+    yticklabels_format_time: bool = False
+    yticklabels_format_engineering: bool = False
+    yticklabels_format_engineering_unit: str = ''
+    yticks_interval: Optional[float] = None
 
     yminorticks: bool = False
     yminorticks_interval: float = 1 * units.us
@@ -107,6 +109,8 @@ class AxisContainer:
             self.axis.yaxis.set_major_locator(MultipleLocator(self.yticks_interval))
         if self.yticklabels_format_time:
             self.decorate_axis_time_formatter(self.axis.yaxis)
+        if self.yticklabels_format_engineering:
+            self.decorate_axis_engineering_formatter(self.axis.yaxis, self.yticklabels_format_engineering_unit)
 
         if self.yminorticks:
             if self.yminorticks_interval:
@@ -134,6 +138,15 @@ class AxisContainer:
             axis.set_minor_formatter(formatter)
 
     @staticmethod
+    def decorate_axis_engineering_formatter(axis, unit: str = '', major: bool = True):
+        formatter = matplotlib.ticker.FuncFormatter(lambda value, _: units.format_engineering(value, unit))
+        if major:
+            axis.set_major_formatter(formatter)
+        else:
+            axis.set_minor_formatter(formatter)
+
+
+    @staticmethod
     def add_boundary(axes: plt.Axes, timestamp: timedelta):
         axes.axvline(
             timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND,
@@ -144,6 +157,29 @@ class AxisContainer:
     def add_elements(self, *elements: DataElement) -> Self:
         self.data_elements += elements
         return self
+
+@dataclass
+class TimeAxisContainer(AxisContainer):
+    """Axis container with sensible defaults for time values on the y axis"""
+    ylabel: Optional[str] = "Clock Offset"
+    yticklabels_format_time: bool = True
+    yticks_interval: Optional[float] = 10 * units.us
+
+@dataclass
+class TimeLogAxisContainer(TimeAxisContainer):
+    ylog: bool = True
+    yticks_interval: Optional[float] = None
+
+@dataclass
+class TimeseriesAxisContainer(TimeAxisContainer):
+    """Axis container with sensible defaults for time series"""
+    xticklabels_format_time: bool = True
+    yticklabels_format_time: bool = True
+
+@dataclass
+class DataAxisContainer(AxisContainer):
+    yticklabels_format_engineering: bool = True
+    yticklabels_format_engineering_unit: str = 'B'
 
 
 @dataclass
@@ -198,9 +234,3 @@ class FigureContainer:
 
         self.figure.savefig(path, format=format)
         plt.close(self.figure)
-
-@dataclass
-class TimeseriesAxisContainer(AxisContainer):
-    """Axis container with sensible defaults for time series"""
-    xticklabels_format_time: bool = True
-    yticklabels_format_time: bool = True

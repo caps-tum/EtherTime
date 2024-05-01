@@ -8,7 +8,8 @@ from matplotlib.patches import ConnectionPatch, ConnectionStyle
 from ptp_perf import config
 from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
-from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
+from ptp_perf.charts.figure_container import FigureContainer, AxisContainer, TimeseriesAxisContainer, TimeAxisContainer, \
+    TimeLogAxisContainer
 from ptp_perf.config import CLUSTER_PI
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.models import BenchmarkSummary
@@ -37,19 +38,18 @@ class VendorComparisonCharts(TestCase):
 
             chart = FigureContainer(
                 axes_containers=[
-                    AxisContainer([
-                        ComparisonLineElement(
-                            data=frame,
-                            column_x='X',
-                            column_y='Value',
-                            column_hue='Vendor',
-                        )
-                    ],
+                    TimeLogAxisContainer(
+                        [
+                            ComparisonLineElement(
+                                data=frame,
+                                column_x='X',
+                                column_y='Value',
+                                column_hue='Vendor',
+                            )
+                        ],
                         title="Unisolated Network Load",
                         xlabel='Network Load',
                         xticklabels_format_percent=True,
-                        ylog=True,
-                        yticks_interval=None,
                     )
                 ]
             )
@@ -74,7 +74,7 @@ class VendorComparisonCharts(TestCase):
             share_y=False,
             tight_layout=True,
             axes_containers=[
-                AxisContainer(
+                TimeAxisContainer(
                     [ComparisonBarElement(
                         data=frame,
                         column_x='X',
@@ -86,7 +86,7 @@ class VendorComparisonCharts(TestCase):
                     xticklabels=list(frame['Vendor']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"],
                     ylimit_top=50 * units.us,
                 ),
-                AxisContainer(
+                TimeAxisContainer(
                     [ComparisonBarElement(
                         data=frame_rpi5,
                         column_x='X',
@@ -155,7 +155,7 @@ class VendorComparisonCharts(TestCase):
         }
         figure = FigureContainer(
             axes_containers=[
-                AxisContainer(
+                TimeLogAxisContainer(
                     data_elements=[
                         ComparisonBarElement(
                             data=frame,
@@ -168,8 +168,6 @@ class VendorComparisonCharts(TestCase):
                         )
                     ],
                     title=f"Isolation Mechanisms at 100% {component} Load",
-                    ylog=True,
-                    yticks_interval=None,
                 )
             ]
         )

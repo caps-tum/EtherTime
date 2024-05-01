@@ -79,7 +79,7 @@ That a regular NTP client can outperform all of our PTP clients might come as a 
 
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
 
-The most noticeable effect on the synchronization quality is the choice of hardware, which is expected since the Raspberry-Pi 5 offers hardware timestamping while the Raspberry-Pi 4 does not. The advantage ranges from \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}. Curiously, although PTPd does not support hardware timestamping and thus cannot use hardware capabilities, it still offers around \fPercentage{\ptpKey{cmp/base/rpi-5/min}/\ptpKey{base/rpi-5/ptpd/q50}} of the performance of the top contender \fVendor{\ptpKey{cmp/base/rpi-5/minarg}}. While the difference is significant, it is not orders of magnitude better than the software-only implementation, showing that hardware timestamps alone are not a cure-all solution to clock-synchronization and cannot eliminate timing variations entirely.
+The most noticeable effect on the synchronization quality is the choice of hardware, which is expected since the Raspberry-Pi 5 offers hardware timestamping while the Raspberry-Pi 4 does not. The newer hardware's performance advantage ranges from \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}. Curiously, although PTPd does not support hardware timestamping and thus cannot use hardware capabilities, it still offers around \fPercentage{\ptpKey{cmp/base/rpi-5/min}/\ptpKey{base/rpi-5/ptpd/q50}} of the performance of the top contender \fVendor{\ptpKey{cmp/base/rpi-5/minarg}}. While the difference is significant, it is not orders of magnitude better than the software-only implementation, showing that hardware timestamps alone are not a cure-all solution to clock-synchronization and cannot eliminate timing variations entirely.
 
 %\todo{
 %Advantages: \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{\fRatio{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}} }
@@ -93,8 +93,18 @@ whereas the magnitude is smaller when hardware support is offered on the Raspber
 This means that not only is the average performance improved, but the magnitude of outliers is reduced, which is especially important when considering the dependability aspect. For applications that need to rely on timing sources, this shows that hardware acceleration can make a significant impact, but of course this comes with the price tag associated with a more capable network interface.
 
 \subsection{Reproducibility}
-{
 
+% Ordering: Requires ptpKeyPrefix to be intact
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{res/generated/base/key_metric_variance.pdf}
+    \legend[ptpd,linuxptp]
+    \caption{Validating the baseline results by repeatedly measuring the baseline for both vendors on the Raspberry Pi 4 system. Top: The median absolute clock offset for each run, with error bars reaching from quantiles 0.05 to 0.95. Bottom: The same for the estimated path delay.}
+    \label{fig:baseline_reproducibility}
+\end{figure}
+
+
+{
 \pgfkeys{
     /reproducibility/rpi-4/.cd,
     ptpd/min/.initial={0.000005329},
@@ -113,11 +123,6 @@ This means that not only is the average performance improved, but the magnitude 
 \renewcommand{\ptpKeyPrefix}{/reproducibility/rpi-4}
 
 
-\begin{figure}
-    \includegraphics[width=\linewidth]{res/generated/base/key_metric_variance.pdf}
-    \caption{Validating the baseline results by repeatedly measuring the baseline for both vendors on the Raspberry Pi 4 system. Top: The median absolute clock offset for each run, with error bars reaching from quantiles 0.05 to 0.95. Bottom: The same for the estimated path delay.}
-    \label{fig:baseline_reproducibility}
-\end{figure}
 
 \newcommand{\numBaselineMeasurements}{10}
 \newcommand{\baselineMinutesRuntime}{\numBaselineMeasurements*4*2*20}
@@ -355,3 +360,18 @@ We observe that the failover master can very rapidly take over the master role i
 \subsection{Network Fault}
 
 Another possible root cause for a fault is the network. While a network outage is generally bad news for reliable distributed systems that need to communicate, a total network outage is ironically easier for PTP to handle than a functioning network with high levels of congestion or a contained failure within any of the nodes. Since no state is lost, the servos are kept in holdover and PTP just has to detect when the network is available again to reconverge on the common network time. The effects of this scenario are not particularly surprising, so we do not show it separately\todo{include perhaps 1 number}.
+
+
+\section{Resource Consumption}
+\todo{Find where to place this section.}
+Finally, embedded systems need to take particular care of the resource consumption of their applications. Since time synchronization fulfills only a supporting role in the overall deployment, it is important that it does not detract significantly from the resources available for the actual application. This is not only true for resources with a hard limit (compute, memory, etc.) but also for ``soft'' resources like power draw and heat dissipation. Especially SPTP was created with the intention of less resource consumption in mind\todo{cite}, so we will verify whether reality holds up to these claims.
+
+While some PTP systems are specifically tied to Linux and thus come with the associated resource requirements, others can also be deployed in more lightweight environments. On low capability devices, ROM/flash space is generally restricted, so the footprint becomes a concern. PTPd has the comparatively lightest footprint, with executables, data and dependencies totaling at around 840\,KB after removal of pre-packaged documentation and dependencies that can reasonably be expected to already be available (e.g. lib-c). The LinuxPTP package is larger but requires fewer dependencies, thus the resulting footprint of 970\,KB is around the same. SPTP (21\,MB) and Chrony (12\,MB) are both more than an order of magnitude larger due to the integrated Go runtime and the comparatively large number of dependencies, respectively. Note that the size of SPTP could be reduced by around 40\% by only deploying the master or client executable and the Chrony footprint is significantly smaller if the larger dependencies (iproute2 + libgnutls30 + tzdata $=$ 10\,MB) are already available. In combination with an embedded Linux distribution, the more lightweight systems could reasonably be deployed on 16\,MB flash devices, although this would likely not leave sufficient headroom for the actual application -- thus 32\,MB is the more realistic lower bound for PTP deployments.
+
+Closely tied to the storage footprint is the memory footprint. LinuxPTP (250\,KB-400\,KB), Chrony (800\~KB-1\,MB) and PTPD ($\sim$1\,MB) all have reasonably small unique set sizes, with resident set sizes around 2-4\,MB. SPTP requires significantly more, with unique and resident set ranging between 8-10\,MB for the master node and 15-16\,MB on the slaves. Also notable is the virtual memory allocated by SPTP, 3\,GB on the master and 1\,GB on the client: over 100x more space than the next most hungry implementation (Chrony at 11\,MB) and enough to cause potential issues on 16/32-bit deployments.
+
+Aside from deployability, power consumption is another big concern especially for mobile deployments. Using consumed CPU time as a heuristic for power consumption, we observe that LinuxPTP and PTPd consume the fewest compute, while Chrony requires around 30\%$-$150\% more. SPTP consumes the most cycles, with around 300\% more consumption than LinuxPTP and PTPd, causing the system to run 0.3°C$-$0.6°C hotter on both the Raspberry-Pi 4 cluster and the Raspberry-Pi 5 cluster (indicative of the additional energy expended). Overall, the consumption of compute power is however relatively small even for SPTP, with around 10\,s of compute consumed in 1 hour of runtime on our comparatively powerful ARM Cortex-A72.
+
+Network traffic can also be a concern for low-throughput networks. Previous studies have found that PTP tends to consume a negligible amount of bandwidth\todo{cite}. Our results suggest that SPTP consumes the fewest network resources overall (around 1.1\,MB per hour for one client), only surpassed by the Chrony master endpoint, which uses even less. \todo{finish.}
+
+Overall, despite SPTP's promise of better resource efficiency, we find that SPTP surpasses the other vendors only in network traffic efficiency (likely due to the simplified protocol), but uses considerably more ROM, RAM, and compute. Thus, it is actually less well suited to embedded deployments than the more widespread PTP vendors. However, this does not necessarily contradict the claims made in the SPTP article~\cite{sptp}, since the article targeted mass-scale deployments of 100K clients, a scale that is highly uncommon in the embedded world. For minimizing resource consumption on embedded systems, we recommend LinuxPTP foremost: it shows high efficiency in all categories\todo{verify} and outperforms the other suitable vendor PTPd in synchronization quality.

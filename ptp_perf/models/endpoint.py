@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 from django.db import models
-from django.db.models import CASCADE
+from django.db.models import CASCADE, FloatField
 
 from ptp_perf import config
 from ptp_perf.machine import Machine, Cluster, MachineClientType
@@ -19,9 +19,10 @@ from ptp_perf.models.profile import PTPProfile
 from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.profiles.data_container import Timeseries, ConvergenceStatistics
+from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import units, psutil_utilities
 from ptp_perf.utilities.django_utilities import TimeFormatFloatField, PercentageFloatField, DataFormatFloatField, \
-    GenericEngineeringFloatField
+    GenericEngineeringFloatField, TemperatureFormatFloatField, FrequencyFormatFloatField
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
@@ -89,9 +90,13 @@ class PTPEndpoint(models.Model):
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
 
     # Resource consumption data
+    resource_profile_length: timedelta = models.DurationField(null=True)
+
     proc_cpu_percent = PercentageFloatField(null=True)
     proc_cpu_percent_system = PercentageFloatField(null=True)
     proc_cpu_percent_user = PercentageFloatField(null=True)
+    proc_mem_uss = DataFormatFloatField(null=True)
+    proc_mem_pss = DataFormatFloatField(null=True)
     proc_mem_rss = DataFormatFloatField(null=True)
     proc_mem_vms = DataFormatFloatField(null=True)
     proc_io_write_count = GenericEngineeringFloatField(null=True)
@@ -101,10 +106,15 @@ class PTPEndpoint(models.Model):
     proc_ctx_switches_involuntary = GenericEngineeringFloatField(null=True)
     proc_ctx_switches_voluntary = GenericEngineeringFloatField(null=True)
 
+    sys_sensors_temperature_cpu = TemperatureFormatFloatField(null=True)
+    sys_cpu_frequency = FrequencyFormatFloatField(null=True)
+
     sys_net_ptp_iface_bytes_sent = DataFormatFloatField(null=True)
     sys_net_ptp_iface_packets_sent = GenericEngineeringFloatField(null=True)
     sys_net_ptp_iface_bytes_received = DataFormatFloatField(null=True)
     sys_net_ptp_iface_packets_received = GenericEngineeringFloatField(null=True)
+    sys_net_ptp_iface_bytes_total = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_total = GenericEngineeringFloatField(null=True)
 
     def load_samples_to_series(self, sample_type: "Sample.SampleType", converged_only: bool = True,
                                remove_clock_step: bool = True, remove_clock_step_force: bool = True,
@@ -388,6 +398,144 @@ class PTPEndpoint(models.Model):
 
         # Check if any data available
         if len(records) != 0:
+            # Sample data:
+            # {
+            #   "system": {
+            #     "cpu_times": {
+            #       "user": 5.03,
+            #       "nice": 0,
+            #       "system": 4.36,
+            #       "idle": 105.34,
+            #       "iowait": 9.22,
+            #       "irq": 0,
+            #       "softirq": 0,
+            #       "steal": 0,
+            #       "guest": 0,
+            #       "guest_nice": 0
+            #     },
+            #     "cpu_percent": 0.2,
+            #     "cpu_stats": {
+            #       "ctx_switches": 100070,
+            #       "interrupts": 80280,
+            #       "soft_interrupts": 43078,
+            #       "syscalls": 0
+            #     },
+            #     "cpu_freq": {
+            #       "current": 2400,
+            #       "min": 1500,
+            #       "max": 2400
+            #     },
+            #     "virtual_memory": {
+            #       "total": 4241719296,
+            #       "available": 3903979520,
+            #       "percent": 8,
+            #       "used": 274235392,
+            #       "free": 3632332800,
+            #       "active": 377946112,
+            #       "inactive": 119701504,
+            #       "buffers": 33308672,
+            #       "cached": 301842432,
+            #       "shared": 6045696,
+            #       "slab": 49577984
+            #     },
+            #     "disk_io_counters": {
+            #       "read_count": 6814,
+            #       "write_count": 521,
+            #       "read_bytes": 281693696,
+            #       "write_bytes": 19522048,
+            #       "read_time": 19048,
+            #       "write_time": 65735,
+            #       "read_merged_count": 4272,
+            #       "write_merged_count": 255,
+            #       "busy_time": 12044
+            #     },
+            #     "net_io_counters": {
+            #       "lo": {
+            #         "bytes_sent": 12129,
+            #         "bytes_recv": 12129,
+            #         "packets_sent": 135,
+            #         "packets_recv": 135,
+            #         "errin": 0,
+            #         "errout": 0,
+            #         "dropin": 0,
+            #         "dropout": 0
+            #       },
+            #       "eth0": {
+            #         "bytes_sent": 4280,
+            #         "bytes_recv": 1946,
+            #         "packets_sent": 38,
+            #         "packets_recv": 22,
+            #         "errin": 0,
+            #         "errout": 0,
+            #         "dropin": 0,
+            #         "dropout": 0
+            #       },
+            #       "wlan0": {
+            #         "bytes_sent": 39457,
+            #         "bytes_recv": 33166,
+            #         "packets_sent": 190,
+            #         "packets_recv": 180,
+            #         "errin": 0,
+            #         "errout": 0,
+            #         "dropin": 0,
+            #         "dropout": 0
+            #       }
+            #     },
+            #     "sensors_temperature": {
+            #       "cpu_thermal": [
+            #         {
+            #           "label": "",
+            #           "current": 56.75,
+            #           "high": null,
+            #           "critical": null
+            #         }
+            #       ],
+            #       "rp1_adc": [
+            #         {
+            #           "label": "",
+            #           "current": 56.634,
+            #           "high": null,
+            #           "critical": null
+            #         }
+            #       ]
+            #     }
+            #   },
+            #   "process": {
+            #     "cpu_percent": 0,
+            #     "num_threads": 1,
+            #     "num_ctx_switches": {
+            #       "voluntary": 8,
+            #       "involuntary": 2
+            #     },
+            #     "memory_full_info": {
+            #       "rss": 4194304,
+            #       "vms": 11468800,
+            #       "shared": 3670016,
+            #       "text": 311296,
+            #       "lib": 0,
+            #       "data": 819200,
+            #       "dirty": 0,
+            #       "uss": 1212416,
+            #       "pss": 1679360,
+            #       "swap": 0
+            #     },
+            #     "io_counters": {
+            #       "read_count": 33,
+            #       "write_count": 5,
+            #       "read_bytes": 0,
+            #       "write_bytes": 0,
+            #       "read_chars": 32273,
+            #       "write_chars": 324
+            #     },
+            #     "cpu_times": {
+            #       "user": 0,
+            #       "system": 0,
+            #       "children_user": 0,
+            #       "children_system": 0,
+            #       "iowait": 0
+            #     }
+            #   }
+            # }
 
             # Difference data: data based on counter can be subtracted and converted into a rate where applicable.
             first_record: LogRecord = records.first()
@@ -397,14 +545,21 @@ class PTPEndpoint(models.Model):
                 json.loads(last_record.message), json.loads(first_record.message),
                 lambda x, y: x - y,
             )
-            measurement_timedelta = last_record.timestamp - first_record.timestamp
-            self.proc_cpu_percent_system = first_last_difference["process"]["cpu_times"]["system"] / measurement_timedelta.total_seconds()
-            self.proc_cpu_percent_user = first_last_difference["process"]["cpu_times"]["user"] / measurement_timedelta.total_seconds()
+            self.resource_profile_length = last_record.timestamp - first_record.timestamp
+            self.proc_cpu_percent_system = first_last_difference["process"]["cpu_times"]["system"] / self.resource_profile_length.total_seconds()
+            self.proc_cpu_percent_user = first_last_difference["process"]["cpu_times"]["user"] / self.resource_profile_length.total_seconds()
             self.proc_cpu_percent = self.proc_cpu_percent_system + self.proc_cpu_percent_user
 
-            memory_frame = pd.DataFrame(json.loads(record.message)["process"]["memory_full_info"] for record in records)
-            self.proc_mem_vms = memory_frame["vms"].max()
+            records_parsed = [json.loads(record.message) for record in records]
+            self.sys_cpu_frequency = pd.Series(record["system"]["cpu_freq"]["current"] for record in records_parsed).mean()
+            # The sensor is a single-element list for some reason, needs to be unpacked
+            self.sys_sensors_temperature_cpu = pd.Series(unpack_one_value(record["system"]["sensors_temperature"]["cpu_thermal"])["current"] for record in records_parsed).mean()
+
+            memory_frame = pd.DataFrame(record["process"]["memory_full_info"] for record in records_parsed)
+            self.proc_mem_uss = memory_frame["uss"].max()
+            self.proc_mem_pss = memory_frame["pss"].max()
             self.proc_mem_rss = memory_frame["rss"].max()
+            self.proc_mem_vms = memory_frame["vms"].max()
 
             self.proc_ctx_switches_voluntary = first_last_difference["process"]["num_ctx_switches"]["voluntary"]
             self.proc_ctx_switches_involuntary = first_last_difference["process"]["num_ctx_switches"]["involuntary"]
@@ -419,6 +574,9 @@ class PTPEndpoint(models.Model):
             self.sys_net_ptp_iface_packets_sent = interface_stats["packets_sent"]
             self.sys_net_ptp_iface_bytes_received = interface_stats["bytes_recv"]
             self.sys_net_ptp_iface_packets_received = interface_stats["packets_recv"]
+
+            self.sys_net_ptp_iface_packets_total = (self.sys_net_ptp_iface_packets_received + self.sys_net_ptp_iface_packets_sent)
+            self.sys_net_ptp_iface_bytes_total = (self.sys_net_ptp_iface_bytes_received + self.sys_net_ptp_iface_bytes_sent)
 
             self.save()
 

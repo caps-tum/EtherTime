@@ -3,7 +3,6 @@ import os
 from typing import Callable
 
 from admin_actions.admin import ActionsModelAdmin
-from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
 from django.db import connection, models
 
@@ -52,6 +51,12 @@ class GenericEngineeringFloatField(FormattedFloatField):
 
 class PercentageFloatField(FormattedFloatField):
     format_function = lambda x: units.format_percentage(x)
+
+class TemperatureFormatFloatField(FormattedFloatField):
+    format_function = lambda x: f"{x:.1f}°C"
+
+class FrequencyFormatFloatField(FormattedFloatField):
+    format_function = lambda x: f"{x:.0f}MHz"
 
 
 class CustomFormatsAdmin(ActionsModelAdmin):

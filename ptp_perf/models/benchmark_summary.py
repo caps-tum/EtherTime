@@ -2,6 +2,7 @@ from typing import Dict
 
 import pandas as pd
 from django.db import models
+from django.db.models import FloatField
 
 from ptp_perf.machine import Cluster
 from ptp_perf.models import Sample
@@ -10,7 +11,7 @@ from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities.django_utilities import FormattedFloatField, DataFormatFloatField, GenericEngineeringFloatField, \
-    PercentageFloatField, TimeFormatFloatField
+    PercentageFloatField, TimeFormatFloatField, TemperatureFormatFloatField, FrequencyFormatFloatField
 from ptp_perf.utilities.units import format_time_offset
 from ptp_perf.vendor.vendor import Vendor
 
@@ -45,6 +46,8 @@ class BenchmarkSummary(models.Model):
     proc_cpu_percent = PercentageFloatField(null=True)
     proc_cpu_percent_system = PercentageFloatField(null=True)
     proc_cpu_percent_user = PercentageFloatField(null=True)
+    proc_mem_uss = DataFormatFloatField(null=True)
+    proc_mem_pss = DataFormatFloatField(null=True)
     proc_mem_rss = DataFormatFloatField(null=True)
     proc_mem_vms = DataFormatFloatField(null=True)
     proc_io_write_count = GenericEngineeringFloatField(null=True)
@@ -54,10 +57,16 @@ class BenchmarkSummary(models.Model):
     proc_ctx_switches_involuntary = GenericEngineeringFloatField(null=True)
     proc_ctx_switches_voluntary = GenericEngineeringFloatField(null=True)
 
+    sys_sensors_temperature_cpu = TemperatureFormatFloatField(null=True)
+    sys_cpu_frequency = FrequencyFormatFloatField(null=True)
+
     sys_net_ptp_iface_bytes_sent = DataFormatFloatField(null=True)
     sys_net_ptp_iface_packets_sent = GenericEngineeringFloatField(null=True)
     sys_net_ptp_iface_bytes_received = DataFormatFloatField(null=True)
     sys_net_ptp_iface_packets_received = GenericEngineeringFloatField(null=True)
+
+    sys_net_ptp_iface_bytes_total = DataFormatFloatField(null=True)
+    sys_net_ptp_iface_packets_total = GenericEngineeringFloatField(null=True)
 
 
     @staticmethod
