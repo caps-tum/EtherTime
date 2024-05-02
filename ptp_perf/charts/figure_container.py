@@ -1,16 +1,17 @@
+import math
 import dataclasses
 from dataclasses import dataclass, field
 from datetime import timedelta
 from io import StringIO
 from pathlib import Path
-from typing import Optional, List, Union, Dict, Tuple, Iterable, Self
+from typing import Optional, List, Union, Dict, Tuple, Iterable, Self, Callable
 
 import matplotlib
 import matplotlib.ticker
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn
-from matplotlib.ticker import MultipleLocator, PercentFormatter
+from matplotlib.ticker import MultipleLocator, PercentFormatter, LogLocator
 
 from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
@@ -60,6 +61,7 @@ class AxisContainer:
     xticks: Optional[Iterable] = None
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = False
+    xticklabels_format_time_display_offset: timedelta = timedelta(seconds=0)
     xticklabels_format_time_units_premultiplied: bool = True
     xticklabels_format_percent: bool = False
     xaxis_invert: bool = False
@@ -68,6 +70,8 @@ class AxisContainer:
     ylog: bool = False
     ylimit_top: Optional[float] = None
     ylimit_bottom: Optional[float] = None
+    yticks: Optional[Iterable] = None
+    yticklabels: Optional[Iterable] = None
     yticklabels_format_time: bool = False
     yticklabels_format_time_units_premultiplied: bool = True
     yticklabels_format_engineering: bool = False
@@ -75,7 +79,8 @@ class AxisContainer:
     yticks_interval: Optional[float] = None
 
     yminorticks: bool = False
-    yminorticks_interval: float = 1 * units.us
+    yminorticks_fixed: Optional[List[float]] = None
+    yminorticks_interval: Optional[float] = 1 * units.us
     yminorticklabels: bool = False
 
     legend: bool = False
@@ -83,6 +88,8 @@ class AxisContainer:
     legend_kwargs: Optional[dict] = None
 
     grid: bool = True
+
+    on_decorate_callbacks: List[Callable] = field(default_factory=list)
 
     def plot(self):
         for data_element in self.data_elements:
@@ -100,9 +107,8 @@ class AxisContainer:
         if self.xticks is not None:
             self.axis.set_xticks(self.xticks)
         if self.xticklabels_format_time:
-            self.decorate_axis_time_formatter(
-                self.axis.xaxis, units_premultiplied=self.xticklabels_format_time_units_premultiplied
-            )
+            self.decorate_axis_time_formatter(self.axis.xaxis, offset=self.xticklabels_format_time_display_offset,
+                                              units_premultiplied=self.xticklabels_format_time_units_premultiplied)
         if self.xticklabels_format_percent:
             self.axis.set_xlim(0, 1)
             self.axis.xaxis.set_major_formatter(PercentFormatter(xmax=1))
@@ -116,22 +122,36 @@ class AxisContainer:
             self.axis.set_yscale('log')
         self.axis.yaxis.set_label_text(self.ylabel)
         self.axis.set_ylim(self.ylimit_bottom, self.ylimit_top)
+        if self.yticks is not None:
+            self.axis.set_yticks(self.yticks)
+        if self.yticklabels is not None:
+            self.axis.set_yticklabels(self.yticklabels)
         if self.yticks_interval:
             self.axis.yaxis.set_major_locator(MultipleLocator(self.yticks_interval))
         if self.yticklabels_format_time:
-            self.decorate_axis_time_formatter(
-                self.axis.yaxis, units_premultiplied=self.yticklabels_format_time_units_premultiplied,
-            )
+            self.decorate_axis_time_formatter(self.axis.yaxis,
+                                              units_premultiplied=self.yticklabels_format_time_units_premultiplied)
         if self.yticklabels_format_engineering:
             self.decorate_axis_engineering_formatter(self.axis.yaxis, self.yticklabels_format_engineering_unit)
 
         if self.yminorticks:
-            if self.yminorticks_interval:
+            if self.yminorticks_fixed:
+                self.axis.set_yticks(self.yminorticks_fixed, minor=True)
+            elif self.yminorticks_interval is not None:
                 self.axis.yaxis.set_minor_locator(MultipleLocator(self.yminorticks_interval))
+            else:
+                if self.ylog:
+                    self.axis.yaxis.set_tick_params(which="both", bottom=True)
+                    # self.axis.yaxis.set_minor_locator(
+                    #     matplotlib.ticker.LogLocator(base=10.0, subs=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], numticks=10)
+                    # )
+                    # self.axis.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+
             if self.yminorticklabels:
-                self.decorate_axis_time_formatter(
-                    self.axis.yaxis, major=False, units_premultiplied=self.yticklabels_format_time_units_premultiplied,
-                )
+                self.decorate_axis_time_formatter(self.axis.yaxis, major=False,
+                                                  units_premultiplied=self.yticklabels_format_time_units_premultiplied)
+            else:
+                self.axis.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 
         if self.grid:
             self.axis.grid(axis='y')
@@ -144,11 +164,15 @@ class AxisContainer:
             if self.legend_pos or self.legend_kwargs:
                 seaborn.move_legend(self.axis, self.legend_pos, **self.legend_kwargs)
 
+        for callback in self.on_decorate_callbacks:
+            callback()
+
     @staticmethod
-    def decorate_axis_time_formatter(axis, major: bool = True, units_premultiplied: bool = True):
+    def decorate_axis_time_formatter(axis, major: bool = True, offset: timedelta = timedelta(seconds=0),
+                                     units_premultiplied: bool = True):
         formatter = matplotlib.ticker.FuncFormatter(
             lambda value, _: units.format_time_offset(
-                value if units_premultiplied else value * units.NANOSECONDS_TO_SECONDS
+                value - offset.total_seconds() if units_premultiplied else (value * units.NANOSECONDS_TO_SECONDS) - offset.total_seconds()
             )
         )
         if major:
@@ -164,13 +188,26 @@ class AxisContainer:
         else:
             axis.set_minor_formatter(formatter)
 
+    def on_decorate(self, function: Callable):
+        self.on_decorate_callbacks.append(function)
 
-    @staticmethod
-    def add_boundary(axes: plt.Axes, timestamp: timedelta):
-        axes.axvline(
-            timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND,
-            linestyle='--',
-            color='tab:red'
+    def add_boundary(self, timestamp: timedelta, linestyle='--', color='tab:red') -> "Self":
+        self.on_decorate(
+            lambda: self.axis.axvline(
+                timestamp.total_seconds() * units.NANOSECONDS_IN_SECOND,
+                linestyle=linestyle,
+                color=color,
+            )
+        )
+        return self
+
+    def annotate(self, text: str, position: Tuple[float, float], horizontalalignment: str, verticalalignment: str):
+        self.on_decorate(
+            lambda: self.axis.annotate(
+                text,
+                xy=position,
+                horizontalalignment=horizontalalignment, verticalalignment=verticalalignment,
+            )
         )
 
     def add_elements(self, *elements: DataElement) -> Self:
@@ -207,16 +244,20 @@ class FigureContainer:
 
     figure: plt.Figure = None
     size: Tuple[int, int] = (6, 4)
+    columns: int = None
     weights: List[int] = None
     w_space: float = None
+    share_x: bool = True
     share_y: bool = True
 
     tight_layout: bool = False
 
     def plot(self):
+        grid_size = self.effective_grid_size
         self.figure, axes = plt.subplots(
             figsize=self.size,
-            nrows=1, ncols=len(self.axes_containers),
+            nrows=grid_size[0], ncols=grid_size[1],
+            sharex=self.share_x,
             sharey=self.share_y,
             squeeze=False,
             width_ratios=self.weights,
@@ -226,7 +267,8 @@ class FigureContainer:
 
         axes = axes.flatten()
 
-        assert len(axes) == len(self.axes_containers)
+        if len(axes) != len(self.axes_containers):
+            raise RuntimeError(f"Unexpected number of axes (axes: {len(axes)}, containers: {len(self.axes_containers)})")
 
         for axis, axis_container in zip(axes, self.axes_containers):
             axis_container.axis = axis
@@ -253,3 +295,11 @@ class FigureContainer:
 
         self.figure.savefig(path, format=format)
         plt.close(self.figure)
+
+    @property
+    def effective_grid_size(self):
+        columns = len(self.axes_containers)
+        if self.columns is not None and self.columns < columns:
+            columns = self.columns
+        rows = math.ceil(len(self.axes_containers) / columns)
+        return rows, columns

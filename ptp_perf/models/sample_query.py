@@ -51,7 +51,7 @@ class SampleQuery:
 
         # Cannot use None in data
         if any(data_series is None for data_series in data):
-            raise NoDataError("Endpoint in query returned no data.")
+            raise NoDataError(f"Endpoint in query {self} returned no data for sample type {sample_type}.")
 
         result = pd.concat(
             data,

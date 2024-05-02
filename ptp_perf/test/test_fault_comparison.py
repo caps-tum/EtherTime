@@ -1,5 +1,7 @@
+import itertools
 import logging
 from datetime import timedelta
+from typing import Tuple, List
 
 import pandas as pd
 from django.test import TestCase
@@ -7,10 +9,12 @@ from django.test import TestCase
 from ptp_perf.charts.comparison_bar_element import ComparisonLineElement
 from ptp_perf.machine import Cluster
 from ptp_perf.models.exceptions import NoDataError
+from ptp_perf.models.fault import Fault
 from ptp_perf.profiles.benchmark import Benchmark
 
 from ptp_perf.charts.timeseries_element import ScatterElement
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
+from ptp_perf.util import setup_logging
 from ptp_perf.utilities import units
 from ptp_perf import config, util
 from ptp_perf.charts.figure_container import FigureContainer, TimeseriesAxisContainer
@@ -19,9 +23,16 @@ from ptp_perf.models import Sample, PTPEndpoint
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.vendor.registry import VendorDB
 
 
 class FaultComparisonCharts(TestCase):
+    fault_split = pd.to_timedelta(11, unit='minutes')
+
+    @classmethod
+    def setUpClass(cls):
+        setup_logging()
+        super().setUpClass()
 
     def test_hardware_fault_cluster_comparison_chart(self):
         for benchmark, log_scale in [
@@ -32,100 +43,163 @@ class FaultComparisonCharts(TestCase):
         ]:
             axis_containers = []
 
-            frame = None
-            frame_pi5 = None
-            try:
-                frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
-                frame['exclude_column'] = frame['value'] >= timedelta(milliseconds=1).total_seconds()
-                axis_containers.append(
-                    TimeseriesAxisContainer(
-                        title="Raspberry-Pi 4",
+            for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
+                try:
+                    frame, faults = self.prepare_multi_vendor_scatter_data(benchmark, cluster)
+                    frame['exclude_column'] = frame['value'] >= timedelta(milliseconds=1).total_seconds()
+
+                    yticks = [
+                        1 * units.NANOSECONDS_TO_SECONDS, 10 * units.NANOSECONDS_TO_SECONDS,
+                        100 * units.NANOSECONDS_TO_SECONDS,
+                        1 * units.MICROSECONDS_TO_SECONDS, 10 * units.MICROSECONDS_TO_SECONDS,
+                        100 * units.MICROSECONDS_TO_SECONDS,
+                        1 * units.MILLISECONDS_TO_SECONDS, 10 * units.MILLISECONDS_TO_SECONDS,
+                        100 * units.MILLISECONDS_TO_SECONDS,
+                        1, 60, 3600
+                    ]
+                    yticklabels = [
+                        "1 ns", "", "",
+                        "1 μs", "", "",
+                        "1 ms", "", "",
+                        "1 s", "1 m", "1 h",
+                    ]
+                    axis_container = TimeseriesAxisContainer(
+                        title=cluster.name,
                         xticklabels_format_time_units_premultiplied=False,
+                        ylog=log_scale,
+                        yticks_interval=None,
+                        yminorticks=True, yminorticks_interval=None,
+                        yminorticks_fixed=[0.5 * ytick for ytick in yticks],
+                        yticks=yticks,
+                        yticklabels=yticklabels,
+                        yticklabels_format_time=False,
+                        grid=False,
                     ).add_elements(
                         *ComparisonLineElement(
                             data=frame,
                             marker='None',
                             x_coord_aggregate=timedelta(seconds=10),
                             x_coord_aggregate_exclude_column='exclude_column',
-                        ).configure_for_timeseries_input().split_data(pd.to_timedelta(11, unit='minutes'))
+                        ).configure_for_timeseries_input().split_data(self.fault_split)
                     )
-                )
-            except NoDataError:
-                logging.info(f"No data: {benchmark}")
+                    axis_containers.append(axis_container)
 
-            try:
-                frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
-                frame_pi5['exclude_column'] = frame_pi5['value'] >= timedelta(milliseconds=1).total_seconds()
-                axis_containers.append(
-                    TimeseriesAxisContainer(
-                        title="Raspberry-Pi 5",
-                        xticklabels_format_time_units_premultiplied=False,
-                    ).add_elements(
-                        *ComparisonLineElement(
-                            data=frame_pi5,
-                            marker='None',
-                            x_coord_aggregate=timedelta(seconds=10),
-                            x_coord_aggregate_exclude_column='exclude_column',
-                        ).configure_for_timeseries_input().split_data(pd.to_timedelta(11, unit='minutes'))
-                    )
-                )
-            except NoDataError:
-                logging.info(f"No data: {benchmark}")
+                    if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE and frame is not None:
+                        max_outlier = frame.iloc[frame["value"].argmax()]
+                        axis_container.annotate(
+                            f"Offset: {units.format_time_offset(max_outlier.loc['value'])}$\\rightarrow$  ",
+                            position=(
+                                max_outlier.loc['timestamp'].total_seconds() * units.NANOSECONDS_IN_SECOND,
+                                max_outlier.loc['value'],
+                            ),
+                            horizontalalignment='right', verticalalignment='center',
+                        )
 
-            chart = FigureContainer(axis_containers)
-            if log_scale:
-                for axis in chart.axes_containers:
-                    axis.ylog = True
-                    axis.yticks_interval = None
-            chart.plot()
+                    # Mark the faults
+                    max_fault_start = max(fault.start for fault in faults)
+                    min_fault_end = min(fault.end for fault in faults)
 
-            if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE and frame is not None:
-                outliers = frame[frame["value"] > 1]
-                first_outlier = outliers.iloc[0]
-                chart.axes_containers[0].axis.annotate(
-                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$  ", xy=(first_outlier.loc['timestamp'].total_seconds() * units.NANOSECONDS_IN_SECOND, first_outlier.loc['value']),
-                    horizontalalignment='right', verticalalignment='center',
-                )
+                    for boundary in [max_fault_start, min_fault_end]:
+                        axis_container.add_boundary(boundary, linestyle='dotted', color='.7')
 
-                first_outlier = frame_pi5.iloc[frame_pi5["value"].argmax()]
-                chart.axes_containers[1].axis.annotate(
-                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$   ", xy=(first_outlier.loc['timestamp'].total_seconds() * units.NANOSECONDS_IN_SECOND, first_outlier.loc['value']),
-                    horizontalalignment='right', verticalalignment='center',
-                )
+                except NoDataError:
+                    logging.info(f"No data: {benchmark}")
 
+            if len(axis_containers) > 0:
+                chart = FigureContainer(axis_containers, tight_layout=True, size=(6, 3))
+                chart.plot()
 
-            chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_cluster_comparison.png"), make_parents=True)
-            chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_cluster_comparison.pdf"), make_parents=True)
+                chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_cluster_comparison.png"), make_parents=True)
+                chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_cluster_comparison.pdf"),
+                           make_parents=True)
+            else:
+                logging.info(f"No data for benchmark {benchmark}")
 
     def test_software_fault_peer_comparison(self):
         for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
+            axis_containers = []
             try:
                 benchmark = BenchmarkDB.SOFTWARE_FAULT_SLAVE
-                frame_faulty = self.prepare_multi_vendor_scatter_data(benchmark, cluster)
-                frame_faultless = self.prepare_multi_vendor_scatter_data(benchmark, cluster, endpoint_type=EndpointType.SECONDARY_SLAVE)
+                frame_faulty, fault1 = self.prepare_multi_vendor_scatter_data(
+                    benchmark, cluster
+                )
+                frame_faulty['exclude'] = frame_faulty['value'] > 30 * units.MICROSECONDS_TO_SECONDS
+                frame_faultless, fault2 = self.prepare_multi_vendor_scatter_data(
+                    benchmark, cluster, endpoint_type=EndpointType.SECONDARY_SLAVE
+                )
+                fault_start = max(fault.start for fault in fault1)
+                # Have to use manual fault duration because the restart delay is not included in the log
+                # min_fault_end = min(fault.end for fault in fault1)
+                min_fault_end = fault_start + benchmark.fault_duration
 
-                chart = FigureContainer([
-                    TimeseriesAxisContainer(
-                        title="Faulty Peer",
-                    ).add_elements(
-                        ScatterElement(data=frame_faulty).configure_for_timeseries_input()
-                    ),
-                    TimeseriesAxisContainer(
-                        title="Faultless Peer",
-                    ).add_elements(
-                        ScatterElement(data=frame_faultless).configure_for_timeseries_input()
+                for vendor in VendorDB.ANALYZED_VENDORS:
+                    axis_containers.append(
+                        TimeseriesAxisContainer(
+                            # title="Faulty Peer",
+                            ylabel='Faulty Peer\nClock Offset',
+                            yticks_interval=None,
+                            ylimit_bottom=0,
+                            ylimit_top=120 * units.MICROSECONDS_TO_SECONDS,
+                            grid=False,
+                        ).add_elements(
+                            *ComparisonLineElement(
+                                data=frame_faulty[frame_faulty['Vendor'] == vendor.id],
+                                marker='None',
+                                x_coord_aggregate=timedelta(seconds=5),
+                                x_coord_aggregate_exclude_column='exclude',
+                            ).configure_for_timeseries_input().split_data(self.fault_split)
+                        ).add_boundary(
+                            fault_start, linestyle='dotted', color='.7'
+                        ).add_boundary(
+                            min_fault_end, linestyle='dotted', color='.7'
+                        )
                     )
-                ])
+                for vendor in VendorDB.ANALYZED_VENDORS:
+                        axis_containers.append(
+                        TimeseriesAxisContainer(
+                            # title="Faultless Peer",
+                            ylabel='Faultless Peer\nClock Offset',
+                            xticklabels_format_time=False,
+                            xticks=units.convert_all_units(
+                                units.NANOSECONDS_IN_SECOND,
+                                [fault_start.total_seconds() - 120,
+                                    fault_start.total_seconds(),
+                                    fault_start.total_seconds() + 120]
+                            ),
+                            xticklabels=["-2m", "0m", "2m"],
+                            yticks_interval=None,
+                            grid=False,
+                        ).add_elements(
+                            ComparisonLineElement(
+                                data=frame_faultless[frame_faultless['Vendor'] == vendor.id],
+                                marker='None',
+                                x_coord_aggregate=timedelta(seconds=5),
+                            ).configure_for_timeseries_input()
+                        ).add_boundary(
+                            fault_start, linestyle='dotted', color='.7'
+                        ).add_boundary(
+                            min_fault_end, linestyle='dotted', color='.7'
+                        )
+                    )
+                chart = FigureContainer(
+                    axis_containers,
+                    tight_layout = True,
+                    columns=4,
+                    size=(5,3),
+                )
                 chart.plot()
-                chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.png"), make_parents=True)
-                chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.pdf"), make_parents=True)
-            except NoDataError:
-                logging.info("Missing data.")
+                chart.save(MEASUREMENTS_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.png"),
+                           make_parents=True)
+                chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{benchmark.id}_{cluster.id}_peer_comparison.pdf"),
+                           make_parents=True)
+            except NoDataError as e:
+                logging.info(f"Missing data: {e}")
 
     def prepare_multi_vendor_scatter_data(self,
                                           benchmark: Benchmark, cluster: Cluster,
                                           endpoint_type=EndpointType.PRIMARY_SLAVE,
-                                          context: timedelta = timedelta(minutes=2.5)) -> pd.DataFrame:
+                                          context: timedelta = timedelta(minutes=2.5)) -> Tuple[
+        pd.DataFrame, List[Fault]]:
         query = SampleQuery(
             benchmark=benchmark,
             cluster=cluster,
@@ -135,6 +209,11 @@ class FaultComparisonCharts(TestCase):
         )
 
         frame = query.run(Sample.SampleType.CLOCK_DIFF).reset_index()
+        try:
+            faults = Fault.from_query(query)
+        except NoDataError:
+            faults = []
+
         vendors = {endpoint_id: PTPEndpoint.objects.get(id=endpoint_id).profile.vendor_id
                    for endpoint_id in frame["endpoint_id"].unique().tolist()}
 
@@ -142,8 +221,8 @@ class FaultComparisonCharts(TestCase):
         frame = frame[
             (center_timestamp - context <= frame['timestamp'])
             & (frame['timestamp'] <= center_timestamp + context)
-        ]
+            ]
         frame['Vendor'] = frame["endpoint_id"].map(vendors)
         frame['value'] = frame['value'].abs()
         # frame['timestamp'] = frame['timestamp'] * units.NANOSECONDS_TO_SECONDS
-        return frame
+        return frame, faults
