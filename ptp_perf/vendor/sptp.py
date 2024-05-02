@@ -77,7 +77,7 @@ class SPTPVendor(Vendor):
         return Vendor.extract_sample_from_log_using_regex(
             endpoint,
             source_name='sptp',
-            pattern='msg="offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+) \(\s*\d+:\s*\d+\)"',
+            pattern='msg="offset \s*(?P<master_offset>[0-9.+-]+)\s* s\d+ freq \s*(?P<s0_freq>[0-9.+-]+)\s* path delay\s* (?P<path_delay>[0-9.+-]+) \(\s*[0-9.+-]+:\s*[0-9.+-]+\)"',
         )
 
     def get_processes(self) -> typing.Iterable[Invocation]:
