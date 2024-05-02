@@ -257,11 +257,14 @@ class PTPEndpoint(models.Model):
                 raise ProfileCorruptError("Fault ended before it started?")
             if fault_end.timestamp > max(frame_no_clock_step.index):
                 # TODO: Investigate fault corruption
-                raise ProfileCorruptError(
-                    f"Fault occurred after last sample timestamp? "
-                    f"Data interval: [{min(frame_no_clock_step.index)}, {max(frame_no_clock_step.index)}], "
-                    f"Fault interval: [{fault_start.timestamp}, {fault_end.timestamp}]"
-                )
+                error_msg = f"Fault out of data range on endpoint {self} " \
+                            f"Data interval: [{min(frame_no_clock_step.index)}, {max(frame_no_clock_step.index)}], " \
+                            f"Fault interval: [{fault_start.timestamp}, {fault_end.timestamp}]"
+
+                if self.profile.benchmark.fault_location == self.endpoint_type:
+                    raise ProfileCorruptError(error_msg)
+                else:
+                    logging.warning(error_msg)
 
             pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
             self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (
@@ -273,20 +276,21 @@ class PTPEndpoint(models.Model):
             )
 
             post_fault_series = abs_clock_diff[abs_clock_diff.index >= fault_end.timestamp]
-            self.fault_clock_diff_post_median, self.fault_clock_diff_post_p05, self.fault_clock_diff_post_p95 = (
-                self.calculate_quantiles(post_fault_series)
-            )
-            post_fault_path_delay = path_delay_values[path_delay_values.index >= fault_end.timestamp]
-            self.fault_path_delay_post_median, self.fault_path_delay_post_p05, self.fault_path_delay_post_p95 = (
-                self.calculate_quantiles(post_fault_path_delay)
-            )
+            if not post_fault_series.empty:
+                self.fault_clock_diff_post_median, self.fault_clock_diff_post_p05, self.fault_clock_diff_post_p95 = (
+                    self.calculate_quantiles(post_fault_series)
+                )
+                post_fault_path_delay = path_delay_values[path_delay_values.index >= fault_end.timestamp]
+                self.fault_path_delay_post_median, self.fault_path_delay_post_p05, self.fault_path_delay_post_p95 = (
+                    self.calculate_quantiles(post_fault_path_delay)
+                )
 
-            self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
-            self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
-            self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
+                self.fault_actual_duration = post_fault_series.index.min() - pre_fault_series.index.max()
+                self.fault_ratio_clock_diff_median = self.fault_clock_diff_post_median / self.fault_clock_diff_pre_median
+                self.fault_ratio_clock_diff_p95 = self.fault_clock_diff_post_p95 / self.fault_clock_diff_pre_p95
 
-            self.fault_clock_diff_post_max = post_fault_series.max()
-            self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
+                self.fault_clock_diff_post_max = post_fault_series.max()
+                self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
 
         except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:
@@ -335,16 +339,16 @@ class PTPEndpoint(models.Model):
             output_path = self.get_chart_timeseries_path(convergence_included=True)
             chart_convergence.save(output_path, make_parents=True)
 
-    def create_timeseries_chart_convergence(self) -> "TimeseriesChart":
+    def create_timeseries_chart_convergence(self, normalization=TimeNormalizationStrategy.CLOCK_STEP) -> "TimeseriesChart":
         from ptp_perf.charts.timeseries_chart import TimeseriesChart
         from ptp_perf.models.sample import Sample
         clock_diff = self.load_samples_to_series(
             Sample.SampleType.CLOCK_DIFF,
-            converged_only=False, remove_clock_step_force=False, normalize_time=TimeNormalizationStrategy.CLOCK_STEP,
+            converged_only=False, remove_clock_step_force=False, normalize_time=normalization,
         )
         path_delay = self.load_samples_to_series(
             Sample.SampleType.PATH_DELAY,
-            converged_only=False, remove_clock_step_force=False, normalize_time=TimeNormalizationStrategy.CLOCK_STEP,
+            converged_only=False, remove_clock_step_force=False, normalize_time=normalization,
         )
         # if self.check_dependent_file_needs_update(output_path) or force_regeneration:
         chart_convergence = TimeseriesChart(
