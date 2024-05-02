@@ -63,6 +63,9 @@ class Benchmark:
     def __str__(self):
         return f"{self.name}"
 
+    def __repr__(self):
+        return self.id
+
     @property
     def artificial_load(self):
         if self.artificial_load_network is not None and self.artificial_load_cpu is not None:

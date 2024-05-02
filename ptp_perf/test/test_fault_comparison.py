@@ -1,4 +1,4 @@
-import itertools
+import dataclasses
 import logging
 from datetime import timedelta
 from typing import Tuple, List
@@ -6,23 +6,21 @@ from typing import Tuple, List
 import pandas as pd
 from django.test import TestCase
 
-from ptp_perf.charts.comparison_bar_element import ComparisonLineElement
-from ptp_perf.machine import Cluster
-from ptp_perf.models.exceptions import NoDataError
-from ptp_perf.models.fault import Fault
-from ptp_perf.profiles.benchmark import Benchmark
-
-from ptp_perf.charts.timeseries_element import ScatterElement
-from ptp_perf.models.endpoint import TimeNormalizationStrategy
-from ptp_perf.util import setup_logging
-from ptp_perf.utilities import units
 from ptp_perf import config, util
+from ptp_perf.charts.comparison_bar_element import ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, TimeseriesAxisContainer
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
+from ptp_perf.machine import Cluster
 from ptp_perf.models import Sample, PTPEndpoint
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
+from ptp_perf.models.exceptions import NoDataError
+from ptp_perf.models.fault import Fault
 from ptp_perf.models.sample_query import SampleQuery
+from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.util import setup_logging
+from ptp_perf.utilities import units
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -48,6 +46,10 @@ class FaultComparisonCharts(TestCase):
                     frame, faults = self.prepare_multi_vendor_scatter_data(benchmark, cluster)
                     frame['exclude_column'] = frame['value'] >= timedelta(milliseconds=1).total_seconds()
 
+                    # Mark the faults
+                    max_fault_start = max(fault.start for fault in faults)
+                    min_fault_end = min(fault.end for fault in faults)
+
                     yticks = [
                         1 * units.NANOSECONDS_TO_SECONDS, 10 * units.NANOSECONDS_TO_SECONDS,
                         100 * units.NANOSECONDS_TO_SECONDS,
@@ -63,9 +65,11 @@ class FaultComparisonCharts(TestCase):
                         "1 ms", "", "",
                         "1 s", "1 m", "1 h",
                     ]
+                    xticks, xlabels = self.xticks_and_labels_from_fault(max_fault_start)
                     axis_container = TimeseriesAxisContainer(
                         title=cluster.name,
-                        xticklabels_format_time_units_premultiplied=False,
+                        xticks=xticks,
+                        xticklabels=xlabels,
                         ylog=log_scale,
                         yticks_interval=None,
                         yminorticks=True, yminorticks_interval=None,
@@ -79,7 +83,7 @@ class FaultComparisonCharts(TestCase):
                             data=frame,
                             marker='None',
                             x_coord_aggregate=timedelta(seconds=10),
-                            x_coord_aggregate_exclude_column='exclude_column',
+                            x_coord_aggregate_exclude_column='exclude_column' if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE else None,
                         ).configure_for_timeseries_input().split_data(self.fault_split)
                     )
                     axis_containers.append(axis_container)
@@ -94,10 +98,6 @@ class FaultComparisonCharts(TestCase):
                             ),
                             horizontalalignment='right', verticalalignment='center',
                         )
-
-                    # Mark the faults
-                    max_fault_start = max(fault.start for fault in faults)
-                    min_fault_end = min(fault.end for fault in faults)
 
                     for boundary in [max_fault_start, min_fault_end]:
                         axis_container.add_boundary(boundary, linestyle='dotted', color='.7')
@@ -155,18 +155,14 @@ class FaultComparisonCharts(TestCase):
                         )
                     )
                 for vendor in VendorDB.ANALYZED_VENDORS:
+                        xticks, xlabels = self.xticks_and_labels_from_fault(fault_start)
                         axis_containers.append(
                         TimeseriesAxisContainer(
                             # title="Faultless Peer",
                             ylabel='Faultless Peer\nClock Offset',
                             xticklabels_format_time=False,
-                            xticks=units.convert_all_units(
-                                units.NANOSECONDS_IN_SECOND,
-                                [fault_start.total_seconds() - 120,
-                                    fault_start.total_seconds(),
-                                    fault_start.total_seconds() + 120]
-                            ),
-                            xticklabels=["-2m", "0m", "2m"],
+                            xticks=xticks,
+                            xticklabels=xlabels,
                             yticks_interval=None,
                             grid=False,
                         ).add_elements(
@@ -195,6 +191,14 @@ class FaultComparisonCharts(TestCase):
             except NoDataError as e:
                 logging.info(f"Missing data: {e}")
 
+    def xticks_and_labels_from_fault(self, fault_start) -> Tuple[List[float], List[str]]:
+        return units.convert_all_units(
+            units.NANOSECONDS_IN_SECOND,
+            [fault_start.total_seconds() - 120,
+             fault_start.total_seconds(),
+             fault_start.total_seconds() + 120]
+        ), ["-2m", "0m", "2m"]
+
     def prepare_multi_vendor_scatter_data(self,
                                           benchmark: Benchmark, cluster: Cluster,
                                           endpoint_type=EndpointType.PRIMARY_SLAVE,
@@ -209,13 +213,14 @@ class FaultComparisonCharts(TestCase):
         )
 
         frame = query.run(Sample.SampleType.CLOCK_DIFF).reset_index()
-        try:
-            faults = Fault.from_query(query)
-        except NoDataError:
-            faults = []
+        endpoints = {
+            endpoint_id: PTPEndpoint.objects.get(id=endpoint_id)
+            for endpoint_id in frame["endpoint_id"].unique().tolist()
+        }
+        profiles = set(endpoint.profile for endpoint in endpoints.values())
+        faults = util.flat_map(lambda profile: Fault.from_profile(profile), profiles)
 
-        vendors = {endpoint_id: PTPEndpoint.objects.get(id=endpoint_id).profile.vendor_id
-                   for endpoint_id in frame["endpoint_id"].unique().tolist()}
+        vendors = {endpoint.id: endpoint.profile.vendor_id for endpoint in endpoints.values()}
 
         center_timestamp = benchmark.fault_interval + (benchmark.fault_duration / 2)
         frame = frame[

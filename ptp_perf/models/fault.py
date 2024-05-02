@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 from pandas.tests.scalar import timedelta
 
-from ptp_perf.models import Sample, PTPEndpoint
+from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.util import unpack_one_value
 
@@ -14,6 +14,28 @@ class Fault:
     endpoint: PTPEndpoint
     start: timedelta
     end: timedelta
+
+    @staticmethod
+    def from_profile(profile: PTPProfile) -> List["Fault"]:
+        faults: List[Sample] = Sample.objects.filter(
+            endpoint__profile_id=profile.id, sample_type=Sample.SampleType.FAULT
+        )
+        parsed_faults = []
+        fault_start = None
+        for id, fault in enumerate(faults):
+            if id % 2 == 0:
+                assert fault.value == 1
+                fault_start = fault
+            else:
+                assert fault.value == 0
+                assert fault.endpoint_id == fault_start.endpoint_id
+                parsed_faults.append(
+                    Fault(
+                        fault.endpoint,
+                        fault_start.timestamp - profile.start_time, fault.timestamp - profile.start_time
+                    )
+                )
+        return parsed_faults
 
     @staticmethod
     def from_query(query: SampleQuery) -> List["Fault"]:
