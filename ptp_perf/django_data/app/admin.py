@@ -4,17 +4,16 @@ from urllib.parse import urlencode
 
 from admin_actions.admin import ActionsModelAdmin
 from django.contrib import admin
-from django.contrib.admin import ModelAdmin
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.test.test_key_metric_variance_charts import KeyMetricVarianceCharts
-from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities.django_utilities import CustomFormatsAdmin
 from ptp_perf.utilities.units import format_time_offset, format_relative
 
@@ -61,7 +60,7 @@ def create_key_metric_variance_chart(modeladmin, request, queryset):
 
 
 def render_timeseries_to_http_response(endpoint: PTPEndpoint):
-    chart = endpoint.create_timeseries_chart_convergence()
+    chart = endpoint.create_timeseries_chart_convergence(normalization=TimeNormalizationStrategy.PROFILE_START)
     chart.tight_layout = True
     return chart_to_http_response(chart)
 
