@@ -11,6 +11,9 @@ class LogRecord(models.Model):
 
     message = models.TextField(null=False)
 
+    @property
+    def machine(self):
+        return self.endpoint.machine
 
     class Meta:
         ordering = ('id',)

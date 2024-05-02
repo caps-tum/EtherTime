@@ -200,7 +200,7 @@ create_modeladmin(PTPEndpointFaultAdmin, PTPEndpoint, "endpoint-fault")
 
 @admin.register(LogRecord)
 class LogRecordAdmin(admin.ModelAdmin):
-    list_display = ['id', 'source', 'timestamp', 'message']
+    list_display = ['id', 'machine', 'source', 'timestamp', 'message']
     list_filter = ['endpoint__machine_id', 'source', 'endpoint__profile']
 
 
