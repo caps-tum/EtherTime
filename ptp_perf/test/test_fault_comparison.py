@@ -4,6 +4,7 @@ from datetime import timedelta
 import pandas as pd
 from django.test import TestCase
 
+from ptp_perf.charts.comparison_bar_element import ComparisonLineElement
 from ptp_perf.machine import Cluster
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.benchmark import Benchmark
@@ -26,7 +27,7 @@ class FaultComparisonCharts(TestCase):
         for benchmark, log_scale in [
             (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
             (BenchmarkDB.HARDWARE_FAULT_MASTER, True),
-            (BenchmarkDB.HARDWARE_FAULT_SWITCH, True),
+            (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
             (BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, True),
         ]:
             axis_containers = []
@@ -35,11 +36,18 @@ class FaultComparisonCharts(TestCase):
             frame_pi5 = None
             try:
                 frame = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI)
+                frame['exclude_column'] = frame['value'] >= timedelta(milliseconds=1).total_seconds()
                 axis_containers.append(
                     TimeseriesAxisContainer(
                         title="Raspberry-Pi 4",
+                        xticklabels_format_time_units_premultiplied=False,
                     ).add_elements(
-                        ScatterElement(data=frame).configure_for_timeseries_input()
+                        *ComparisonLineElement(
+                            data=frame,
+                            marker='None',
+                            x_coord_aggregate=timedelta(seconds=10),
+                            x_coord_aggregate_exclude_column='exclude_column',
+                        ).configure_for_timeseries_input().split_data(pd.to_timedelta(11, unit='minutes'))
                     )
                 )
             except NoDataError:
@@ -47,11 +55,18 @@ class FaultComparisonCharts(TestCase):
 
             try:
                 frame_pi5 = self.prepare_multi_vendor_scatter_data(benchmark, config.CLUSTER_PI5)
+                frame_pi5['exclude_column'] = frame_pi5['value'] >= timedelta(milliseconds=1).total_seconds()
                 axis_containers.append(
                     TimeseriesAxisContainer(
                         title="Raspberry-Pi 5",
+                        xticklabels_format_time_units_premultiplied=False,
                     ).add_elements(
-                        ScatterElement(data=frame_pi5).configure_for_timeseries_input()
+                        *ComparisonLineElement(
+                            data=frame_pi5,
+                            marker='None',
+                            x_coord_aggregate=timedelta(seconds=10),
+                            x_coord_aggregate_exclude_column='exclude_column',
+                        ).configure_for_timeseries_input().split_data(pd.to_timedelta(11, unit='minutes'))
                     )
                 )
             except NoDataError:
@@ -68,13 +83,13 @@ class FaultComparisonCharts(TestCase):
                 outliers = frame[frame["value"] > 1]
                 first_outlier = outliers.iloc[0]
                 chart.axes_containers[0].axis.annotate(
-                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$  ", xy=((first_outlier.loc['timestamp'] * units.NANOSECONDS_IN_SECOND).total_seconds(), first_outlier.loc['value']),
+                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$  ", xy=(first_outlier.loc['timestamp'].total_seconds() * units.NANOSECONDS_IN_SECOND, first_outlier.loc['value']),
                     horizontalalignment='right', verticalalignment='center',
                 )
 
                 first_outlier = frame_pi5.iloc[frame_pi5["value"].argmax()]
                 chart.axes_containers[1].axis.annotate(
-                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$   ", xy=((first_outlier.loc['timestamp'] * units.NANOSECONDS_IN_SECOND).total_seconds(), first_outlier.loc['value']),
+                    f"Offset: {units.format_time_offset(first_outlier.loc['value'])}$\\rightarrow$   ", xy=(first_outlier.loc['timestamp'].total_seconds() * units.NANOSECONDS_IN_SECOND, first_outlier.loc['value']),
                     horizontalalignment='right', verticalalignment='center',
                 )
 
@@ -130,5 +145,5 @@ class FaultComparisonCharts(TestCase):
         ]
         frame['Vendor'] = frame["endpoint_id"].map(vendors)
         frame['value'] = frame['value'].abs()
-        frame['timestamp'] = frame['timestamp'] * units.NANOSECONDS_TO_SECONDS
+        # frame['timestamp'] = frame['timestamp'] * units.NANOSECONDS_TO_SECONDS
         return frame

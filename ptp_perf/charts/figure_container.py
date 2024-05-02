@@ -1,3 +1,4 @@
+import dataclasses
 from dataclasses import dataclass, field
 from datetime import timedelta
 from io import StringIO
@@ -41,6 +42,12 @@ class DataElement:
             self.column_hue = 'Vendor'
         return self
 
+    def split_data(self, x_value: Union[float, timedelta]) -> Tuple["Self", "Self"]:
+        """Split the data along the x-value, returning two data elements that only differ in the data."""
+        data_1 = self.data[self.data[self.column_x] < x_value]
+        data_2 = self.data[self.data[self.column_x] >= x_value]
+        return dataclasses.replace(self, data=data_1), dataclasses.replace(self, data=data_2)
+
 @dataclass
 class AxisContainer:
     data_elements: List[DataElement] = field(default_factory=list)
@@ -53,6 +60,7 @@ class AxisContainer:
     xticks: Optional[Iterable] = None
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = False
+    xticklabels_format_time_units_premultiplied: bool = True
     xticklabels_format_percent: bool = False
     xaxis_invert: bool = False
 
@@ -61,6 +69,7 @@ class AxisContainer:
     ylimit_top: Optional[float] = None
     ylimit_bottom: Optional[float] = None
     yticklabels_format_time: bool = False
+    yticklabels_format_time_units_premultiplied: bool = True
     yticklabels_format_engineering: bool = False
     yticklabels_format_engineering_unit: str = ''
     yticks_interval: Optional[float] = None
@@ -91,7 +100,9 @@ class AxisContainer:
         if self.xticks is not None:
             self.axis.set_xticks(self.xticks)
         if self.xticklabels_format_time:
-            self.decorate_axis_time_formatter(self.axis.xaxis)
+            self.decorate_axis_time_formatter(
+                self.axis.xaxis, units_premultiplied=self.xticklabels_format_time_units_premultiplied
+            )
         if self.xticklabels_format_percent:
             self.axis.set_xlim(0, 1)
             self.axis.xaxis.set_major_formatter(PercentFormatter(xmax=1))
@@ -108,7 +119,9 @@ class AxisContainer:
         if self.yticks_interval:
             self.axis.yaxis.set_major_locator(MultipleLocator(self.yticks_interval))
         if self.yticklabels_format_time:
-            self.decorate_axis_time_formatter(self.axis.yaxis)
+            self.decorate_axis_time_formatter(
+                self.axis.yaxis, units_premultiplied=self.yticklabels_format_time_units_premultiplied,
+            )
         if self.yticklabels_format_engineering:
             self.decorate_axis_engineering_formatter(self.axis.yaxis, self.yticklabels_format_engineering_unit)
 
@@ -116,7 +129,9 @@ class AxisContainer:
             if self.yminorticks_interval:
                 self.axis.yaxis.set_minor_locator(MultipleLocator(self.yminorticks_interval))
             if self.yminorticklabels:
-                self.decorate_axis_time_formatter(self.axis.yaxis, major=False)
+                self.decorate_axis_time_formatter(
+                    self.axis.yaxis, major=False, units_premultiplied=self.yticklabels_format_time_units_premultiplied,
+                )
 
         if self.grid:
             self.axis.grid(axis='y')
@@ -130,8 +145,12 @@ class AxisContainer:
                 seaborn.move_legend(self.axis, self.legend_pos, **self.legend_kwargs)
 
     @staticmethod
-    def decorate_axis_time_formatter(axis, major: bool = True):
-        formatter = matplotlib.ticker.FuncFormatter(lambda value, _: units.format_time_offset(value))
+    def decorate_axis_time_formatter(axis, major: bool = True, units_premultiplied: bool = True):
+        formatter = matplotlib.ticker.FuncFormatter(
+            lambda value, _: units.format_time_offset(
+                value if units_premultiplied else value * units.NANOSECONDS_TO_SECONDS
+            )
+        )
         if major:
             axis.set_major_formatter(formatter)
         else:
