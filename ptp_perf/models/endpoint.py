@@ -631,7 +631,7 @@ class PTPEndpoint(models.Model):
             f", {extra_info})" if extra_info is not None else ")")
 
     def __str__(self):
-        return f"{self.machine_id} (#{self.id}, {self.profile})"
+        return f"{self.machine_id} (E{self.id}, {self.profile})"
 
     def get_effective_client_type(self) -> MachineClientType:
         return self.machine.get_effective_client_type(failover_active=self.benchmark.fault_failover)

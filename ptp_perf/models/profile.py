@@ -76,7 +76,7 @@ class PTPProfile(models.Model):
         return config.clusters.get(self.cluster_id)
 
     def __str__(self):
-        return f"#{self.id} {self.benchmark} {self.vendor}"
+        return f"P{self.id} {self.benchmark} {self.vendor}"
 
 
     class Meta:
