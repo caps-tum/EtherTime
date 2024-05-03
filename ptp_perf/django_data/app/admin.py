@@ -99,7 +99,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
                    'is_corrupted')
     # inlines = [PTPEndpointInline]
     actions = (delete_analysis_output,)
-    actions_row = ('get_endpoints', 'create_timeseries_for_profile', 'redirect_logrecord', 'redirect_analysislogrecord')
+    actions_row = ('get_endpoints', 'create_timeseries_for_profile', 'redirect_logrecord', 'profile_redirect_analysislogrecord')
 
     def create_timeseries_for_profile(self, request, pk):
         profile = PTPProfile.objects.get(pk=pk)
@@ -124,12 +124,12 @@ class PTPProfileAdmin(ActionsModelAdmin):
     redirect_logrecord.short_description = 'Log'
     redirect_logrecord.url_path = 'logrecord'
 
-    def redirect_analysislogrecord(self, request, pk):
+    def profile_redirect_analysislogrecord(self, request, pk):
         return HttpResponseRedirect(
             get_admin_redirect_link(AnalysisLogRecord, {'profile_id': pk})
         )
-    redirect_analysislogrecord.short_description = 'Analysis Log'
-    redirect_analysislogrecord.url_path = 'analysislogrecord'
+    profile_redirect_analysislogrecord.short_description = 'Analysis Log'
+    profile_redirect_analysislogrecord.url_path = 'analysislogrecord'
 
 
 @admin.register(PTPEndpoint)
@@ -140,7 +140,7 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
     list_select_related = ('profile',)
     list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
     actions = (create_key_metric_variance_chart,)
-    actions_row = ('create_timeseries', 'redirect_logrecord')
+    actions_row = ('create_timeseries', 'endpoint_redirect_logrecord')
 
     def benchmark(self, endpoint: PTPEndpoint):
         return endpoint.profile.benchmark.name
@@ -181,12 +181,12 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
 
-    def redirect_logrecord(self, request, pk):
+    def endpoint_redirect_logrecord(self, request, pk):
         return HttpResponseRedirect(
             get_admin_redirect_link(LogRecord, {'endpoint_id__exact': pk})
         )
-    redirect_logrecord.short_description = 'Log'
-    redirect_logrecord.url_path = 'logrecord'
+    endpoint_redirect_logrecord.short_description = 'Log'
+    endpoint_redirect_logrecord.url_path = 'logrecord'
 
 
 def format_time_offset_for_admin(value: float) -> str:
