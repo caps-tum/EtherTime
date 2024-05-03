@@ -38,12 +38,14 @@ def delete_analysis_output(modeladmin, request, queryset):
             profile.is_corrupted = False
             profile.save()
 
-
-def chart_to_http_response(chart) -> HttpResponse:
+def chart_to_svg_string(chart) -> str:
     image_data = StringIO()
     chart.save(image_data, format='svg')
+    return image_data.getvalue()
+
+def chart_to_http_response(chart) -> HttpResponse:
     response = HttpResponse(content_type="image/svg+xml")
-    response.write(image_data.getvalue())
+    response.write(chart_to_svg_string(chart))
     return response
 
 
@@ -60,10 +62,28 @@ def create_key_metric_variance_chart(modeladmin, request, queryset):
     return chart_to_http_response(chart)
 
 
-def render_timeseries_to_http_response(endpoint: PTPEndpoint):
-    chart = endpoint.create_timeseries_chart_convergence(normalization=TimeNormalizationStrategy.PROFILE_START)
-    chart.tight_layout = True
-    return chart_to_http_response(chart)
+def render_timeseries_to_http_response(*endpoints: PTPEndpoint):
+    charts_as_svg = ""
+    for endpoint in endpoints:
+        chart = endpoint.create_timeseries_chart_convergence(normalization=TimeNormalizationStrategy.PROFILE_START)
+        chart.tight_layout = True
+        charts_as_svg += f"{endpoint}<br/>" +  chart_to_svg_string(chart) + "<br/>"
+
+    response = HttpResponse()
+    response.write(
+        f"""
+<!DOCTYPE html>
+<html>
+<body>
+
+{charts_as_svg}
+
+</body>
+</html> 
+"""
+    )
+    return response
+
 
 
 @admin.register(PTPProfile)
@@ -78,7 +98,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 
     def create_timeseries_for_profile(self, request, pk):
         profile = PTPProfile.objects.get(pk=pk)
-        return render_timeseries_to_http_response(profile.endpoint_primary_slave)
+        return render_timeseries_to_http_response(profile.endpoint_primary_slave, profile.endpoint_secondary_slave)
 
     create_timeseries_for_profile.short_description = 'Timeseries'
     create_timeseries_for_profile.url_path = 'profile_timeseries'
