@@ -107,7 +107,6 @@ class Command(BaseCommand):
         parser.add_argument("--force", action='store_true', help="Force analysis of all profiles, even if they were already analyzed.")
 
     def handle(self, *args, **options):
-        markdown_formatter = logging.Formatter("%(levelname)s: %(message)s\n")
         util.setup_logging()
 
         force = options["force"]
