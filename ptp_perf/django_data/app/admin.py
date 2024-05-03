@@ -67,7 +67,12 @@ def render_timeseries_to_http_response(*endpoints: PTPEndpoint):
     for endpoint in endpoints:
         chart = endpoint.create_timeseries_chart_convergence(normalization=TimeNormalizationStrategy.PROFILE_START)
         chart.tight_layout = True
-        charts_as_svg += f"{endpoint}<br/>" +  chart_to_svg_string(chart) + "<br/>"
+        charts_as_svg += f"""
+            <h3>{endpoint.endpoint_type}</h3>
+            <p>{endpoint}</p>
+            {chart_to_svg_string(chart)}
+            <br>
+        """
 
     response = HttpResponse()
     response.write(
@@ -303,7 +308,7 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
                     'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
-    actions_row = ('details',)
+    actions_row = ('summary_create_timeseries', 'details')
 
     def vs_baseline(self, summary: BenchmarkSummary):
         baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
@@ -326,6 +331,18 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
 
     details.short_description = 'Details'
     details.url_path = 'details'
+
+    def summary_create_timeseries(self, request, pk):
+        summary = BenchmarkSummary.objects.get(pk=pk)
+        endpoints = PTPEndpoint.objects.filter(
+            profile__benchmark_id=summary.benchmark_id,
+            profile__vendor_id=summary.vendor_id,
+            profile__cluster_id=summary.cluster_id,
+            endpoint_type__in=[EndpointType.PRIMARY_SLAVE, EndpointType.SECONDARY_SLAVE],
+        )
+        return render_timeseries_to_http_response(*endpoints.all())
+    summary_create_timeseries.short_description = 'Timeseries'
+    summary_create_timeseries.url_path = 'summary_timeseries'
 
 class ResourceConsumptionEndpointAdmin(PTPEndpointAdmin):
     list_display = (
