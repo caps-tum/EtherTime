@@ -9,12 +9,13 @@ from typing import Optional, Tuple
 
 import pandas as pd
 from django.db import models
-from django.db.models import CASCADE, FloatField
+from django.db.models import CASCADE
 
 from ptp_perf import config
 from ptp_perf.machine import Machine, Cluster, MachineClientType
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
+from ptp_perf.models.loglevel import LogLevel
 from ptp_perf.models.profile import PTPProfile
 from ptp_perf.profiles.analysis import detect_clock_step, detect_clock_convergence
 from ptp_perf.profiles.benchmark import Benchmark
@@ -160,25 +161,26 @@ class PTPEndpoint(models.Model):
 
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
-        from ptp_perf.models.log_record import LogRecord
 
-        entire_series = self.load_samples_to_series(Sample.SampleType.CLOCK_DIFF, converged_only=False,
-                                                    remove_clock_step=False, normalize_time=TimeNormalizationStrategy.NONE)
+        entire_series = self.load_samples_to_series(
+            Sample.SampleType.CLOCK_DIFF, converged_only=False,
+            remove_clock_step=False, normalize_time=TimeNormalizationStrategy.NONE
+        )
         if entire_series is None:
             return
 
         timestamps = entire_series.index
         if not isinstance(timestamps.dtype, pd.DatetimeTZDtype):
-            raise RuntimeError(f"Received a time series the is not a datetime64+tz (type: {timestamps.dtype}).")
+            raise ProfileCorruptError(f"Received a time series the is not a datetime64+tz (type: {timestamps.dtype}).")
 
         # Basic sanity checks, no duplicate timestamps
         if not timestamps.is_unique:
             value_counts = timestamps.value_counts()
             duplicate_timestamps = value_counts[value_counts != 1]
-            raise RuntimeError(f"Timestamps not unique:\n{duplicate_timestamps}")
+            raise ProfileCorruptError(f"Timestamps not unique:\n{duplicate_timestamps}")
         if not timestamps.is_monotonic_increasing:
             time_index_diff = entire_series.index.diff()
-            raise RuntimeError(
+            raise ProfileCorruptError(
                 f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}"
             )
 
@@ -202,7 +204,9 @@ class PTPEndpoint(models.Model):
         self.clock_step_magnitude = detected_clock_step.magnitude
 
         # Now crop after clock step
-        logging.debug(f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}")
+        self.profile.log_analyze(
+            f"Clock step at {detected_clock_step.time}: {detected_clock_step.magnitude}", level=LogLevel.DEBUG
+        )
         frame_no_clock_step = frame_no_leading_zeros[frame_no_leading_zeros.index > detected_clock_step.time]
 
         Timeseries._validate_series(frame_no_clock_step)
@@ -214,9 +218,11 @@ class PTPEndpoint(models.Model):
             raise ProfileCorruptError("No clock convergence detected.")
 
         remaining_benchmark_time = frame_no_clock_step.index.max() - detected_clock_convergence.timestamp
-        if remaining_benchmark_time < self.benchmark.duration * 0.75:
-            logging.warning(
-                f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}")
+        if remaining_benchmark_time < self.benchmark.duration * 0.5:
+            self.profile.log_analyze(
+                f"Cropping of convergence zone resulted in a low remaining benchmark data time of {remaining_benchmark_time}",
+                level=LogLevel.WARNING,
+            )
 
         # Create some convergence statistics
         convergence_series = frame_no_clock_step[frame_no_clock_step.index <= detected_clock_convergence.timestamp]
@@ -248,7 +254,7 @@ class PTPEndpoint(models.Model):
             )
 
             if len(faults) > 2:
-                raise NotImplementedError("Cannot support multiple faults in one profile at the moment.")
+                raise ProfileCorruptError("Cannot support multiple faults in one profile at the moment.")
             fault_start = faults.filter(value=1).get()
             fault_end = faults.filter(value=0).get()
             if fault_start.timestamp <= self.convergence_timestamp:
@@ -264,7 +270,7 @@ class PTPEndpoint(models.Model):
                 if self.profile.benchmark.fault_location == self.endpoint_type:
                     raise ProfileCorruptError(error_msg)
                 else:
-                    logging.warning(error_msg)
+                    self.profile.log_analyze(error_msg, level=LogLevel.WARNING)
 
             pre_fault_series = abs_clock_diff[abs_clock_diff.index <= fault_start.timestamp]
             self.fault_clock_diff_pre_median, self.fault_clock_diff_pre_p05, self.fault_clock_diff_pre_p95 = (
@@ -387,7 +393,7 @@ class PTPEndpoint(models.Model):
                 sample.save()
                 parsed_faults += 1
         if parsed_faults > 0:
-            logging.info(f"{self} parsed {parsed_faults} fault status records.")
+            self.profile.log_analyze(f"{self} parsed {parsed_faults} fault status records.")
         return parsed_faults
 
 
@@ -583,6 +589,11 @@ class PTPEndpoint(models.Model):
             self.sys_net_ptp_iface_bytes_total = (self.sys_net_ptp_iface_bytes_received + self.sys_net_ptp_iface_bytes_sent)
 
             self.save()
+
+
+    def clear_analysis_data(self):
+        # Remove existing data. Does not clear the associated profile data.
+        self.sample_set.all().delete()
 
 
     def log(self, message: str, source: str):

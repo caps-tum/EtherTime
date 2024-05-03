@@ -10,6 +10,7 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
+from ptp_perf.models.analysis_logrecord import AnalysisLogRecord
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.registry.benchmark_db import BenchmarkDB
@@ -73,7 +74,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
                    'is_corrupted')
     # inlines = [PTPEndpointInline]
     actions = (delete_analysis_output,)
-    actions_row = ('get_endpoints', 'create_timeseries_for_profile',)
+    actions_row = ('get_endpoints', 'create_timeseries_for_profile', 'redirect_logrecord', 'redirect_analysislogrecord')
 
     def create_timeseries_for_profile(self, request, pk):
         profile = PTPProfile.objects.get(pk=pk)
@@ -91,6 +92,20 @@ class PTPProfileAdmin(ActionsModelAdmin):
     get_endpoints.short_description = 'Endpoints'
     get_endpoints.url_path = 'endpoints'
 
+    def redirect_logrecord(self, request, pk):
+        return HttpResponseRedirect(
+            get_admin_redirect_link(LogRecord, {'endpoint__profile__id__exact': pk})
+        )
+    redirect_logrecord.short_description = 'Log'
+    redirect_logrecord.url_path = 'logrecord'
+
+    def redirect_analysislogrecord(self, request, pk):
+        return HttpResponseRedirect(
+            get_admin_redirect_link(AnalysisLogRecord, {'profile_id': pk})
+        )
+    redirect_analysislogrecord.short_description = 'Analysis Log'
+    redirect_analysislogrecord.url_path = 'analysislogrecord'
+
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(CustomFormatsAdmin):
@@ -100,7 +115,7 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
     list_select_related = ('profile',)
     list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
     actions = (create_key_metric_variance_chart,)
-    actions_row = ('create_timeseries',)
+    actions_row = ('create_timeseries', 'redirect_logrecord')
 
     def benchmark(self, endpoint: PTPEndpoint):
         return endpoint.profile.benchmark.name
@@ -140,6 +155,13 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
 
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
+
+    def redirect_logrecord(self, request, pk):
+        return HttpResponseRedirect(
+            get_admin_redirect_link(LogRecord, {'endpoint_id__exact': pk})
+        )
+    redirect_logrecord.short_description = 'Log'
+    redirect_logrecord.url_path = 'logrecord'
 
 
 def format_time_offset_for_admin(value: float) -> str:
@@ -202,6 +224,12 @@ create_modeladmin(PTPEndpointFaultAdmin, PTPEndpoint, "endpoint-fault")
 class LogRecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'machine', 'source', 'timestamp', 'message']
     list_filter = ['endpoint__machine_id', 'source', 'endpoint__profile']
+    list_per_page = 1000
+
+@admin.register(AnalysisLogRecord)
+class LogRecordAdmin(admin.ModelAdmin):
+    list_display = ['id', 'profile', 'level', 'timestamp', 'message']
+    list_filter = ['profile', 'level']
 
 
 @admin.register(Sample)
@@ -209,6 +237,7 @@ class SampleAdmin(admin.ModelAdmin):
     list_display = ['id', 'endpoint', "sample_type", "timestamp", 'value']
     list_filter = ['endpoint__profile__benchmark_id', 'endpoint__profile__vendor_id', 'endpoint__machine_id',
                    "sample_type", 'endpoint__profile']
+    list_per_page = 1000
 
 
 @admin.register(Tag)
@@ -231,6 +260,8 @@ class ScheduleTaskAdmin(admin.ModelAdmin):
     list_filter = ['success', 'paused']
     actions = [toggle_pause]
 
+def get_admin_redirect_link(model, filters: dict):
+    return reverse_lazy(f'admin:app_{model._meta.model_name}_changelist') + '?' + urlencode(filters)
 
 def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int = None,
                             endpoint_type: EndpointType = None):
@@ -244,7 +275,7 @@ def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int
     if profile_id is not None:
         filters['profile__id'] = profile_id
 
-    return reverse_lazy('admin:app_ptpendpoint_changelist') + '?' + urlencode(filters)
+    return get_admin_redirect_link(PTPEndpoint, filters)
 
 
 @admin.register(BenchmarkSummary)

@@ -1,8 +1,11 @@
+import logging
 import typing
 
 from django.db import models
 
 from ptp_perf.models.endpoint_type import EndpointType
+from ptp_perf.models.loglevel import LogLevel
+from ptp_perf.utilities.django_utilities import get_server_datetime
 
 if typing.TYPE_CHECKING:
     from ptp_perf.machine import Cluster
@@ -24,6 +27,25 @@ class PTPProfile(models.Model):
 
     start_time = models.DateTimeField()
     stop_time = models.DateTimeField()
+
+    def clear_analysis_data(self):
+        # Remove existing analysis data including endpoint data.
+        for endpoint in self.ptpendpoint_set.all():
+            endpoint.clear_analysis_data()
+        self.analysislogrecord_set.all().delete()
+
+
+    def log_analyze(self, message: str, level: LogLevel = LogLevel.INFO):
+        """Save a log message for the analysis run to the database."""
+        from ptp_perf.models.analysis_logrecord import AnalysisLogRecord
+        logging.log(level, message)
+        log_record = AnalysisLogRecord(
+            profile=self,
+            level=level,
+            message=message,
+            timestamp=get_server_datetime(),
+        )
+        log_record.save()
 
 
     @property
@@ -54,7 +76,7 @@ class PTPProfile(models.Model):
         return config.clusters.get(self.cluster_id)
 
     def __str__(self):
-        return f"{self.benchmark} (#{self.id}, {self.vendor}, {self.start_time})"
+        return f"#{self.id} {self.benchmark} {self.vendor}"
 
 
     class Meta:

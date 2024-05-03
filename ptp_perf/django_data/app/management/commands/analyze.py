@@ -9,6 +9,7 @@ from ptp_perf.models import PTPProfile
 from ptp_perf.models.benchmark_summary import BenchmarkSummary
 from ptp_perf.models.endpoint import ProfileCorruptError
 from ptp_perf.models.exceptions import NoDataError
+from ptp_perf.models.loglevel import LogLevel
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.vendor.registry import VendorDB
 
@@ -35,21 +36,14 @@ def analyze(force: bool = False):
     return converted_profiles
 
 def convert_profile(profile: PTPProfile):
-
-    # logging.info(
-    #     f"Converting {profile.file_path_relative} "
-    #     f"([Folder]({profile.storage_base_path.relative_to(constants.MEASUREMENTS_DIR)}), "
-    #     f"[Chart]({profile.get_chart_timeseries_path().relative_to(constants.MEASUREMENTS_DIR)}), "
-    #     f"[Convergence Chart]({profile.get_chart_timeseries_path(convergence_included=True).relative_to(constants.MEASUREMENTS_DIR)}))"
-    # )
+    """Parse the collected raw log data into a processable analyzed format."""
 
     total_samples = 0
+    profile.clear_analysis_data()
     profile_endpoints = profile.ptpendpoint_set.all()
     for endpoint in profile_endpoints:
-        # Remove existing data
-        endpoint.sample_set.all().delete()
         parsed_samples = profile.vendor.parse_log_data(endpoint)
-        logging.info(f"{endpoint} converted {len(parsed_samples)} samples.")
+        profile.log_analyze(f"{endpoint} converted {len(parsed_samples)} samples.")
         total_samples += len(parsed_samples)
 
     try:
@@ -69,29 +63,19 @@ def convert_profile(profile: PTPProfile):
         for endpoint in profile_endpoints:
             endpoint.process_timeseries_data()
 
+        if total_samples == 0:
+            raise ProfileCorruptError("No samples on entire profile, corrupt.")
+
+        # Success
+        profile.is_processed = True
+        profile.save()
+
     except ProfileCorruptError as e:
         # This profile is probably corrupt.
         profile.is_corrupted = True
         profile.save()
-        logging.warning(f"Profile marked as corrupt: {e}")
+        profile.log_analyze(f"Profile marked as corrupt: {e}", level=LogLevel.ERROR)
 
-
-    if total_samples == 0:
-        logging.warning("No samples on entire profile, corrupt.")
-        profile.is_corrupted = True
-    profile.is_processed = True
-    profile.save()
-    # processed_profile = profile.vendor.convert_profile(profile)
-    # if processed_profile is not None:
-    #     # Remove existing processed profiles (they may be in a different path)
-    #     processed_profile.get_file_path(ProfileType.PROCESSED).unlink(missing_ok=True)
-    #     processed_profile.get_file_path(ProfileType.PROCESSED_CORRUPT).unlink(missing_ok=True)
-    #
-    #     processed_profile.save()
-    #
-    #     processed_profile.create_timeseries_charts()
-    # else:
-    #     logging.info("No profile generated.")
 
 def summarize(force: bool = False):
     for benchmark in BenchmarkDB.all():
@@ -124,8 +108,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         markdown_formatter = logging.Formatter("%(levelname)s: %(message)s\n")
-        util.setup_logging(log_file=constants.MEASUREMENTS_DIR.joinpath("analysis.log.md"), log_file_mode="w",
-                           log_file_formatter=markdown_formatter)
+        util.setup_logging()
 
         force = options["force"]
 
