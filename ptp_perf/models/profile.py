@@ -5,6 +5,7 @@ from django.db import models
 
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.loglevel import LogLevel
+from ptp_perf.util import str_join
 from ptp_perf.utilities.django_utilities import get_server_datetime
 
 if typing.TYPE_CHECKING:
@@ -34,6 +35,9 @@ class PTPProfile(models.Model):
             endpoint.clear_analysis_data()
         self.analysislogrecord_set.all().delete()
 
+        self.is_processed = False
+        self.is_corrupted = False
+        self.save()
 
     def log_analyze(self, message: str, level: LogLevel = LogLevel.INFO):
         """Save a log message for the analysis run to the database."""
@@ -78,6 +82,8 @@ class PTPProfile(models.Model):
     def __str__(self):
         return f"P{self.id} {self.benchmark} {self.vendor}"
 
+    def analysis_log_full(self, separator="\n"):
+        return str_join((record.message for record in self.analysislogrecord_set.all()), separator)
 
     class Meta:
         app_label = 'app'

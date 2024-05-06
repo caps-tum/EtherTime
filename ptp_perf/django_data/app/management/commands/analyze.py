@@ -30,7 +30,7 @@ def analyze(force: bool = False):
             )
             converted_profiles += 1
         except Exception as e:
-            logging.exception("Failed to convert profile!", exc_info=e)
+            profile.log_analyze(f"Failed to convert profile! {e}", level=LogLevel.CRITICAL)
 
 
     return converted_profiles
@@ -72,6 +72,7 @@ def convert_profile(profile: PTPProfile):
 
     except ProfileCorruptError as e:
         # This profile is probably corrupt.
+        profile.is_processed = True
         profile.is_corrupted = True
         profile.save()
         profile.log_analyze(f"Profile marked as corrupt: {e}", level=LogLevel.ERROR)

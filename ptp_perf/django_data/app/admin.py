@@ -3,12 +3,13 @@ from typing import List, Callable, Any
 from urllib.parse import urlencode
 
 from admin_actions.admin import ActionsModelAdmin
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 
+from ptp_perf.django_data.app.management.commands.analyze import run_analysis
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
 from ptp_perf.models.analysis_logrecord import AnalysisLogRecord
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
@@ -30,13 +31,20 @@ class PTPEndpointInline(admin.TabularInline):
 @admin.action(description="Delete analysis output")
 def delete_analysis_output(modeladmin, request, queryset):
     profile: PTPProfile
+    with transaction.atomic():
+        for profile in queryset.all():
+            profile.clear_analysis_data()
+
+@admin.action(description="Reanalyze profile")
+def reanalyze_profile(modeladmin, request, queryset):
+    profile: PTPProfile
     for profile in queryset.all():
-        with transaction.atomic():
-            for endpoint in profile.ptpendpoint_set.all():
-                endpoint.sample_set.all().delete()
-            profile.is_processed = False
-            profile.is_corrupted = False
-            profile.save()
+        profile.clear_analysis_data()
+    run_analysis(force=False)
+    for profile in queryset.all():
+        messages.info(request, f"Analyzed profile {profile}:",)
+        for record in profile.analysislogrecord_set.all():
+            messages.add_message(request, record.level, record.message)
 
 def chart_to_svg_string(chart) -> str:
     image_data = StringIO()
@@ -98,7 +106,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
                    'is_corrupted')
     # inlines = [PTPEndpointInline]
-    actions = (delete_analysis_output,)
+    actions = (delete_analysis_output, reanalyze_profile)
     actions_row = ('get_endpoints', 'create_timeseries_for_profile', 'redirect_logrecord', 'profile_redirect_analysislogrecord')
 
     def create_timeseries_for_profile(self, request, pk):

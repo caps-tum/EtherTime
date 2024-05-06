@@ -180,8 +180,9 @@ class PTPEndpoint(models.Model):
             raise ProfileCorruptError(f"Timestamps not unique:\n{duplicate_timestamps}")
         if not timestamps.is_monotonic_increasing:
             time_index_diff = entire_series.index.diff()
+            steps_backward = entire_series[time_index_diff < timedelta(seconds=0)]
             raise ProfileCorruptError(
-                f"Timestamps not monotonically increasing:\n{time_index_diff[time_index_diff < timedelta(seconds=0)]}"
+                f"Timestamps not monotonically increasing:\n{steps_backward}"
             )
 
         # We don't normalize time automatically anymore.
