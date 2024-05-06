@@ -19,6 +19,7 @@ class DeviceControl(Adapter):
         'rpi06': (0, 2),
         'rpi07': (0, 4),
         'rpi08': (0, 6),
+        'switch2': (1, 1),
         'rpi56': (1, 2),
         'rpi57': (1, 4),
         'rpi58': (1, 6),
@@ -44,6 +45,12 @@ class DeviceControl(Adapter):
                 local_key="H.BBK_VnvCu}O53%",
                 version=3.4,
             ),
+            OutletDevice(
+                dev_id="eb40abdcfe68048f2a7jcn",
+                address="192.168.1.202",
+                local_key="PlX?5Zk~tU@a`<`&",
+                version=3.4,
+            )
         ]
 
     def toggle_machine(self, machine: Machine, state: bool):
