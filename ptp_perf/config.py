@@ -90,7 +90,7 @@ MACHINE_RPI57 = Machine(
 
 # New boards
 PETALINUX_PTP_SETTINGS = {
-    'ptp_interface': 'eth0',
+    'ptp_interface': 'end0',
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': False,
 }
