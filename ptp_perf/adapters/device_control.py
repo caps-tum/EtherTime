@@ -23,7 +23,10 @@ class DeviceControl(Adapter):
         'rpi56': (1, 2),
         'rpi57': (1, 4),
         'rpi58': (1, 6),
-        'petalinux-1': (2, 1),
+        'petalinux01': (2, 1),
+        'petalinux02': (2, 2),
+        'petalinux03': (2, 4),
+        'petalinux04': (2, 6),
     }
 
     power_strips: List[OutletDevice]
