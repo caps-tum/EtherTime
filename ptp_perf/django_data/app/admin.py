@@ -111,7 +111,11 @@ class PTPProfileAdmin(ActionsModelAdmin):
 
     def create_timeseries_for_profile(self, request, pk):
         profile = PTPProfile.objects.get(pk=pk)
-        return render_timeseries_to_http_response(profile.endpoint_primary_slave, profile.endpoint_secondary_slave)
+        try:
+            return render_timeseries_to_http_response(profile.endpoint_primary_slave, profile.endpoint_secondary_slave)
+        except PTPEndpoint.DoesNotExist:
+            # Fall back to just the primary slave if secondary does not exist.
+            return render_timeseries_to_http_response(profile.endpoint_primary_slave)
 
     create_timeseries_for_profile.short_description = 'Timeseries'
     create_timeseries_for_profile.url_path = 'profile_timeseries'

@@ -120,7 +120,7 @@ MACHINE_PETALINUX03 = Machine(
     id="petalinux03", address="petalinux03", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.83",
     **PTP_SLAVE_SETTINGS,
-    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    endpoint_type=EndpointType.SECONDARY_SLAVE,
     **PETALINUX_PTP_SETTINGS,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
@@ -131,7 +131,7 @@ MACHINE_PETALINUX04 = Machine(
     id="petalinux04", address="petalinux04", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.84",
     **PTP_SLAVE_SETTINGS,
-    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    endpoint_type=EndpointType.TERTIARY_SLAVE,
     **PETALINUX_PTP_SETTINGS,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
