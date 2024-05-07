@@ -20,6 +20,10 @@ class PTPConfig:
     def log_log_interval(self):
         return min(self.log_announce_interval, self.log_sync_interval, self.log_delayreq_interval)
 
+    @property
+    def has_non_standard_intervals(self):
+        return self.log_announce_interval != 1 or self.log_sync_interval != 0 or self.log_delayreq_interval != 0
+
 @dataclass
 class Benchmark:
 

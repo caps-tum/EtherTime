@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
 class Vendor:
     id: str
     name: str
+    supports_non_standard_config_interval: bool = False
 
     @property
     def installed(self):
@@ -77,6 +78,10 @@ class Vendor:
 
     def create_configuration_file(self, endpoint: "PTPEndpoint") -> Path:
         # Render the configuration template file to a temporary file and return it
+
+        if not self.supports_non_standard_config_interval and endpoint.benchmark.ptp_config.has_non_standard_intervals:
+            raise NotImplementedError(f"Vendor {self} does not support non standard PTP configuration intervals")
+
         template_source_path = self.config_file_source_path(
             PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config"), endpoint
         )

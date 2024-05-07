@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
 class LinuxPTPVendor(Vendor):
     id: str = "linuxptp"
     name: str = "PTP4L"
+    supports_non_standard_config_interval: bool = True
 
     _process_ptp4l: Invocation = None
     _process_phc2sys: Invocation = None

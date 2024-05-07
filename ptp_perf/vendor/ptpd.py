@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
 class PTPDVendor(Vendor):
     id: str = "ptpd"
     name: str = "PTPd"
+    supports_non_standard_config_interval: bool = True
     _process: Invocation = None
 
     def running(self):
