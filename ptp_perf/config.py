@@ -180,6 +180,13 @@ CLUSTER_PI5 = Cluster(
         MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
     ]
 )
+CLUSTER_PETALINUX = Cluster(
+    id="petalinux",
+    name="Petalinux",
+    machines=[
+        MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
+    ]
+)
 CLUSTER_RPI_SERV = Cluster(
     id="rpi-serv",
     name='RPI Server',
@@ -189,9 +196,9 @@ CLUSTER_RPI_SERV = Cluster(
 )
 
 clusters = {
-    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_RPI_SERV]
+    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_RPI_SERV]
 }
-ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5]
+ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX]
 
 
 @dataclass
