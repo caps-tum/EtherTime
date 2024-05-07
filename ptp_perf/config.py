@@ -88,6 +88,58 @@ MACHINE_RPI57 = Machine(
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
 
+# New boards
+PETALINUX_PTP_SETTINGS = {
+    'ptp_interface': 'eth0',
+    'ptp_use_phc2sys': False,
+    'ptp_software_timestamping': False,
+}
+
+MACHINE_PETALINUX01 = Machine(
+    id="petalinux01", address="petalinux01", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.81",
+    endpoint_type=EndpointType.MASTER,
+    **PETALINUX_PTP_SETTINGS,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.181",
+        stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
+)
+MACHINE_PETALINUX02 = Machine(
+    id="petalinux02", address="petalinux02", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.82",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    **PETALINUX_PTP_SETTINGS,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.82", iperf_secondary_address="192.168.1.182",
+        stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
+)
+MACHINE_PETALINUX03 = Machine(
+    id="petalinux03", address="petalinux03", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.83",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    **PETALINUX_PTP_SETTINGS,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.83", iperf_secondary_address="192.168.1.183",
+        stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
+)
+MACHINE_PETALINUX04 = Machine(
+    id="petalinux04", address="petalinux04", remote_root="/home/rpi/ptp-perf",
+    ptp_address="10.0.0.84",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    **PETALINUX_PTP_SETTINGS,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.84", iperf_secondary_address="192.168.1.184",
+        stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
+)
+
+
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
     ptp_address="0.0.0.0",
@@ -99,12 +151,17 @@ MACHINE_SWITCH = Machine(
     id="switch", endpoint_type=EndpointType.SWITCH,
     address=None, ptp_address=None, ptp_interface=None,
 )
+MACHINE_SWITCH2 = Machine(
+    id="switch2", endpoint_type=EndpointType.SWITCH,
+    address=None, ptp_address=None, ptp_interface=None,
+)
 
 machines = {
     machine.id: machine for machine in [
         MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08,
         MACHINE_RPI56, MACHINE_RPI57, MACHINE_RPI58,
         MACHINE_RPISERV, MACHINE_SWITCH,
+        MACHINE_SWITCH2,
     ]
 }
 
