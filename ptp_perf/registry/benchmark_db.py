@@ -175,7 +175,6 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
             f"config/{id_label}",
             f"Config {title_label}",
             tags=[ProfileTags.CATEGORY_CONFIGURATION, *extra_tags],
-            duration=timedelta(hours=1),
             ptp_config=configuration,
         )
 
