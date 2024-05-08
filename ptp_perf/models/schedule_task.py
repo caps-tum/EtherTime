@@ -59,7 +59,7 @@ class ScheduleTask(models.Model):
         return self.estimated_time + self.slack_time
 
     def __str__(self):
-        return f"{self.name} ({self.id})"
+        return f"{self.name} ({self.id if self.id is not None else 'new'})"
 
     class Meta:
         app_label = 'app'

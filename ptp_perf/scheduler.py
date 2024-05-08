@@ -10,7 +10,7 @@ from ptp_perf.constants import LOCAL_DIR, ensure_directory_exists
 from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.models.schedule_task import ScheduleTask
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.util import user_prompt_confirmation
+from ptp_perf.util import user_prompt_confirmation, str_join
 from ptp_perf.vendor.registry import VendorDB
 
 QUEUE = ensure_directory_exists(LOCAL_DIR.joinpath("task_queue"))
@@ -101,7 +101,7 @@ def queue_benchmarks(result):
     else:
         vendors = [VendorDB.get(vendor_id) for vendor_id in vendors]
 
-    tasks: List[Tuple[int, ScheduleTask]] = []
+    tasks_with_index: List[Tuple[int, ScheduleTask]] = []
     for benchmark in benchmarks:
         for cluster in clusters:
             for vendor in vendors:
@@ -131,7 +131,7 @@ def queue_benchmarks(result):
                     number_tasks_to_queue = 1
 
                 for i in range(number_tasks_to_queue):
-                    tasks.append(
+                    tasks_with_index.append(
                         (
                             i,
                             ScheduleTask(
@@ -141,13 +141,14 @@ def queue_benchmarks(result):
                             )
                         )
                     )
-                    print(tasks[-1])
 
     # Sort by task iteration index so that tasks run interleaved.
-    tasks.sort(key=lambda pair_index_task: pair_index_task[0])
+    tasks_with_index.sort(key=lambda pair_index_task: pair_index_task[0])
+    tasks = [task for index, task in tasks_with_index]
+    print(str_join(tasks, "\n"))
 
-    if len(tasks) >= 5:
-        print(f'Expected runtime: {sum((task.estimated_time for i, task in tasks), start=timedelta(seconds=0))}')
+    if len(tasks_with_index) >= 5:
+        print(f'Expected runtime: {sum((task.estimated_time for task in tasks), start=timedelta(seconds=0))}')
         user_prompt_confirmation(f'Do you want to schedule these {len(tasks)} tasks?')
 
-    ScheduleTask.objects.bulk_create(task for index, task in tasks)
+    ScheduleTask.objects.bulk_create(tasks)
