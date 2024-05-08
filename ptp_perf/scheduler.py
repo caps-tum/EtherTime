@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Tuple, List
 
 from django.utils import timezone
 
@@ -101,7 +101,7 @@ def queue_benchmarks(result):
     else:
         vendors = [VendorDB.get(vendor_id) for vendor_id in vendors]
 
-    tasks = []
+    tasks: List[Tuple[int, ScheduleTask]] = []
     for benchmark in benchmarks:
         for cluster in clusters:
             for vendor in vendors:
@@ -132,16 +132,22 @@ def queue_benchmarks(result):
 
                 for i in range(number_tasks_to_queue):
                     tasks.append(
-                        ScheduleTask(
-                            name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
-                            command=command,
-                            estimated_time=duration,
+                        (
+                            i,
+                            ScheduleTask(
+                                name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
+                                command=command,
+                                estimated_time=duration,
+                            )
                         )
                     )
                     print(tasks[-1])
 
+    # Sort by task iteration index so that tasks run interleaved.
+    tasks.sort(key=lambda pair_index_task: pair_index_task[0])
+
     if len(tasks) >= 5:
-        print(f'Expected runtime: {sum((task.estimated_time for task in tasks), start=timedelta(seconds=0))}')
+        print(f'Expected runtime: {sum((task.estimated_time for i, task in tasks), start=timedelta(seconds=0))}')
         user_prompt_confirmation(f'Do you want to schedule these {len(tasks)} tasks?')
 
-    ScheduleTask.objects.bulk_create(tasks)
+    ScheduleTask.objects.bulk_create(task for index, task in tasks)
