@@ -29,7 +29,7 @@ class ScheduleTask(models.Model):
             asyncio.run(invocation.run(timeout=self.timeout.total_seconds()))
             self.success = True
         except InvocationFailedException as e:
-            logging.exception("Failed to run task", exc_info=e)
+            logging.warning(f"Failed to run task: {e}")
             self.success = False
         self.completion_time = timezone.now()
         logging.info(f"Task {self.id} completed at {self.completion_time} (success: {self.success}).")
