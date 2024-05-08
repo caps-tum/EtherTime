@@ -320,7 +320,7 @@ def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int
     if endpoint_type is not None:
         filters['endpoint_type__exact'] = endpoint_type.value
     if profile_id is not None:
-        filters['profile__id'] = profile_id
+        filters['profile_id'] = profile_id
 
     return get_admin_redirect_link(PTPEndpoint, filters)
 
