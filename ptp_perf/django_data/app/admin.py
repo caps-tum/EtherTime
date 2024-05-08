@@ -78,7 +78,7 @@ def render_timeseries_to_http_response(*endpoints: PTPEndpoint):
         chart.tight_layout = True
         charts_as_svg += f"""
             <h3>{endpoint.endpoint_type}</h3>
-            <p>{endpoint}</p>
+            <p>{endpoint} (<a href="/admin/app/ptpendpoint/interactive/{endpoint.id}/">Interactive Chart</a>)</p>
             {chart_to_svg_string(chart)}
             <br>
         """
@@ -306,6 +306,7 @@ class ScheduleTaskAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time']
     list_filter = ['success', 'paused']
     actions = [toggle_pause]
+    ordering = ('-id',)
 
 def get_admin_redirect_link(model, filters: dict):
     return reverse_lazy(f'admin:app_{model._meta.model_name}_changelist') + '?' + urlencode(filters)
