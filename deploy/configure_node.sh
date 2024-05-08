@@ -7,7 +7,7 @@ sudo apt install -y tmux iperf stress-ng ptpd linuxptp chrony || exit 255
 # Alternative: redhat (build ptp chrony from source, linuxptp installed as ptp)
 # sudo dnf install -y tmux iperf2 stress-ng || exit 255
 
-pip3 install --user --break-system-packages "rpyc==6.0.0" "pydantic==2.6.2" "pandas==2.2.1" "matplotlib==3.8.3" "scipy==1.12.0" "seaborn==0.13.2" "natsort==8.4.0" "tinytuya==1.13.2" "django==5.0.2" "psycopg==3.1.18" "psycopg_binary==3.1.18" "django-admin-actions==0.1.1" "psutil==5.9.8" || exit 255
+pip3 install --user --break-system-packages "rpyc==6.0.0" "pydantic==2.6.2" "pandas==2.2.1" "matplotlib==3.8.3" "scipy==1.12.0" "seaborn==0.13.2" "natsort==8.4.0" "tinytuya==1.13.2" "django==5.0.2" "psycopg==3.1.18" "psycopg_binary==3.1.18" "django-admin-actions==0.1.1" "psutil==5.9.8" "bokeh==3.4.1" || exit 255
 
 echo "Installing ssh keys"
 sudo bash -c "umask 077 && mkdir -p ~/.ssh && echo 'ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBDf+fowl76P6HzxBXJTDwDZKeyXFfIcXKH68i/9d3x5SRzDMk2ChLHILGaVtRv7ARd044qnjslpU7lj4AmYsiUI= vincent_bode@VTO-Laptop-XPS15' > ~/.ssh/authorized_keys"

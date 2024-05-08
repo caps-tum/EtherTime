@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 
+from ptp_perf.charts.interactive_timeseries_chart import InteractiveTimeseriesChart
 from ptp_perf.django_data.app.management.commands.analyze import run_analysis
 from ptp_perf.models import PTPProfile, PTPEndpoint, LogRecord, Sample, Tag, ScheduleTask, BenchmarkSummary
 from ptp_perf.models.analysis_logrecord import AnalysisLogRecord
@@ -97,7 +98,9 @@ def render_timeseries_to_http_response(*endpoints: PTPEndpoint):
     )
     return response
 
-
+def render_timeseries_interactive_chart(endpoint: PTPEndpoint):
+    document = InteractiveTimeseriesChart().render_to_html(endpoint)
+    return HttpResponse(content=document)
 
 @admin.register(PTPProfile)
 class PTPProfileAdmin(ActionsModelAdmin):
@@ -152,7 +155,7 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
     list_select_related = ('profile',)
     list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
     actions = (create_key_metric_variance_chart,)
-    actions_row = ('create_timeseries', 'endpoint_redirect_logrecord')
+    actions_row = ('create_timeseries', 'create_interactive_timeseries', 'endpoint_redirect_logrecord')
 
     def benchmark(self, endpoint: PTPEndpoint):
         return endpoint.profile.benchmark.name
@@ -192,6 +195,13 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
 
     create_timeseries.short_description = 'Timeseries'
     create_timeseries.url_path = 'timeseries'
+
+    def create_interactive_timeseries(self, request, pk):
+        endpoint: PTPEndpoint = PTPEndpoint.objects.get(pk=pk)
+        return render_timeseries_interactive_chart(endpoint)
+
+    create_interactive_timeseries.short_description = 'Interactive'
+    create_interactive_timeseries.url_path = 'interactive'
 
     def endpoint_redirect_logrecord(self, request, pk):
         return HttpResponseRedirect(
