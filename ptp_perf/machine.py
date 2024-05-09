@@ -133,6 +133,14 @@ class Machine(RPCTarget):
             EndpointType.SECONDARY_SLAVE: MachineClientType.SLAVE if not failover_active else MachineClientType.FAILOVER_MASTER
         }[self.endpoint_type]
 
+    def invoke_ssh(self, command: str, ssh_options: List[str] = None):
+        if ssh_options is None:
+            ssh_options = []
+
+        return Invocation.of_command(
+            "ssh", *ssh_options, self.address, command
+        )
+
     @property
     def ptp_timestamp_type(self):
         return "software" if self.ptp_software_timestamping else "hardware"

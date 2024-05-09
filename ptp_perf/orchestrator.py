@@ -60,12 +60,13 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
             )
             await machine_endpoint.asave()
 
-            machine._ssh_session = Invocation.of_command(
-                "ssh", machine.address,
-                "-o", "ServerAliveInterval=3", "-o", "ServerAliveCountMax=3",
-                "-o", "ConnectTimeout=5", "-o", "ConnectionAttempts=1",
+            machine._ssh_session = machine.invoke_ssh(
                 f"cd '{machine.remote_root}/' && "
-                f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}"
+                f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}",
+                ssh_options=[
+                    "-o", "ServerAliveInterval=3", "-o", "ServerAliveCountMax=3",
+                    "-o", "ConnectTimeout=5", "-o", "ConnectionAttempts=1"
+                ],
             )
             controller.add_coroutine(
                 machine._ssh_session.run(), label=f"Orchestrator remote session {machine_endpoint.machine_id}"

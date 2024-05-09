@@ -7,8 +7,8 @@ from ptp_perf.util import setup_logging, async_gather_with_progress
 
 
 async def restart_node(machine: Machine):
-    await Invocation.of_command(
-        "ssh", machine.address, "sudo shutdown -r now"
+    await machine.invoke_ssh(
+        "sudo shutdown -r now"
     ).hide_unless_failure().run(timeout=10)
     await asyncio.sleep(3)
 
@@ -16,8 +16,8 @@ async def restart_node(machine: Machine):
     i = 0
     for i in range(20):
         try:
-            await Invocation.of_command(
-                "ssh", machine.address, "echo '$(date): Restart OK'"
+            await machine.invoke_ssh(
+                "echo '$(date): Restart OK'"
             ).hide().run(timeout=10)
             success=True
             break
