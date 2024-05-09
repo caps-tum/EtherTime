@@ -198,7 +198,7 @@ BenchmarkDB.register_all(
 )
 
 for component in [ResourceContentionComponent.NET, ResourceContentionComponent.CPU]:
-    for load_level in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+    for load_level in [20, 50, 80, 100]:
         BenchmarkDB.register(BenchmarkDB.resource_contention(component, ResourceContentionType.UNPRIORITIZED, load_level=load_level))
         BenchmarkDB.register(BenchmarkDB.resource_contention(component, ResourceContentionType.UNPRIORITIZED, load_level=load_level))
 
