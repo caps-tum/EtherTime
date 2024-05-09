@@ -1,7 +1,7 @@
-import copy
+import dataclasses
+import itertools
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional
 
 from ptp_perf.machine import Cluster, Machine, PluginSettings
 from ptp_perf.models.endpoint_type import EndpointType
@@ -200,10 +200,32 @@ CLUSTER_RPI_SERV = Cluster(
     ]
 )
 
+def create_big_bad_cluster_machines():
+    machines=[
+        dataclasses.replace(
+            machine, endpoint_type=EndpointType.TERTIARY_SLAVE,
+            initial_clock_offset=timedelta(minutes=-1),
+        ) for machine in itertools.chain(
+            CLUSTER_PI5.machines, CLUSTER_PI.machines, CLUSTER_PETALINUX.machines
+        )
+    ]
+    machines[0].endpoint_type = EndpointType.MASTER
+    machines[0].initial_clock_offset = None
+    machines[1].endpoint_type = EndpointType.PRIMARY_SLAVE
+    machines[2].initial_clock_offset = EndpointType.SECONDARY_SLAVE
+
+    return machines
+
+CLUSTER_BIG_BAD = Cluster(
+    id="big-bad",
+    name="Big Bad Cluster",
+    machines=create_big_bad_cluster_machines(),
+)
+
 clusters = {
-    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_RPI_SERV]
+    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_RPI_SERV, CLUSTER_BIG_BAD]
 }
-ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX]
+ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_BIG_BAD]
 
 
 @dataclass

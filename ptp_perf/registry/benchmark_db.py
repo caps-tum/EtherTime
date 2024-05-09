@@ -22,6 +22,11 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
         num_machines=3,
     )
 
+    Base_ALL_CLIENTS = Benchmark(
+        "scalability/1_to_9", "1 Master 9 Clients", tags=[],
+        num_machines=10,
+    )
+
     _FAULT_TIMING_SETTINGS = {
         'duration': timedelta(minutes=15),
         'fault_interval': timedelta(minutes=10),
@@ -184,7 +189,8 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.SOFTWARE_FAULT_SLAVE,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.Base_ALL_CLIENTS,
+    BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,
     BenchmarkDB.NO_SWITCH,

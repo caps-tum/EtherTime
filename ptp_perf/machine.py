@@ -130,7 +130,8 @@ class Machine(RPCTarget):
         return {
             EndpointType.MASTER: MachineClientType.MASTER,
             EndpointType.PRIMARY_SLAVE: MachineClientType.SLAVE,
-            EndpointType.SECONDARY_SLAVE: MachineClientType.SLAVE if not failover_active else MachineClientType.FAILOVER_MASTER
+            EndpointType.SECONDARY_SLAVE: MachineClientType.SLAVE if not failover_active else MachineClientType.FAILOVER_MASTER,
+            EndpointType.TERTIARY_SLAVE: MachineClientType.SLAVE,
         }[self.endpoint_type]
 
     def invoke_ssh(self, command: str, ssh_options: List[str] = None):
