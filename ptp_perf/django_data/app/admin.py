@@ -62,6 +62,8 @@ def chart_to_http_response(chart) -> HttpResponse:
 def create_key_metric_variance_chart(modeladmin, request, queryset):
     endpoints: List[PTPEndpoint] = list(queryset.all())
     chart = KeyMetricVarianceCharts.create_key_metric_variance_chart(endpoints)
+    chart.ylimit_top_use_always = False
+    chart.ylimit_top = None
     chart.legend = True
     chart.legend_pos = 'center left'
     chart.legend_kwargs = {

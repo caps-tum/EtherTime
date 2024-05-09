@@ -34,7 +34,7 @@ class KeyMetricVarianceCharts(TestCase):
             comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance.pdf"))
 
     @staticmethod
-    def create_key_metric_variance_chart(endpoints) -> ComparisonChart:
+    def create_key_metric_variance_chart(endpoints, true=True) -> ComparisonChart:
         benchmark_names = str_join(set([endpoint.benchmark.name for endpoint in endpoints]))
         endpoints.sort(key=lambda endpoint: endpoint.profile.vendor_id)
         comparison_chart = ComparisonChart(
@@ -45,7 +45,7 @@ class KeyMetricVarianceCharts(TestCase):
             include_p99=False, include_p99_separate_axis=False,
             include_profile_confidence_intervals=True,
             include_annotate_range=True,
-            ylimit_top=0.0001, ylimit_top_use_always=True,
+            ylimit_top=0.0001, ylimit_top_use_always=true,
         )
         comparison_chart.plot_median_clock_diff_and_path_delay(
             x_axis_values=lambda endpoint: endpoints.index(endpoint),

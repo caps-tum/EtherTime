@@ -65,12 +65,16 @@ class VendorComparisonCharts(TestCase):
         frame.sort_values('X', inplace=True)
         print(frame)
 
-        frame_rpi5 = frame[frame['Cluster'] == config.CLUSTER_PI5.name]
+        frame_magnify = frame[
+            (frame['Cluster'] == config.CLUSTER_PI5.name)
+            | (frame['Cluster'] == config.CLUSTER_PETALINUX.name)
+        ]
 
         chart = FigureContainer(
             size=(8, 4),
-            weights=[2.5, 1],
+            weights=[1.5, 1],
             w_space=0,
+            share_x=False,
             share_y=False,
             tight_layout=True,
             axes_containers=[
@@ -82,23 +86,24 @@ class VendorComparisonCharts(TestCase):
                         column_hue='Vendor'
                     )],
                     title="Baseline Performance by Vendor and Cluster",
-                    xticks=list(frame['X']) + [1.5, 6],
-                    xticklabels=list(frame['Vendor']) + ["\nRaspberry-Pi 4", "\nRaspberry-Pi 5"],
+                    xticks=[1.5, 6, 10.5, ],
+                    xticklabels=["Raspberry-Pi 4", "Raspberry-Pi 5", "Petalinux", ],
                     ylimit_top=50 * units.us,
                 ),
                 TimeAxisContainer(
                     [ComparisonBarElement(
-                        data=frame_rpi5,
+                        data=frame_magnify,
                         column_x='X',
                         column_y='Value',
-                        column_hue='Vendor'
+                        column_hue='Vendor',
                     )],
-                    xticks=list(frame_rpi5['X']) + [6],
-                    xticklabels=list(frame_rpi5['Vendor']) + ["\nRaspberry-Pi 5"],
+                    xticks=[6, 10.5],
+                    xticklabels=["Raspberry-Pi 5", "Petalinux"],
                     ylabel='',
                     ylimit_top=5.5 * units.us,
                     yminorticks=True,
                     yminorticklabels=True,
+                    title="(Magnified)",
                 )
             ],
         )
@@ -108,7 +113,7 @@ class VendorComparisonCharts(TestCase):
         boundary = 5 * units.us
         ax1.add_artist(
             ConnectionPatch(
-                (1.0, boundary / ax1.get_ylim()[1]), (0.5, 0),
+                (1.0, boundary / ax1.get_ylim()[1]), (0.333, 0),
                 coordsA='axes fraction', coordsB='axes fraction',
                 axesA=ax1, axesB=ax1,
                 linestyle='dashed', color='0.7', connectionstyle=ConnectionStyle('angle', angleA=180, angleB=90, rad=0),
