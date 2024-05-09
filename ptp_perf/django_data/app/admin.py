@@ -116,11 +116,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 
     def create_timeseries_for_profile(self, request, pk):
         profile = PTPProfile.objects.get(pk=pk)
-        try:
-            return render_timeseries_to_http_response(profile.endpoint_primary_slave, profile.endpoint_secondary_slave)
-        except PTPEndpoint.DoesNotExist:
-            # Fall back to just the primary slave if secondary does not exist.
-            return render_timeseries_to_http_response(profile.endpoint_primary_slave)
+        return render_timeseries_to_http_response(*profile.ptpendpoint_set.all())
 
     create_timeseries_for_profile.short_description = 'Timeseries'
     create_timeseries_for_profile.url_path = 'profile_timeseries'
@@ -151,7 +147,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(CustomFormatsAdmin):
-    list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
+    list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'machine', 'endpoint_type',
                     'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
                     'convergence_duration')
     list_select_related = ('profile',)
