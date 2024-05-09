@@ -1,13 +1,33 @@
 
-\section{Time Synchronization \& PTP}
+\section{Time Synchronization, PTP \& Related Work}
 
-Over the years, many different protocols, algorithms and solutions to time synchronization across computer networks have been explored~\cite{ntpv4-spec, sntp-spec, linuxptp, time-protocol-flooding, time-protocol-pulsesync, white-rabbit, time-protocol-wsn, time-protocol-low-power}. In today's most widely deployed network stack for general purpose computing, IP, two protocols have established themselves as standard for time synchronization: the Network Time Protocol (NTP) for Wide Area Networks (WANs) and the Precision Time Protocol (PTP) for Local Area Networks (LANs) that require a greater degree of time synchronization precision. Both protocols are standardized and each have multiple implementations available at the time of writing.
+Over the years, many different protocols, algorithms and solutions to time synchronization across computer networks have been explored~\cite{ntpv4-spec, sntp-spec, linuxptp, time-protocol-flooding, time-protocol-pulsesync, white-rabbit, time-protocol-wsn, time-protocol-low-power}. In today's most widely deployed network stack for general purpose computing, IP, two protocols have established themselves as standard for time synchronization: the Network Time Protocol (NTP)~\cite{ntpv4-spec} for Wide Area Networks (WANs) and the Precision Time Protocol (PTP)~\cite{ptp-spec} for Local Area Networks (LANs) that require a greater degree of time synchronization precision. Both protocols are standardized and each have multiple implementations available at the time of writing.
 
 Because we are interested in evaluating time synchronization for dependable embedded systems, we will focus on PTP and derivatives as they are designed to be deployed in controlled environments such as fault-tolerant industrial control networks. PTP has wide-spread adoption in general computing and telecommunications, and also serves as a foundation for technologies such as IEEE Time Sensitive Networking (TSN).
 
-We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required makes it less suitable for embedded systems.
+Clock synchronization protocols have been proposed for many different applications including packet-switched networks~\cite{sptp, white-rabbit, time-protocol-flooding, time-protocol-low-power} and their strengths and weaknesses have been evaluated analytically~\cite{clock-synchronization-packet-switched-networks}. Due to the need for dependability, multiple studies have compared how time protocols can fail~\cite{ptp-failures}, how fault tolerance and redundancy can be offered~\cite{fault-tolerant-clock-synchronization-distributed-systems}, and how timing protocols might be attacked by malicious actors~\cite{ptp-internal-attacks, byzantine-ptp}. However, we find that there is a lack of literature collecting empirical findings across implementations and protocols, with an early study~\cite{ntp-vs-ptp} from 2006 focusing on technologies that were available at the time and more recent studies~\cite{time-enough} not incorporating fault-tolerance as a central aspect.
+
+We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure (specifically the Elasticsearch/Logstash/Kibana stack) making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report\todo{Cannot cite: submitted via email because no public issue tracker is available} has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required (White Rabbit capable synchronous Ethernet switches and NICs with \emph{synctonization} support) makes it less suitable for embedded systems.
 
 This left us with PTPd~\cite{ptpd-manpage}, a slightly dated implementation of the protocol that is nevertheless popular and spawned multiple derivatives, and LinuxPTP, an open-source implementation that is closely tied to the Linux kernel and aims to take advantage of kernel and hardware capabilities to improve synchronization accuracy. We also include a recent addition, SPTP, a simplified version of PTP developed by Meta that claims to offer comparable performance to PTP while reducing resource consumption~\cite{sptp}. Finally, we include Chrony, a state-of-the-art open implementation of NTP as a baseline to compare the precision implementations against.
+
+\begin{table}
+    \caption{Surveyed Time-Synchronization Protocols}
+    \begin{tabular}{lcc@{\,}rl}
+        Vendor & Protocol & \multicolumn{2}{c}{Included} & Notes\\\hline
+        PTPd & PTP & \checkmark & 2.3.1 & Established implementation with derivatives\\
+        LinuxPTP & PTP & \checkmark & 3.1.1 & Advanced capabilities but specific to Linux\\
+        SPTP & Custom & \checkmark & b27bdba & Meta's custom time protocol\\
+        Chrony & NTP & \checkmark & 4.3 & Widespread NTP server/client\\
+        OpenPTP & PTP & $\times$ & r2 & Unmaintained \\
+        Timebeat & PTP & $\times$ & 2.0.7 & Unsuitable for embedded \\
+        PPSI & PTP & $\times$ & 6.1 & Critical bug \\
+        White Rabbit & Custom & $\times$ & - & Specialized hardware requirements\\
+    \end{tabular}
+\end{table}
+
+\todo{Table reference in text}
+To the best of our knowledge, we provide the first empirical evaluation of multiple Ethernet-based time synchronization protocols and implementations across several embedded hardware testbeds with an explicit focus on dependability and fault-tolerance. We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 
 \subsection{PTP -- Background and Architecture}
 
@@ -49,6 +69,58 @@ PTP operates across a network and has two types of endpoints: master nodes and s
 
 \subsection{PTP Profiles}
 PTP is built to be configurable, and settings include anything from the underlying transport (unicast/multicast packet switching), the delay mechanism to use (end-to-end or peer-to-peer), message frequencies and leases, as well as rules to discipline the clock. To reduce the complexity of configuring PTP, several so-called profiles are available that provide default settings for the specific use-case, such as general-purpose or ITU telecoms. To conduct our evaluation, we examine each vendor's default profile, as this profile is a widely-applicable general-purpose profile that does not require special configuration, and is thus likely to be deployed in many different contexts.
+
+
+\subsection{PTP Lifecycle}
+
+
+\begin{figure*}
+    \newcommand{\intervalAnnotation}[4]{
+        \draw[Bar-Bar] ([yshift=#3, xshift=-0.1cm]#1.south west) -- ([yshift=#3, xshift=0.1cm]#2.south east) node[midway, below] {#4};
+    }
+    \newcommand{\intervalAnnotationAbove}[4]{
+            \draw[Bar-Bar] ([yshift=#3, xshift=-0.1cm]#1.north west) -- ([yshift=#3, xshift=0.1cm]#2.north east) node[midway, above] {#4};
+    }
+
+    \begin{tikzpicture}[
+        start chain=stages going right,
+        stage/.style={
+            draw, on chain=stages,
+            every on chain/.style={join}, every join/.style={-Stealth}
+        },
+        text depth=0cm,
+        ]
+        \node[stage] (discovery) {Discovery};
+        \node[stage] (bmca) {Best Master Clock Algorithm};
+        \node[stage] (calibrate) {Calibration};
+        \node[stage] (step) {Clock Step};
+        \node[stage] (slew) {Clock Slew};
+        \node[stage] (maintain) {Stable};
+
+        \intervalAnnotation{step}{slew}{-0.25cm}{Converging}
+        \intervalAnnotation{maintain}{maintain}{-0.25cm}{Synchronized}
+        \intervalAnnotationAbove{calibrate}{maintain}{0.25cm}{Slave bound to Grandmaster}
+        \intervalAnnotationAbove{discovery}{bmca}{0.25cm}{Peer}
+
+    \end{tikzpicture}
+    \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. }
+    \label{fig:ptp-lifecycle}
+\end{figure*}
+
+PTP clients traverse multiple stages in a lifecycle to synchronize their clock (Figure~\ref{fig:ptp-lifecycle}). At any point, unexpected conditions such as loss of connectivity can lead PTP to return to an earlier stage in the lifecycle, potentially changing the operating conditions.
+
+\begin{enumerate}[label=S\arabic*.]
+    \item \textbf{Discovery} is the stage where remote clocks are identified, usually via periodic multicast announcements. Discovered clients are collected into a PTP domain.
+    \item \textbf{Best Master Clock Algorithm (BMCA)} is the predefined algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties~\cite{bmca-deep-dive}. By the end of this phase, each peer will become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
+    \item \textbf{Calibration} is a brief phase where no local clock modifications are made yet to allow the estimate of the offset to increase in precision through multiple synchronization intervals and path delay estimates.
+    \item \textbf{Clock Step} Having arrived at a reasonably precise estimate of the offset, an attempt is made to immediately rectify the offset by directly resetting the slave's local time. Since this is a direct violation of invariants I2 and potentially I1 (i.e. this is expected to break applications), it is only done when the offset is large (e.g.~$>1$~second) and many PTP profiles usually allow this to happen only once during the initial synchronization where only using clock-slew would take too long.
+    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune the clocks position, thus further reducing offset. The rate of change is usually limited via software and configuration parameters, e.g. the Linux kernel limits the rate of change to 500 parts per million, equivalent to 0.05\%~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- the 0.05\% limit implies that correcting 1 second of offset takes at least 33 minutes.
+    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to lack of offset estimation precision, but at this point the clock signal is the most stable and most useful.
+\end{enumerate}
+
+For calculating metrics on the quality of the clock synchronization, it is important to consider what should be measured. Often, comparisons are only meaningful when PTP is in comparable states (stable synchronization is usually of most interest), but ensuring this is the case is not always trivial, especially across vendors.
+%pre-process the data to exclude data during the convergence phase and only consider observations from the synchronized/stable state. We apply this processing offline by determining the rate of change of the estimated offset's sign -- when frequent switches from positive to negative happen then the algorithm is no longer sure whether its own clock is early or tardy, thus we are close to the optimum synchronization.
+
 
 \subsection{Synchronization Performance}
 It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}\todo{An evaluation of this using our data would be nice}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation to try and compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
