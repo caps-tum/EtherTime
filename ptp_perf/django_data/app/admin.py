@@ -295,10 +295,11 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(ScheduleTask)
 class ScheduleTaskAdmin(ActionsModelAdmin):
-    list_display = ('id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time')
+    list_display = ('id', 'priority', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time')
     list_filter = ('success', 'paused')
+    actions = ('toggle_pause', 'update_priority')
     actions_list = ('toggle_pause', 'update_priority')
-    actions_row = ('toggle_pause', 'update_priority')
+    actions_row = ('update_priority_single',)
 
     @admin.action(description="Toggle paused")
     def toggle_pause(self, request, queryset):
@@ -307,6 +308,7 @@ class ScheduleTaskAdmin(ActionsModelAdmin):
             for task in queryset.all():
                 task.paused = not task.paused
                 task.save()
+
     @admin.action(description="Prioritize")
     def update_priority(self, request, queryset: QuerySet):
         with transaction.atomic():
@@ -314,6 +316,16 @@ class ScheduleTaskAdmin(ActionsModelAdmin):
                 task.priority += 1
                 task.save()
         messages.info(request, f"Updated priorities of {queryset.count()} tasks.")
+
+
+    def update_priority_single(self, request, pk):
+        task = ScheduleTask.objects.get(pk=pk)
+        task.priority += 1
+        task.save()
+        messages.info(request, f"Prioritized task {task} to priority {task.priority}")
+        return redirect(get_admin_redirect_link(ScheduleTask, filters={}))
+    update_priority_single.short_description = 'Prioritize Task'
+    update_priority_single.url_path = 'prioritize'
 
 
 

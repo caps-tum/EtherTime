@@ -19,11 +19,12 @@ class ScheduleTask(models.Model):
     slack_time: timedelta = models.DurationField(default=timedelta(minutes=5))
 
     success: Optional[bool] = models.BooleanField(null=True, blank=True)
-    start_time: Optional[datetime] = models.DateTimeField(null=True)
-    completion_time: Optional[datetime] = models.DateTimeField(null=True)
+    start_time: Optional[datetime] = models.DateTimeField(null=True, blank=True)
+    completion_time: Optional[datetime] = models.DateTimeField(null=True, blank=True)
 
     def run(self):
         self.start_time = timezone.now()
+        self.priority = 999
         self.save()
         try:
             invocation = Invocation.of_shell(command=self.command)
@@ -64,4 +65,4 @@ class ScheduleTask(models.Model):
 
     class Meta:
         app_label = 'app'
-        ordering = ('-priority', '-id',)
+        ordering = ('-completion_time', '-priority', '-id',)

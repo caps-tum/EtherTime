@@ -66,11 +66,11 @@ def queue_task(result):
 
 
 def info(result):
-    alignment_str = "{0: >4}  {1: <80}  {2: >20}  {3: >20}"
+    alignment_str = "{0: >4} {1: >4}  {2: <80}  {3: >20}  {4: >20}"
 
     now = timezone.now().replace(microsecond=0)
     eta = now
-    print(alignment_str.format("Id", "Name", "Est. Time Remaining", "ETA"))
+    print(alignment_str.format("Id", "Prio", "Name", "Est. Time Remaining", "ETA"))
     pending_tasks = ScheduleQueue.pending_tasks()
     for task in pending_tasks:
         remaining_time = task.estimated_time_remaining
@@ -78,6 +78,7 @@ def info(result):
         eta = eta + remaining_time
         print(alignment_str.format(
             task.id,
+            task.priority,
             task.name + (" (running)" if task.running else '') + (" (paused)" if task.paused else ''),
             str(remaining_time).split(".")[0],
             str(timezone.localtime(eta).strftime("%H:%M")))
