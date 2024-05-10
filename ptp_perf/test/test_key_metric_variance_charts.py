@@ -6,6 +6,7 @@ from ptp_perf.charts.comparison_chart import ComparisonChart
 from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import str_join
+from ptp_perf.vendor.registry import VendorDB
 
 
 class KeyMetricVarianceCharts(TestCase):
@@ -36,7 +37,7 @@ class KeyMetricVarianceCharts(TestCase):
     @staticmethod
     def create_key_metric_variance_chart(endpoints, true=True) -> ComparisonChart:
         benchmark_names = str_join(set([endpoint.benchmark.name for endpoint in endpoints]))
-        endpoints.sort(key=lambda endpoint: endpoint.profile.vendor_id)
+        endpoints.sort(key=lambda endpoint: VendorDB.ANALYZED_VENDORS.index(endpoint.profile.vendor))
         comparison_chart = ComparisonChart(
             title=f"Reproducibility ({benchmark_names})",
             endpoints=endpoints,

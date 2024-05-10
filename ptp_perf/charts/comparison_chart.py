@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pandas.core.dtypes.common import is_numeric_dtype
 
 from ptp_perf.charts.chart_container import ChartContainer, YAxisLabelType
-from ptp_perf.models import PTPProfile, PTPEndpoint
+from ptp_perf.models import PTPEndpoint
 from ptp_perf.profiles.data_container import BootstrapMetric
 from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import units
@@ -103,6 +103,7 @@ class ComparisonChart(ChartContainer):
                 x=data['x'],
                 y=data['y'],
                 hue=data['hue'].rename(self.hue_name),
+                palette=self.VENDOR_COLORS,
                 errorbar=("pi", 95),
                 native_scale=True,
                 linestyle=linestyle,
@@ -114,6 +115,7 @@ class ComparisonChart(ChartContainer):
                 x=data['x'],
                 y=data['y'],
                 hue=data['hue'].rename(self.hue_name),
+                palette=self.VENDOR_COLORS,
                 marker='o',
                 linestyle=linestyle,
                 errorbar=("pi", 95),
