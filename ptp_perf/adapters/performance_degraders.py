@@ -42,7 +42,7 @@ class NetworkPerformanceDegrader:
             self.iperf_invocation = Invocation.of_command(*iperf_command, '-s')
         else:
             logging.debug("Waiting momentarily for iPerf server to come up...")
-            await asyncio.sleep(0.5)
+            await self.wait_for_port_open(server_address, 5001)
             logging.info("Launching iPerf client...")
             # Launching clients
             self.iperf_invocation = Invocation.of_command(
@@ -51,6 +51,29 @@ class NetworkPerformanceDegrader:
 
         await self.iperf_invocation.run()
 
+    @staticmethod
+    async def wait_for_port_open(host, port, interval=3, retries=10):
+        """
+        Asynchronously wait for a port on a host to be open.
+
+        :param host: The hostname or IP address of the server to check.
+        :param port: The port number to check.
+        :param interval: Interval in seconds between checks.
+        """
+        for _ in range(retries):
+            try:
+                # Attempt to open a connection to the specified port
+                reader, writer = await asyncio.open_connection(host, port)
+                # If connection is successful, close it and return
+                writer.close()
+                await writer.wait_closed()
+                logging.debug(f"Port {port} on {host} is now open!")
+                return
+            except (ConnectionRefusedError, OSError):
+                # If connection fails, wait for the interval and then retry
+                logging.debug(f"Port {port} on {host} is closed, retrying in {interval} seconds...")
+                await asyncio.sleep(interval)
+        raise RuntimeError(f"Cannot connect to {host}:{port} after {retries} retries.")
 
 @dataclass
 class StressNGPerformanceDegrader:
