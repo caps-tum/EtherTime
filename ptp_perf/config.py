@@ -102,7 +102,7 @@ MACHINE_PETALINUX01 = Machine(
     **PETALINUX_PTP_SETTINGS,
     ptp_priority_1=200,
     plugin_settings=PluginSettings(
-        iperf_server=False, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.181",
+        iperf_server=True, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.181",
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
 )
 MACHINE_PETALINUX02 = Machine(
