@@ -139,6 +139,32 @@ MACHINE_PETALINUX04 = Machine(
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
 )
 
+MACHINE_TK1_1 = Machine(
+    id="tk1-1", address="tk1-1", remote_root="/home/ubuntu/ptp-perf",
+    ptp_address="10.0.0.71",
+    endpoint_type=EndpointType.MASTER,
+    ptp_interface='eth0',
+    ptp_use_phc2sys=False,
+    ptp_software_timestamping=False,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=True, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.171",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+MACHINE_TK1_2 = Machine(
+    id="tk1-2", address="tk1-2", remote_root="/home/ubuntu/ptp-perf",
+    ptp_address="10.0.0.72",
+    **PTP_SLAVE_SETTINGS,
+    endpoint_type=EndpointType.PRIMARY_SLAVE,
+    ptp_interface='enp1s0',
+    ptp_use_phc2sys=False,
+    ptp_software_timestamping=False,
+    ptp_priority_1=200,
+    plugin_settings=PluginSettings(
+        iperf_server=False, iperf_address="10.0.0.82", iperf_secondary_address="192.168.1.172",
+        stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+
 
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
@@ -192,6 +218,13 @@ CLUSTER_PETALINUX = Cluster(
         MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
     ]
 )
+CLUSTER_TK1 = Cluster(
+    id="tk1",
+    name="Jetson TK1",
+    machines=[
+        MACHINE_TK1_1, MACHINE_TK1_2
+    ]
+)
 CLUSTER_RPI_SERV = Cluster(
     id="rpi-serv",
     name='RPI Server',
@@ -206,7 +239,7 @@ def create_big_bad_cluster_machines():
             machine, endpoint_type=EndpointType.TERTIARY_SLAVE,
             initial_clock_offset=timedelta(minutes=-1),
         ) for machine in itertools.chain(
-            CLUSTER_PI5.machines, CLUSTER_PI.machines, CLUSTER_PETALINUX.machines
+            CLUSTER_PI5.machines, CLUSTER_PI.machines, CLUSTER_PETALINUX.machines, CLUSTER_TK1.machines,
         )
     ]
     machines[0].endpoint_type = EndpointType.MASTER
@@ -223,9 +256,11 @@ CLUSTER_BIG_BAD = Cluster(
 )
 
 clusters = {
-    cluster.id: cluster for cluster in [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_RPI_SERV, CLUSTER_BIG_BAD]
+    cluster.id: cluster for cluster in [
+        CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_TK1, CLUSTER_RPI_SERV, CLUSTER_BIG_BAD
+    ]
 }
-ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_BIG_BAD]
+ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_TK1, CLUSTER_BIG_BAD]
 
 
 @dataclass
