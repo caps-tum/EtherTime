@@ -1,21 +1,19 @@
 import copy
 import copy
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.utils import timezone
 
 from ptp_perf import config
-from ptp_perf import util
 from ptp_perf.adapters.device_control import DeviceControl
 from ptp_perf.cluster_restart import restart_cluster
 from ptp_perf.config import Configuration
-from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.models import PTPProfile, PTPEndpoint
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
-from ptp_perf.util import str_join
+from ptp_perf.utilities.django_utilities import get_server_datetime
 from ptp_perf.utilities.logging import LogToDBLogRecordHandler
 from ptp_perf.utilities.multi_task_controller import MultiTaskController
 from ptp_perf.vendor.registry import VendorDB
@@ -31,7 +29,6 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         cluster_id=configuration.cluster.id,
         is_running=True,
         start_time=profile_timestamp,
-        stop_time=profile_timestamp + benchmark.duration
     )
     await profile.asave()
 
@@ -91,6 +88,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
         finally:
             profile.is_successful = run_successful and finalize_successful
             profile.is_running = False
+            profile.stop_time = get_server_datetime()
             await profile.asave()
 
     logging_handler.uninstall()

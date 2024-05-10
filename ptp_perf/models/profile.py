@@ -1,5 +1,6 @@
 import logging
 import typing
+from datetime import timedelta
 
 from django.db import models
 
@@ -27,7 +28,7 @@ class PTPProfile(models.Model):
     is_corrupted: bool = models.BooleanField(default=False)
 
     start_time = models.DateTimeField()
-    stop_time = models.DateTimeField()
+    stop_time = models.DateTimeField(null=True, blank=True)
 
     def clear_analysis_data(self):
         # Remove existing analysis data including endpoint data.
@@ -78,6 +79,14 @@ class PTPProfile(models.Model):
     def cluster(self) -> "Cluster":
         import ptp_perf.config as config
         return config.clusters.get(self.cluster_id)
+
+    @property
+    def duration(self):
+        return self.stop_time - self.start_time
+
+    @property
+    def estimated_time_remaining(self):
+        return max(self.start_time + self.duration - get_server_datetime(), timedelta(seconds=0))
 
     def __str__(self):
         return f"P{self.id} {self.benchmark} {self.vendor}"

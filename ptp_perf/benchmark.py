@@ -66,7 +66,7 @@ async def benchmark(endpoint_id: str):
             profile.vendor.run(endpoint), label=f"{profile.vendor.name}"
         )
 
-        remaining_time = profile.stop_time - get_server_datetime()
+        remaining_time = profile.estimated_time_remaining
         logging.info(f"Benchmarking for {remaining_time}...")
         await background_tasks.run_for(remaining_time)
 

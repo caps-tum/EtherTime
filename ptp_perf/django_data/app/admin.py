@@ -108,7 +108,7 @@ def render_timeseries_interactive_chart(endpoint: PTPEndpoint):
 @admin.register(PTPProfile)
 class PTPProfileAdmin(ActionsModelAdmin):
     list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
-                    'is_corrupted')
+                    'is_corrupted', 'duration')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id', 'is_running', 'is_successful', 'is_processed',
                    'is_corrupted')
     # inlines = [PTPEndpointInline]
