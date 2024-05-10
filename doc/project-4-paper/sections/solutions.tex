@@ -7,9 +7,14 @@ Because we are interested in evaluating time synchronization for dependable embe
 
 Clock synchronization protocols have been proposed for many different applications including packet-switched networks~\cite{sptp, white-rabbit, time-protocol-flooding, time-protocol-low-power} and their strengths and weaknesses have been evaluated analytically~\cite{clock-synchronization-packet-switched-networks}. Due to the need for dependability, multiple studies have compared how time protocols can fail~\cite{ptp-failures}, how fault tolerance and redundancy can be offered~\cite{fault-tolerant-clock-synchronization-distributed-systems}, and how timing protocols might be attacked by malicious actors~\cite{ptp-internal-attacks, byzantine-ptp}. However, we find that there is a lack of literature collecting empirical findings across implementations and protocols, with an early study~\cite{ntp-vs-ptp} from 2006 focusing on technologies that were available at the time and more recent studies~\cite{time-enough} not incorporating fault-tolerance as a central aspect.
 
-We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure (specifically the Elasticsearch/Logstash/Kibana stack) making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report\todo{Cannot cite: submitted via email because no public issue tracker is available} has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required (White Rabbit capable synchronous Ethernet switches and NICs with \emph{synctonization} support) makes it less suitable for embedded systems.
+We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure (specifically the Elasticsearch/Logstash/Kibana stack) making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report\todo{Cannot cite: submitted via email because no public issue tracker is available} has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required (White Rabbit-capable synchronous Ethernet switches and NICs with \emph{synctonization} support) makes it less suitable for embedded systems.
 
-This left us with PTPd~\cite{ptpd-manpage}, a slightly dated implementation of the protocol that is nevertheless popular and spawned multiple derivatives, and LinuxPTP, an open-source implementation that is closely tied to the Linux kernel and aims to take advantage of kernel and hardware capabilities to improve synchronization accuracy. We also include a recent addition, SPTP, a simplified version of PTP developed by Meta that claims to offer comparable performance to PTP while reducing resource consumption~\cite{sptp}. Finally, we include Chrony, a state-of-the-art open implementation of NTP as a baseline to compare the precision implementations against.
+This left us with four vendors suitable for our analysis: PTPd, LinuxPTP, SPTP and Chrony (summarized in Table~\ref{tbl:vendors}).
+PTPd is a traditional implementation of the PTP protocol that, despite being less maintained in recent years~\cite{ptpd-maintainers} and lacking modern features such as hardware timestamping~\cite{ptpd-manpage}, spawned a variety of derivates (also commercial) and is still being deployed according to the Debian package tracker~\cite{debian-popularity-contest}, perhaps due to its relative simplicity and wider support of non-Linux UNIX systems.
+ LinuxPTP is the most deployed~\cite{debian-popularity-contest} open-source PTP solution on Debian, with the stated goals of providing robustness while integrating tightly with Linux and taking advantage of the kernel and hardware features provided to improve synchronization accuracy~\cite{linuxptp-homepage}.
+SPTP, a novel time-synchronization protocol consisting of the PTP4U server and the SPTP client described in a 2023 publication by Meta employees~\cite{facebook-sptp}, was developed at Meta due to difficulties they encountered with deploying PTP. It claims to support a comparable level of time-synchronization performance while offering lower resource consumption and better resilience~\cite{facebook-sptp}.
+Finally, Chrony is included as a reference representing the state of the art implementation of the Network Time Protocol (NTP)\todo{cite}. It is by far the most feature-complete time-synchronization implementation of the ones we evaluated and is far more widely deployed than PTP~\cite{debian-popularity-contest}, likely due to its applicability to wide area networks. It serves as a baseline for the other implementations so that we can compare PTP implementation performance to the performance of general-purpuse time synchronization.
+
 
 \begin{table}
     \caption{Surveyed Time-Synchronization Protocols}
@@ -17,16 +22,17 @@ This left us with PTPd~\cite{ptpd-manpage}, a slightly dated implementation of t
         Vendor & Protocol & \multicolumn{2}{c}{Included} & Notes\\\hline
         PTPd & PTP & \checkmark & 2.3.1 & Established implementation with derivatives\\
         LinuxPTP & PTP & \checkmark & 3.1.1 & Advanced capabilities but specific to Linux\\
-        SPTP & Custom & \checkmark & b27bdba & Meta's custom time protocol\\
+        SPTP\textsuperscript{*} & Custom & \checkmark & b27bdba & Meta's custom time protocol\\
         Chrony & NTP & \checkmark & 4.3 & Widespread NTP server/client\\
         OpenPTP & PTP & $\times$ & r2 & Unmaintained \\
         Timebeat & PTP & $\times$ & 2.0.7 & Unsuitable for embedded \\
         PPSI & PTP & $\times$ & 6.1 & Critical bug \\
         White Rabbit & Custom & $\times$ & - & Specialized hardware requirements\\
     \end{tabular}
+    \label{tbl:vendors}
+    \textsuperscript{*} Note that we had to patch 32-bit support into SPTP for our ARMv7 boards.
 \end{table}
 
-\todo{Table reference in text}
 To the best of our knowledge, we provide the first empirical evaluation of multiple Ethernet-based time synchronization protocols and implementations across several embedded hardware testbeds with an explicit focus on dependability and fault-tolerance. We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 
 \subsection{PTP -- Background and Architecture}

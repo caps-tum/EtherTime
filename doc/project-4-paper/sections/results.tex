@@ -33,12 +33,12 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
 \centering
 \caption{Baseline Values by Vendor and System}
 
-    \begin{tikzpicture}[start chain=rows going below, on grid, node distance=0.35cm and 2cm, text width=2cm, align=right]
+    \begin{tikzpicture}[start chain=rows going below, on grid, node distance=0.35cm and 1.5cm, text width=2cm, align=right]
         \node[on chain=rows] {};
         \begin{scope}[start branch=row going right]
             \node[on chain] {};
             \node[on chain] {Clock Offset};
-            \node[on chain] {Clock Offset};
+%            \node[on chain] {Clock Offset};
         \end{scope}
 
         \node[on chain=rows] {System};
@@ -46,9 +46,10 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
             \node[on chain] {Vendor};
             \node[on chain] {Median};
             \node[on chain] {$P_{95}$};
+            \node[on chain] {Max};
         \end{scope}
 
-            \foreach \system in {rpi-4,rpi-5}{
+            \foreach \system in {rpi-4,rpi-5,petalinux}{
                 \foreach  \vendor  in {ptpd,linuxptp,sptp,chrony}{
                     \node[on chain=rows] {\strcmpfullexpand{\vendor}{ptpd}{\fCluster{\system}}{}};
 
@@ -56,7 +57,7 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
                     \node[on chain] {\fVendor{\vendor}};
                     \node[on chain] {\fTimeKey[1]{base/\system/\vendor/q50}};
                     \node[on chain] {\fTimeKey{base/\system/\vendor/q95}};
-
+                    \node[on chain] {\fTimeKey{base/\system/\vendor/q100}};
                     \end{scope}
                 }
             }
