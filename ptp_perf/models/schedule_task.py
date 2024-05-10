@@ -65,4 +65,4 @@ class ScheduleTask(models.Model):
 
     class Meta:
         app_label = 'app'
-        ordering = ('-completion_time', '-priority', '-id',)
+        ordering = ('-completion_time', '-priority', 'id',)
