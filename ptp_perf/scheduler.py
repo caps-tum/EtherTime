@@ -93,6 +93,7 @@ def queue_benchmarks(result):
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
     clusters = [config.clusters[cluster_id] for cluster_id in result.cluster] or config.ANALYZED_CLUSTERS
+    priority = result.priority
     if result.duration is not None:
         duration_override = timedelta(minutes=result.duration)
     else:
@@ -143,6 +144,7 @@ def queue_benchmarks(result):
                                 name=f"{benchmark.name} ({vendor.name}, {cluster.name})",
                                 command=command,
                                 estimated_time=duration,
+                                priority=priority,
                             )
                         )
                     )
