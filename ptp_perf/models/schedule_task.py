@@ -11,6 +11,7 @@ from ptp_perf.invoke.invocation import Invocation, InvocationFailedException
 
 class ScheduleTask(models.Model):
     id: int = models.AutoField(primary_key=True)
+    priority: int = models.IntegerField(default=0)
     name: str = models.CharField(max_length=255)
     command: str = models.TextField()
     paused: bool = models.BooleanField(default=False)
@@ -63,4 +64,4 @@ class ScheduleTask(models.Model):
 
     class Meta:
         app_label = 'app'
-        ordering = ('id',)
+        ordering = ('-priority', '-id',)

@@ -31,7 +31,11 @@ class ScheduleQueue:
 
     @staticmethod
     def pending_tasks():
-        return ScheduleTask.objects.filter(completion_time__isnull=True, paused=False)
+        return ScheduleTask.objects.filter(
+            completion_time__isnull=True, paused=False
+        ).order_by(
+            '-priority', 'id',
+        )
 
     @staticmethod
     def queue_task(task: ScheduleTask):

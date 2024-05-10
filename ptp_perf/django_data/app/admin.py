@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from admin_actions.admin import ActionsModelAdmin
 from django.contrib import admin, messages
 from django.db import transaction
+from django.db.models import QuerySet
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -290,21 +291,32 @@ class TagAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.action(description="Toggle paused")
-def toggle_pause(modeladmin, request, queryset):
-    task: ScheduleTask
-    with transaction.atomic():
-        for task in queryset.all():
-            task.paused = not task.paused
-            task.save()
 
 
 @admin.register(ScheduleTask)
-class ScheduleTaskAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time']
-    list_filter = ['success', 'paused']
-    actions = [toggle_pause]
-    ordering = ('-id',)
+class ScheduleTaskAdmin(ActionsModelAdmin):
+    list_display = ('id', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time')
+    list_filter = ('success', 'paused')
+    actions_list = ('toggle_pause', 'update_priority')
+    actions_row = ('toggle_pause', 'update_priority')
+
+    @admin.action(description="Toggle paused")
+    def toggle_pause(self, request, queryset):
+        task: ScheduleTask
+        with transaction.atomic():
+            for task in queryset.all():
+                task.paused = not task.paused
+                task.save()
+    @admin.action(description="Prioritize")
+    def update_priority(self, request, queryset: QuerySet):
+        with transaction.atomic():
+            for task in queryset.all():
+                task.priority += 1
+                task.save()
+        messages.info(request, f"Updated priorities of {queryset.count()} tasks.")
+
+
+
 
 def get_admin_redirect_link(model, filters: dict):
     return reverse_lazy(f'admin:app_{model._meta.model_name}_changelist') + '?' + urlencode(filters)
