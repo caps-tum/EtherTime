@@ -28,9 +28,11 @@ class BenchmarkSummary(models.Model):
     clock_diff_median = TimeFormatFloatField(null=True)
     clock_diff_p05 = TimeFormatFloatField(null=True)
     clock_diff_p95 = TimeFormatFloatField(null=True)
+    clock_diff_max = TimeFormatFloatField(null=True)
     path_delay_median = TimeFormatFloatField(null=True)
     path_delay_p05 = TimeFormatFloatField(null=True)
     path_delay_p95 = TimeFormatFloatField(null=True)
+    path_delay_max = TimeFormatFloatField(null=True)
     path_delay_std = TimeFormatFloatField(null=True)
 
     # Fault statistics
@@ -86,7 +88,7 @@ class BenchmarkSummary(models.Model):
             normalize_time=TimeNormalizationStrategy.NONE, timestamp_merge_append=False
         )
 
-        quantiles = [0.05, 0.5, 0.95]
+        quantiles = [0.05, 0.5, 0.95, 1]
 
         clock_data = data_query.run(Sample.SampleType.CLOCK_DIFF)
         count = len(clock_data.index.get_level_values("endpoint_id").unique())
@@ -108,9 +110,11 @@ class BenchmarkSummary(models.Model):
             clock_diff_p05=clock_quantiles[0],
             clock_diff_median=clock_quantiles[1],
             clock_diff_p95=clock_quantiles[2],
+            clock_diff_max=clock_quantiles[3],
             path_delay_p05=path_delay_quantiles[0],
             path_delay_median=path_delay_quantiles[1],
             path_delay_p95=path_delay_quantiles[2],
+            path_delay_max=path_delay_quantiles[3],
         )
 
         # Fault tolerance
@@ -161,12 +165,14 @@ class BenchmarkSummary(models.Model):
             0.05: self.clock_diff_p05,
             0.5: self.clock_diff_median,
             0.95: self.clock_diff_p95,
+            1.0: self.clock_diff_max,
         }
     def path_delay_quantiles(self) -> Dict[float, float]:
         return {
             0.05: self.path_delay_p05,
             0.5: self.path_delay_median,
             0.95: self.path_delay_p95,
+            1.0: self.path_delay_max,
         }
 
     class Meta:
