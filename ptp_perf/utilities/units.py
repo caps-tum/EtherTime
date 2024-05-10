@@ -81,6 +81,8 @@ def format_engineering(value: float, unit: str = "") -> str:
 
 
 def format_percentage(x: float) -> str:
+    if x is None:
+        return "-"
     if x == 0:
         return "0%"
     percentage = x * 100

@@ -10,6 +10,7 @@ from typing import Optional, Tuple
 import pandas as pd
 from django.db import models
 from django.db.models import CASCADE
+from pandas.core.dtypes.common import is_numeric_dtype
 
 from ptp_perf import config
 from ptp_perf.machine import Machine, Cluster, MachineClientType
@@ -38,6 +39,7 @@ class TimeNormalizationStrategy(StrEnum):
     CLOCK_STEP = "clock_step"
     CONVERGENCE = "convergence"
 
+COLUMN_TIMESTAMP_INDEX = "timestamp"
 
 class PTPEndpoint(models.Model):
     id = models.AutoField(primary_key=True)
@@ -56,6 +58,10 @@ class PTPEndpoint(models.Model):
     path_delay_p05 = TimeFormatFloatField(null=True)
     path_delay_p95 = TimeFormatFloatField(null=True)
     path_delay_std = TimeFormatFloatField(null=True)
+
+    # Missing values
+    missing_samples_count = models.IntegerField(null=True)
+    missing_samples_percent = PercentageFloatField(null=True)
 
     # Convergence statistics
     convergence_timestamp = models.DateTimeField(null=True)
@@ -193,6 +199,14 @@ class PTPEndpoint(models.Model):
 
         # Do some data post-processing to improve quality.
 
+        # First: calculate missing data ratios
+        # Maximum gap: 3x the target sync interval.
+        maximum_allowable_time_jump = timedelta(seconds=self.benchmark.sync_interval_seconds * 3)
+        timeseries_gaps = self.calculate_missing_data(entire_series, maximum_allowable_time_jump)
+        total_time_missing = timeseries_gaps.sum()
+        self.missing_samples_count = total_time_missing.total_seconds() / self.benchmark.sync_interval_seconds
+        self.missing_samples_percent = total_time_missing.total_seconds() / self.benchmark.duration.total_seconds()
+
         # Step 1: Remove the first big clock step.
 
         # Remove any beginning zero values (no clock_difference information yet) from start
@@ -305,6 +319,42 @@ class PTPEndpoint(models.Model):
 
         self.save()
         return self
+
+    def _validate_series(self, series: pd.Series, maximum_allowable_time_jump: timedelta = timedelta(seconds=5)):
+        # Validate shape of frame and properties
+        assert is_numeric_dtype(series)
+        assert series.index.is_unique, f"Series index is not unique:\n{series}"
+        assert COLUMN_TIMESTAMP_INDEX in series.index.names, f"Series index does not have a timestamp level\n{series}"
+        # Datetime64 with timezone is not so easy to detect.
+        assert isinstance(series.index.get_level_values(COLUMN_TIMESTAMP_INDEX).dtype, pd.DatetimeTZDtype), f"Series index level timestamps is not a series of datetime64+tz.\n{series}"
+
+        # Ensure that data is sorted chronologically.
+        time_jumps = self.calculate_missing_data(series, maximum_allowable_time_jump)
+        min_time_jump = time_jumps.min()
+        if min_time_jump < timedelta(seconds=0):
+            raise RuntimeError(
+                f"Timeseries index is not monotonically increasing."
+            )
+        # Make sure there are no gaps in the data
+        if not time_jumps.empty:
+            self.profile.log_analyze(
+                f"Timeseries contains {len(time_jumps)} holes "
+                f"(largest hole: {time_jumps.max()}, "
+                f"total: {time_jumps.sum()} = {100 * time_jumps.sum() / (series.index.max() / series.index.min()):.0f}%)",
+                level=LogLevel.WARNING,
+            )
+        # Ensure we have sufficient data in general
+        # At least 10 minutes -> At least 600 samples
+        if len(series) < 600:
+            self.profile.log_analyze(
+                f"Timeseries contains too few data points: {len(series)}", level=LogLevel.WARNING
+            )
+
+    @staticmethod
+    def calculate_missing_data(series: pd.Series, maximum_allowable_time_jump: timedelta = timedelta(seconds=5)):
+        index_time_deltas = series.index.diff()
+        time_jumps = index_time_deltas[index_time_deltas >= maximum_allowable_time_jump]
+        return time_jumps
 
     @staticmethod
     def calculate_quantiles(series: pd.Series) -> Tuple[float, float, float]:

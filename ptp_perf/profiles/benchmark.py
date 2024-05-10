@@ -77,3 +77,7 @@ class Benchmark:
         if self.artificial_load_network is not None:
             return self.artificial_load_network
         return self.artificial_load_cpu
+
+    @property
+    def sync_interval_seconds(self) -> int:
+        return 2 ** self.ptp_config.log_sync_interval

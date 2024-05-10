@@ -150,6 +150,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 class PTPEndpointAdmin(CustomFormatsAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'machine', 'endpoint_type',
                     'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
+                    'missing_samples_percent',
                     'convergence_duration')
     list_select_related = ('profile',)
     list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
