@@ -152,6 +152,17 @@ def queue_benchmarks(result):
     # Sort by task iteration index so that tasks run interleaved.
     tasks_with_index.sort(key=lambda pair_index_task: pair_index_task[0])
     tasks = [task for index, task in tasks_with_index]
+
+    if result.add_pause and len(tasks) > 0:
+        tasks.append(
+            ScheduleTask(
+                name="Manual Pause",
+                command=r"/bin/bash -c 'read -p \'Press any key to continue...\' -n 1 -r",
+                estimated_time=timedelta(seconds=0),
+                priority=priority
+            )
+        )
+
     print(str_join(tasks, "\n"))
 
     if len(tasks_with_index) >= 5:

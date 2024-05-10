@@ -33,6 +33,8 @@ if __name__ == '__main__':
                                           help="The number of profiles to target (queues as many as necessary to reach the target count).")
     queue_benchmarks_command.add_argument("--priority", type=int, default=0,
                                           help="The priority to assign to scheduled tasks.")
+    queue_benchmarks_command.add_argument("--add-pause", action='store_true',
+                                          help="Add a pause after the scheduled tasks finish. The runner needs to be resumed manually.")
     queue_benchmarks_command.add_argument("--duration", type=int, default=None, help="Duration override (in minutes)")
     queue_benchmarks_command.add_argument("--test", action="store_true", default=False, help="Run this benchmark in test mode.")
     queue_benchmarks_command.add_argument("--analyze", action="store_true", default=False, help="Analyze the profile after benchmarking.")
