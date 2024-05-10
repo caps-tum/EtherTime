@@ -86,7 +86,7 @@ class PTPProfile(models.Model):
 
     @property
     def estimated_time_remaining(self):
-        return max(self.start_time + self.duration - get_server_datetime(), timedelta(seconds=0))
+        return max(self.start_time + self.benchmark.duration - get_server_datetime(), timedelta(seconds=0))
 
     def __str__(self):
         return f"P{self.id} {self.benchmark} {self.vendor}"
