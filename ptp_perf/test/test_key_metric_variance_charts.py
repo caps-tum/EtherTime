@@ -48,10 +48,9 @@ class KeyMetricVarianceCharts(TestCase):
             comparison_chart.columns = 1
             comparison_chart.share_x = False
             comparison_chart.share_y = False
-            comparison_chart.axes_containers
             comparison_chart.plot()
             comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_compare_pi.svg"))
-            comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"key_metric_variance_compare_pi.pdf"))
+            comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"key_metric_variance_compare_pi.pdf"))
 
 
     @staticmethod
