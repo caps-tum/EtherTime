@@ -59,7 +59,7 @@ async def do_benchmark(configuration: Configuration, benchmark: Benchmark, vendo
 
             machine._ssh_session = machine.invoke_ssh(
                 f"cd '{machine.remote_root}/' && "
-                f"LOG_EXCEPTIONS=1 python3 run_worker.py --endpoint-id {machine_endpoint.id}",
+                f"LOG_EXCEPTIONS=1 {machine.python_executable} run_worker.py --endpoint-id {machine_endpoint.id}",
                 ssh_options=[
                     "-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=5",
                     "-o", "ConnectTimeout=5", "-o", "ConnectionAttempts=1"

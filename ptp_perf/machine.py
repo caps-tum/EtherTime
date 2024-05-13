@@ -119,6 +119,7 @@ class Machine(RPCTarget):
     ptp_use_phc2sys: bool = True
     ptp_priority_1: int = 128
     """Clock BMCA priority, lower is better. https://blog.meinbergglobal.com/2013/11/14/makes-master-best/"""
+    python_executable: str = "python3"
 
     initial_clock_offset: Optional[timedelta] = None
 
