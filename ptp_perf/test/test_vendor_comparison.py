@@ -27,8 +27,7 @@ class VendorComparisonCharts(TestCase):
     def test_load_chart(self):
         for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
             benchmarks = BenchmarkDB.all_by_tags(ProfileTags.COMPONENT_NET, ProfileTags.ISOLATION_UNPRIORITIZED)
-            benchmarks = [benchmark for benchmark in benchmarks if
-                          benchmark.artificial_load_network in [200, 500, 800, 1000]]
+            benchmarks = [benchmark for benchmark in benchmarks]
             benchmarks.append(BenchmarkDB.BASE)
 
             frame = self.collect_quantile_data(benchmarks, clusters=[cluster])
