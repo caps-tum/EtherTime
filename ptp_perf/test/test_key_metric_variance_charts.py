@@ -9,6 +9,7 @@ from ptp_perf.charts.comparison_chart import ComparisonChart
 from ptp_perf.charts.figure_container import FigureContainer, TimeAxisContainer
 from ptp_perf.constants import PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.models import PTPEndpoint, PTPProfile
+from ptp_perf.models.data_transform import DataTransform, DataQuerySort, DataQueryMelt
 from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import str_join
@@ -38,8 +39,8 @@ class KeyMetricVarianceCharts(TestCase):
 
                 comparison_chart = self.create_key_metric_variance_chart(endpoints)
 
-                comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_{cluster.id}.svg"))
-                comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_{cluster.id}.pdf"))
+                comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_{cluster.id}.png"))
+                comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"key_metric_variance_{cluster.id}.pdf"))
 
             endpoints = [profile.endpoint_primary_slave for profile in ProfileQuery(benchmark=benchmark, cluster=config.CLUSTER_PI).run()]
             endpoints_pi5 = [profile.endpoint_primary_slave for profile in ProfileQuery(benchmark=benchmark, cluster=config.CLUSTER_PI5).run()]
@@ -49,38 +50,25 @@ class KeyMetricVarianceCharts(TestCase):
             comparison_chart.share_x = False
             comparison_chart.share_y = False
             comparison_chart.plot()
-            comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_compare_pi.svg"))
+            comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_compare_pi.png"))
             comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"key_metric_variance_compare_pi.pdf"))
 
 
     @staticmethod
     def create_key_metric_variance_chart(endpoints: List[PTPEndpoint],
                                          ylimit_top_use_always=True) -> FigureContainer:
-        expansions = ["profile"]
-        frame = pd.DataFrame(data=(
-            {
-                key: value
-                for key, value in endpoint.__dict__.items()
-                if not key.startswith("_")
-            } | {
-                    f"{expansion}__{key}": value
-                    for expansion in expansions
-                    for key, value in endpoint.__getattribute__(expansion).__dict__.items()
-                    if not key.startswith("_")
-            }
-            for endpoint in sorted(endpoints, key=lambda endpoint: VendorDB.ANALYZED_VENDORS.index(endpoint.profile.vendor))
-        ))
-        melted_frame = frame.melt(
-            id_vars=[
+        query = DataTransform(
+            expansions=[PTPEndpoint.profile],
+            sort_key=DataQuerySort.ENDPOINT_BY_VENDOR,
+            use_melt=True,
+            melt_id_vars=[
                 frame_column(PTPEndpoint.profile),
                 foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id)
             ],
-            value_vars=[
-                frame_column(PTPEndpoint.clock_diff_p05),
-                frame_column(PTPEndpoint.clock_diff_median),
-                frame_column(PTPEndpoint.clock_diff_p95),
-            ]
+            melt_value_vars=DataQueryMelt.VALUES_CLOCK_DIFF_QUANTILES,
         )
+        melted_frame = query.run(endpoints)
+
         # The "primary key" is the profile id, but it needs to be a string otherwise it will get sorted.
         melted_frame['x'] = melted_frame[
             frame_column(PTPEndpoint.profile)

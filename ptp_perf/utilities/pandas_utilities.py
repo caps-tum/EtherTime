@@ -4,8 +4,8 @@ from django.db.models import Field, Model
 from django.db.models.fields.related_descriptors import ForwardOneToOneDescriptor, ForwardManyToOneDescriptor
 
 
-def frame_column(field: Union[Model, Field]) -> str:
-    if isinstance(field, ForwardOneToOneDescriptor) or isinstance(field, ForwardManyToOneDescriptor):
+def frame_column(field: Union[Model, Field], foreign_key_use_id: bool = True) -> str:
+    if foreign_key_use_id and (isinstance(field, ForwardOneToOneDescriptor) or isinstance(field, ForwardManyToOneDescriptor)):
         return field.__dict__['field'].name + '_id'
     return field.__dict__['field'].name
 
