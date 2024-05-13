@@ -82,7 +82,7 @@ class PTPProfile(models.Model):
 
     @property
     def duration(self):
-        return self.stop_time - self.start_time
+        return self.stop_time - self.start_time if self.stop_time is not None and self.start_time is not None else None
 
     @property
     def estimated_time_remaining(self):
