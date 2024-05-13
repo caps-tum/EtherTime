@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Union, Literal, List, Optional, Tuple
+from typing import Union, Literal, List, Optional
 
 import numpy as np
-import pandas as pd
 import seaborn
 
 from ptp_perf.charts.figure_container import DataElement, AxisContainer
@@ -17,6 +16,7 @@ class ComparisonBarElement(DataElement):
     order: Optional[List[str]] = None
     hue_order_vendors: bool = False
     hue_order: Optional[List[str]] = None
+    native_scale: bool = True
 
     def plot(self, axis_container: AxisContainer):
 
@@ -34,7 +34,7 @@ class ComparisonBarElement(DataElement):
             palette=self.color_map,
             estimator='median',
             errorbar=('pi', 100),
-            native_scale=True,
+            native_scale=self.native_scale,
             dodge=self.dodge,
             order=self.order,
             hue_order=self.hue_order,
