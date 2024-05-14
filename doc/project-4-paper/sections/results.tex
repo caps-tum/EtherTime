@@ -104,9 +104,11 @@ This means that not only is the average performance improved, but the magnitude 
 % Ordering: Requires ptpKeyPrefix to be intact
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{res/generated/base/key_metric_variance_compare_pi.pdf}
+    \includegraphics[width=\linewidth]{res/generated/base/key_metric_variance_rpi-4.pdf}
+    \includegraphics[width=\linewidth]{res/generated/base/ptpd-good-vs-bad.pdf}
+
     \legend
-    \caption{Validating the baseline results by repeatedly measuring the baseline for both vendors on the Raspberry Pi 4 system. Top: The median absolute clock offset for each run, with error bars reaching from quantiles 0.05 to 0.95. Bottom: The same for the estimated path delay.}
+    \caption{Validating the baseline results by repeatedly measuring the baseline for both vendors on the Raspberry Pi 4 system. Top: The median absolute clock offset for each run, with error bars reaching from quantiles 0.05 to 0.95. Bottom: Timeseries profiles for the best run and the worst run under identical conditions, showing significant differences in noise levels.}
     \label{fig:baseline_reproducibility}
 \end{figure}
 
@@ -132,19 +134,24 @@ This means that not only is the average performance improved, but the magnitude 
 
 
 \newcommand{\numBaselineMeasurements}{10}
-\newcommand{\baselineMinutesRuntime}{\numBaselineMeasurements*4*2*20}
+\newcommand{\baselineTotalMinutesRuntime}{\numBaselineMeasurements*4*2*20}
+\newcommand{\numSamplesPerRunApprox}{\fpeval{round(20*60)}}
 
-The next question to be answered is how reproducible the measurement results are. Previously, all baseline results were aggregated into a single metric, but in reality the baseline consists of a number of independent measurements, which are interleaved for better compensation of noise that may be introduced through mechanisms outside our control. We repeated the measurement of the baseline observations ten times for each vendor on each hardware platform (totaling in around \fpeval{round(\baselineMinutesRuntime/60)} hours of runtime and \fpeval{round(\baselineMinutesRuntime*60)} samples collected) and aggregate them. Between each measurement run, the entire cluster is restarted to ensure that no state is carried over, which would harm the independence of observations. Otherwise, the setup is left untouched, so the only differences occur in the internal state of PTP.
-
+A key challenge with conducting high-quality performance studies is figuring out how to aggregate data to increase information density while avoiding the aggregation hiding important events such as outliers. While comparing clock-synchronization quantiles between vendors is certainly useful, in reality this does not tell the entire story because each baseline consists of a number of independent measurements, which in turn consists of around \numSamplesPerRunApprox{} samples, all of which are affected by multiple sources of noise. As it turns out (Figure~\ref{fig:baseline_reproducibility}), not only is there a significant amount of noise during each run\todo{Find a good metric to use here}, but there are also discrepancies between measurement runs. This leads to completely different results for identical measurement runs despite decent measurement lengths and number of samples.
 \cmpSearchVendor{\ptpKey{\vendor/max}/\ptpKey{\vendor/min}}
 
-Figure \ref{fig:baseline_reproducibility}\todo{Graphic not super useful, increase information density.} shows the results for two vendors, PTPd and LinuxPTP. We observe that LinuxPTP produces significantly more stable results for both the clock offset estimation and the path delay, while PTPd shows more variance in median and 95-th quantile observed clock offset across independent measurements. Additionally PTPd's path delay estimation shows a higher variance. A simple restart of the PTPd client can suddenly cause the median latency to jump from \fTimeKey{ptpd/min} up to \fTimeKey{ptpd/max}, which corresponds to an increase of \fRelative[-1]{\ptpKey{ptpd/max}/\ptpKey{ptpd/min}} not only momentarily, but throughout an entire run of 20 minutes.
+\assert{\cmpMaxArg}{ptpd}
+We observe that in absolute terms, PTPd is the main source of variance for both median/95-th percentile observed clock offsets and path delays across independent measurements. A simple restart of the PTPd client can suddenly cause the median latency to jump from \fTimeKey{ptpd/min} up to \fTimeKey{ptpd/max}, which corresponds to an increase of \fRelative[-1]{\ptpKey{ptpd/max}/\ptpKey{ptpd/min}} not only momentarily, but throughout an entire run of 20 minutes.
 %This already comes uncomfortably close to our safety factor of \safetyMargin, and we have not even started stressing the system yet.
-Fortunately, LinuxPTP produces a lot more stable results, with a smaller range of \fTimeKey{linuxptp/min} and \fTimeKey{linuxptp/max} between the best observed run and the worst observed run, corresponding to just \fRelative{\ptpKey{linuxptp/max}/\ptpKey{linuxptp/min}} difference. The best vendor in this regard is \fVendor{\cmpMinArg} (not shown), with a range of just \fRelative{\cmpMin}, while the worst performance is observed with the aforementioned \fVendor{\cmpMaxArg}.
+Fortunately, LinuxPTP produces a lot more stable results, with a smaller range of \fTimeKey{linuxptp/min} and \fTimeKey{linuxptp/max} between the best observed run and the worst observed run, corresponding to just \fRelative{\ptpKey{linuxptp/max}/\ptpKey{linuxptp/min}} difference. The best vendor in this regard is \fVendor{\cmpMinArg}, with both a relative range of just \fRelative{\cmpMin} and an absolute range of \fTime[1]{\ptpKey{chrony/max}-\ptpKey{chrony/min}}.
 %
 % Assert last sentence
 \assert{\cmpMaxArg}{ptpd}
 %
+
+To deal with the amount of noise, we apply a variety of noise reduction techniques. All measurements are interleaved for better compensation of noise that may be introduced through mechanisms outside our control, we repeat each observation at least ten times for each vendor on each hardware platform (totaling in around \fpeval{round(\baselineTotalMinutesRuntime/60)} hours of runtime and \fpeval{round(\baselineTotalMinutesRuntime*60)} samples collected) and between each measurement run, the entire cluster is restarted to ensure that no state is carried over, which would harm the independence of observations. We further filter data that contains too many holes, undercuts a threshold of the actual number of samples collected, or fails basic consistency checks (all of which are likely to lead to bad quality data). Otherwise, the setup is left untouched, so that the only differences that occur are in the internal state of PTP.
+
+
 Needless to say, a vendor that cannot deliver stable timing guarantees is risky to deploy in a production environment that needs to rely upon the time source functioning. In the upcoming sections, we will examine whether PTP clients can be made resilient against potential external and internal influences.
 
 }

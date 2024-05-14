@@ -1,16 +1,23 @@
 import logging
-from unittest import TestCase
 
+import matplotlib.pyplot as plt
+import seaborn
+from django.test import TestCase
+from matplotlib.ticker import MultipleLocator
+
+from ptp_perf.charts.chart_container import ChartContainer
+from ptp_perf.charts.figure_container import TimeAxisContainer, FigureContainer
 from ptp_perf.charts.timeseries_chart import TimeseriesChart
+from ptp_perf.constants import PAPER_GENERATED_RESOURCES_DIR, MEASUREMENTS_DIR
 from ptp_perf.models.endpoint_type import EndpointType
 
-from ptp_perf import constants
+from ptp_perf import constants, config
 from ptp_perf.models.profile_query import ProfileQuery
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.charts.distribution_comparison_chart import DistributionComparisonChart
 from ptp_perf.charts.timeseries_chart_versus import TimeSeriesChartVersus
-from ptp_perf.models import Sample
+from ptp_perf.models import Sample, PTPEndpoint
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.vendor.registry import VendorDB
 
@@ -72,6 +79,36 @@ class TestTimeseriesChart(TestCase):
         chart = TimeSeriesChartVersus(ptpd_profile, linuxptp_profile)
         chart.set_titles("PTPd", "LinuxPTP")
         chart.save(constants.CHARTS_DIR.joinpath("vendors").joinpath("ptpd-vs-linuxptp.png"), make_parents=True)
+
+    def test_ptpd_worst_vs_best_baseline(self):
+        endpoints = list(
+            PTPEndpoint.objects.filter(
+                profile__cluster_id=config.CLUSTER_PI.id, profile__benchmark_id=BenchmarkDB.BASE.id,
+                profile__vendor_id=VendorDB.PTPD.id, endpoint_type=EndpointType.PRIMARY_SLAVE,
+            ).order_by("clock_diff_median")
+        )
+        with seaborn.color_palette([ChartContainer.VENDOR_COLORS[VendorDB.PTPD.id]] * 2):
+            # The best contains outliers makes it look weird
+            # 2nd Best vs worst
+            chart = TimeSeriesChartVersus(
+                SampleQuery(profile=endpoints[1].profile, endpoint_type=EndpointType.PRIMARY_SLAVE),
+                SampleQuery(profile=endpoints[-1].profile, endpoint_type=EndpointType.PRIMARY_SLAVE),
+            )
+            chart.set_titles("PTPd: Best", "PTPd: Worst")
+            chart.ylabel = 'Clock Offset'
+            for index, axis in enumerate(chart.axes):
+                axis.grid(axis='y')
+                axis.grid(axis='y', which='minor')
+                axis.yaxis.set_major_locator(MultipleLocator(3 * TimeAxisContainer.yticks_interval))
+                axis.yaxis.set_minor_locator(MultipleLocator(TimeAxisContainer.yticks_interval))
+                axis.set_axisbelow(True)
+
+                if axis != 1:
+                    TimeAxisContainer.decorate_axis_time_formatter(axis.xaxis, units_premultiplied=False)
+
+            chart.tight_layout = True
+            chart.save(MEASUREMENTS_DIR.joinpath("base").joinpath("ptpd-good-vs-bad.png"), make_parents=True, include_yzero=False)
+            chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath("base").joinpath("ptpd-good-vs-bad.pdf"), make_parents=True, include_yzero=False)
 
     def test_history(self):
         self.create_history_charts(BenchmarkDB.BASE)

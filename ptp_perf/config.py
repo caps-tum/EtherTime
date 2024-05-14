@@ -219,8 +219,8 @@ CLUSTER_PETALINUX = Cluster(
     ]
 )
 CLUSTER_TK1 = Cluster(
-    id="tk1",
-    name="Jetson TK1",
+    id="tk-1",
+    name="Jetson TK-1",
     machines=[
         MACHINE_TK1_1, MACHINE_TK1_2
     ]

@@ -38,6 +38,7 @@ class KeyMetricVarianceCharts(TestCase):
                     continue
 
                 comparison_chart = self.create_key_metric_variance_chart(endpoints)
+                comparison_chart.tight_layout = True
 
                 comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_{cluster.id}.png"))
                 comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"key_metric_variance_{cluster.id}.pdf"))
@@ -91,6 +92,7 @@ class KeyMetricVarianceCharts(TestCase):
                     title='Baseline Variance across Trials',
                 )
             ],
+            size=(6, 2.5),
         )
         chart.plot()
 

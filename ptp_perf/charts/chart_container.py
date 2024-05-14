@@ -34,7 +34,7 @@ class ChartContainer:
     xticks: Optional[pd.Series] = None
     xticklabels: Optional[pd.Series] = None
 
-    ylabel: str = "Clock Offset"
+    ylabel: str = None
 
     ylimit_top: Optional[float] = None
     ylimit_top_use_always: bool = False
@@ -52,6 +52,10 @@ class ChartContainer:
             for axis in self.figure.axes:
                 axis.set_yscale('log')
                 self.plot_decorate_yaxis(axis, "Log-Scale Clock Offset")
+
+        if self.ylabel:
+            for axis in self.figure.axes:
+                axis.set_ylabel(self.ylabel)
 
         if self.ylimit_top_use_always:
             for axis in self.figure.axes:
@@ -218,7 +222,7 @@ class ChartContainer:
     def plot_timeseries_distribution(self, data: pd.Series, ax: plt.Axes, abs: bool = True, invert_axis: bool = True,
                                      hue_discriminator: pd.Series = None, x_discriminator: pd.Series = None, split=True,
                                      palette_index: int = 0,
-                                     annotate_medians: bool = False,
+                                     annotate_medians: bool = True,
                                      include_p95: bool = True, include_iqr: bool = False,):
         import seaborn
 
@@ -238,28 +242,30 @@ class ChartContainer:
             color=seaborn.color_palette()[palette_index] if hue_discriminator is None else None,
             density_norm='count',
             label='_nolegend_',
+            legend=False,
         )
 
-        median = data.quantile(0.5)
-        line = ax.axhline(median, xmax=1.05, color='black')
-        line.set_clip_on(False)
-        ax.annotate(
-            xy=(1.07, median), xycoords=('axes fraction', 'data'),
-            text=f"{units.format_time_offset(median)}" + (f"\n±{units.format_time_offset(data.std())}" if include_iqr else ""),
-            horizontalalignment='left', verticalalignment='center',
-        )
-        if include_p95:
-            p95 = data.quantile(0.95)
-            line = ax.axhline(p95, xmax=1.05, color='black', linestyle='dashed')
+        if annotate_medians:
+            if hue_discriminator is not None:
+                raise NotImplementedError("Cannot annotate medians with a hue discriminator.")
+
+            median = data.quantile(0.5)
+            line = ax.axhline(median, xmax=1.05, color='black')
             line.set_clip_on(False)
             ax.annotate(
-                xy=(1.07, p95), xycoords=('axes fraction', 'data'),
-                text=f"{units.format_time_offset(p95)}",
+                xy=(1.07, median), xycoords=('axes fraction', 'data'),
+                text=f"{units.format_time_offset(median)}" + (f"\n±{units.format_time_offset(data.std())}" if include_iqr else ""),
                 horizontalalignment='left', verticalalignment='center',
             )
-
-        if hue_discriminator is not None and annotate_medians:
-            raise NotImplementedError("Cannot annotate medians with a hue discriminator.")
+            if include_p95:
+                p95 = data.quantile(0.95)
+                line = ax.axhline(p95, xmax=1.05, color='black', linestyle='dashed')
+                line.set_clip_on(False)
+                ax.annotate(
+                    xy=(1.07, p95), xycoords=('axes fraction', 'data'),
+                    text=f"{units.format_time_offset(p95)}",
+                    horizontalalignment='left', verticalalignment='center',
+                )
 
         if x_discriminator is not None:
             formatter = matplotlib.ticker.EngFormatter(unit="s", places=0, usetex=True)
