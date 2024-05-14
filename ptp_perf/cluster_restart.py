@@ -8,9 +8,9 @@ from ptp_perf.util import setup_logging, async_gather_with_progress
 
 async def restart_node(machine: Machine):
     await machine.invoke_ssh(
-        "sudo shutdown -r now"
+        f"sudo shutdown -r +{machine.shutdown_delay.total_seconds() // 60:.0f}"
     ).hide_unless_failure().run(timeout=10)
-    await asyncio.sleep(3)
+    await asyncio.sleep(machine.shutdown_delay.total_seconds() + 5)
 
     success: bool = False
     i = 0

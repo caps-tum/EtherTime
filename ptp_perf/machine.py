@@ -125,6 +125,8 @@ class Machine(RPCTarget):
 
     plugin_settings: Optional[PluginSettings] = None
 
+    shutdown_delay: timedelta = timedelta(minutes=0)
+
     _ssh_session: Optional[Invocation] = None
 
     def get_effective_client_type(self, failover_active: bool = False) -> MachineClientType:
