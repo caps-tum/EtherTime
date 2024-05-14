@@ -3,7 +3,8 @@
 
 \newcommand{\ptpperfLoadKeys}[1]{\pgfkeys{#1}}
 \newcommand{\ptpKeyPrefix}{/ptpperf}
-\newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{0}}
+\newcommand{\ptpKeyUndefinedValue}{0}
+\newcommand{\ptpKey}[1]{\pgfkeysifdefined{\ptpKeyPrefix/#1}{\pgfkeysvalueof{\ptpKeyPrefix/#1}}{\ptpKeyUndefinedValue}}
 \newcommand{\fTime}[2][0]{\fpeval{round((#2) * 10e5, #1)}\,\textmu{}s}
 \newcommand{\fTimeMS}[2][0]{\fpeval{round((#2) * 10e2, #1)}\,ms}
 \newcommand{\fTimeMin}[2][0]{\fpeval{round((#2) / 60, #1)}\,min}
@@ -95,7 +96,11 @@
 }
 
 \newcommand{\cmpSearchVendor}[1]{\cmpSearch{\vendor}{ptpd,linuxptp,sptp,chrony}{#1}}
-\newcommand{\cmpSearchVendorCluster}[1]{\cmpSearch{\vendor/\cluster}{ptpd/rpi-4,linuxptp/rpi-4,sptp/rpi-4,chrony/rpi-4,ptpd/rpi-5,linuxptp/rpi-5,sptp/rpi-5,chrony/rpi-5}{#1}}
+% This excludes sptp/tk-1 due to it being non-functional
+\newcommand{\cmpSearchVendorNoSPTP}[1]{\cmpSearch{\vendor}{ptpd,linuxptp,chrony}{#1}}
+
+% This excludes sptp/tk-1 due to it being non-functional
+\newcommand{\cmpSearchVendorCluster}[1]{\cmpSearch{\vendor/\cluster}{ptpd/rpi-4,linuxptp/rpi-4,sptp/rpi-4,chrony/rpi-4,ptpd/rpi-5,linuxptp/rpi-5,sptp/rpi-5,chrony/rpi-5,ptpd/petalinux,linuxptp/petalinux,sptp/petalinux,chrony/petalinux,ptpd/tk-1,linuxptp/tk-1,chrony/tk-1}{#1}}
 \newcommand{\cmpSave}[1]{%
     \pgfkeys{
         \ptpKeyPrefix/cmp/.cd,
@@ -121,6 +126,10 @@
 \newcommand{\assert}[3][]{\strcmpfullexpand{#2}{#3}{}{\assertError{\strcmpfullexpand{#1}{}{#2 != #3}{#1}}}}
 \newcommand{\assertRange}[3]{\pgfmathparse{ifthenelse(and(\fpeval{#1} >= #2, \fpeval{#1} <= #3),"1","0")}\assert[\fpeval{#1} not in range (#2, #3)]{\pgfmathresult}{1}}
 
+\newcommand{\assertMultiCmpMinArgMaxArgSame}[2]{%
+\assert{\ptpKey{cmp/#1/minarg}}{\ptpKey{cmp/#2/minarg}}%
+\assert{\ptpKey{cmp/#1/maxarg}}{\ptpKey{cmp/#2/maxarg}}%
+}
 % Utility
 
 \makeatletter

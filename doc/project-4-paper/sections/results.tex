@@ -3,7 +3,7 @@
 
 \subsection{Testbed -- Hardware and Software}
 
-To conduct our evaluation we employ a total of four hardware testbeds. These include a cluster consisting of three Raspberry Pi 4 attached to an isolated wired Ethernet network via a single Gigabit Ethernet switch and a second cluster consisting of three Raspberry Pi 5 in the same hardware layout (both on Debian 12 and Linux 6.6.20). There are two key differences relevant to timekeeping between the Raspberry-Pi 4 and the Raspberry-Pi 5: The Raspberry-Pi 5 has support for PTP hardware timestamping on the network interface, and it has an integrated real-time clock (RTC) that can be powered by an external battery, both of which the Raspberry-Pi 4 lacks~\cite{raspberry-pi-datasheets}. Furthermore, we utilize a cluster of four Xilinx ZUBoard 1CGs, which feature a combination of ARM Cortex A53 and ARM Cortex R5F cores. These boards were adapted to run Debian with the standard Xilinx Kernels for access to the larger package repository. The base kernel was 5.15, which we patched for R8152/R8153 support for our secondary Ethernet adapters. However, we observed that under Kernel 5.15 hardware timestamping only worked on the transmission path for this board but not on the receiving path, which degraded synchronization accuracy and prevented SPTP from running at all, so we replaced it with a Xilinx 6.6.10 kernel. Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7, painstakingly updated to Ubuntu 22.04 LTS for software compability but still running the comparatively ancient NVIDIA-customized 3.10.40 kernel. This selection of hardware is representative of a range of embedded systems/edge devices available between 2014 and 2024, both 32-bit and 64-bit and with/without real-time clocks and hardware timestamping across a range of network interfaces. All clusters are controlled by programmable power delivery units so that we can simulate hardware failures in each component individually.
+To conduct our evaluation we employ a total of four hardware testbeds. These include a cluster consisting of three Raspberry Pi 4 attached to an isolated wired Ethernet network via a single Gigabit Ethernet switch and a second cluster consisting of three Raspberry Pi 5 in the same hardware layout (both on Debian 12 and Linux 6.6.20). There are two key differences relevant to timekeeping between the Raspberry-Pi 4 and the Raspberry-Pi 5: The Raspberry-Pi 5 has support for PTP hardware timestamping on the network interface, and it has an integrated real-time clock (RTC) that can be powered by an external battery, both of which the Raspberry-Pi 4 lacks~\cite{raspberry-pi-datasheets}. Furthermore, we utilize a cluster of four Xilinx ZUBoard 1CGs, which feature a combination of ARM Cortex A53 and ARM Cortex R5F cores. These boards were adapted to run Debian with the standard Xilinx Kernels for access to the larger package repository. The base kernel was 5.15, which we patched for R8152/R8153 support for our secondary Ethernet adapters. However, we observed that under Kernel 5.15 hardware timestamping only worked on the transmission path for this board but not on the receiving path, which degraded synchronization accuracy and prevented SPTP from running at all, so we replaced it with a Xilinx 6.6.10 kernel. Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7, painstakingly updated to Ubuntu 22.04 LTS for software compability but still running the comparatively ancient NVIDIA-customized 3.10.40 kernel. This selection of hardware is representative of a range of embedded systems/edge devices available between 2014 and 2024, both 32-bit and 64-bit and with/without real-time clocks and hardware timestamping across a range of network interface manufacturers. All clusters are controlled by programmable power delivery units so that we can simulate hardware failures in each component individually.
 
 \subsection{Baseline: The 1-to-1 benchmark}
 
@@ -53,15 +53,16 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
             \node[on chain] {Max};
         \end{scope}
 
-            \foreach \system in {rpi-4,rpi-5,petalinux}{
+            \foreach \system in {rpi-4,rpi-5,petalinux,tk-1}{
                 \foreach  \vendor  in {ptpd,linuxptp,sptp,chrony}{
                     \node[on chain=rows] {\strcmpfullexpand{\vendor}{ptpd}{\fCluster{\system}}{}};
 
                     \begin{scope}[start branch=row going right]
+                    \renewcommand{\ptpKeyUndefinedValue}{-0.000001}
                     \node[on chain] {\fVendor{\vendor}};
                     \node[on chain] {\fTimeKey[1]{base/\system/\vendor/q50}};
-                    \node[on chain] {\fTimeKey{base/\system/\vendor/q95}};
-                    \node[on chain] {\fTimeKey{base/\system/\vendor/q100}};
+                    \node[on chain] {\fTimeKey[1]{base/\system/\vendor/q95}};
+                    \node[on chain] {\fTimeKey[0]{base/\system/\vendor/q100}};
                     \end{scope}
                 }
             }
@@ -69,18 +70,29 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
     \label{tbl:baseline}
 \end{table}
 
-\cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q50}}
-\cmpSave{base/rpi-5}
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}}
 \cmpSave{base/rpi-4}
+\cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q50}}
+\cmpSave{base/rpi-5}
+\cmpSearchVendor{\ptpKey{base/petalinux/\vendor/q50}}
+\cmpSave{base/petalinux}
+\cmpSearchVendorNoSPTP{\ptpKey{base/tk-1/\vendor/q50}}
+\cmpSave{base/tk-1}
 
 % Best and worst vendors are the same
-\assert{\ptpKey{cmp/base/rpi-4/minarg}}{\ptpKey{cmp/base/rpi-5/minarg}}
-\assert{\ptpKey{cmp/base/rpi-4/maxarg}}{\ptpKey{cmp/base/rpi-5/maxarg}}
+\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/rpi-5}
+\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/petalinux}
+\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/tk-1}
 
+\newcommand{\baselineWorseFactor}{\fRelative{min(
+    \cmpKey{base/rpi-4}{max}/\cmpKey{base/rpi-4}{min},
+    \cmpKey{base/rpi-5}{max}/\cmpKey{base/rpi-5}{min},
+    \cmpKey{base/petalinux}{max}/\cmpKey{base/petalinux}{min},
+    \cmpKey{base/tk-1}{max}/\cmpKey{base/tk-1}{min},
+)}}
 
-A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on the Raspberry-Pi 4 and Raspberry-Pi 5 clusters, with the precise values available in Table~\ref{tbl:baseline}. We observe that \fVendor{\cmpMaxArg} has the worst synchronization offset on both systems, with a median clock offset of \fTime[1]{\cmpMax} on the Raspberry-Pi 4 and \fTimeKey[1]{cmp/base/rpi-5/max} on the Raspberry-Pi 5.
-\fVendor{\cmpMinArg}, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTime[1]{\cmpMin} and \fTimeKey[1]{cmp/base/rpi-5/min}, respectively.
+A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even with our 32-bit patches, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset of \fTime[1]{\cmpKey{base/rpi-4}{max}} on the Raspberry-Pi 4 and \fTimeKey[1]{cmp/base/rpi-5/max} on the Raspberry-Pi 5. Across all systems, \fVendor{\cmpKey{base/rpi-4}{maxarg}} performs at least \baselineWorseFactor{} worse than the best performing vendor.
+\fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTimeKey[1]{cmp/base/rpi-4/min} and \fTimeKey[1]{cmp/base/rpi-5/min}, respectively.
 \assert{\cmpMinArg}{chrony}%
 That a regular NTP client can outperform all of our PTP clients might come as a surprise, with PTP being engineered specifically for precision, but Chrony is very much state-of-the-art and can take advantage of the same hardware acceleration that our PTP clients can while providing a lot more features\todo{this claim might need to be backed up}.
 
@@ -149,7 +161,7 @@ Fortunately, LinuxPTP produces a lot more stable results, with a smaller range o
 \assert{\cmpMaxArg}{ptpd}
 %
 
-To deal with the amount of noise, we apply a variety of noise reduction techniques. All measurements are interleaved for better compensation of noise that may be introduced through mechanisms outside our control, we repeat each observation at least ten times for each vendor on each hardware platform (totaling in around \fpeval{round(\baselineTotalMinutesRuntime/60)} hours of runtime and \fpeval{round(\baselineTotalMinutesRuntime*60)} samples collected) and between each measurement run, the entire cluster is restarted to ensure that no state is carried over, which would harm the independence of observations. We further filter data that contains too many holes, undercuts a threshold of the actual number of samples collected, or fails basic consistency checks (all of which are likely to lead to bad quality data). Otherwise, the setup is left untouched, so that the only differences that occur are in the internal state of PTP.
+To deal with the amount of noise, we apply a variety of noise reduction techniques. All measurements are interleaved for better compensation of noise that may be introduced through mechanisms outside our control, we repeat each observation at least \numBaselineMeasurements{} times for each vendor on each hardware platform (totaling in around \fpeval{round(\baselineTotalMinutesRuntime/60)} hours of runtime and \fpeval{round(\baselineTotalMinutesRuntime*60)} samples collected) and between each measurement run, the entire cluster is restarted to ensure that no state is carried over, which would harm the independence of observations. We further filter data that contains too many holes, undercuts a threshold of the actual number of samples collected, or fails basic consistency checks (all of which are likely to lead to bad quality data). Otherwise, the setup is left untouched, so that the only differences that occur are in the internal state of PTP.
 
 
 Needless to say, a vendor that cannot deliver stable timing guarantees is risky to deploy in a production environment that needs to rely upon the time source functioning. In the upcoming sections, we will examine whether PTP clients can be made resilient against potential external and internal influences.
