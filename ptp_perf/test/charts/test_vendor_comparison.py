@@ -67,6 +67,7 @@ class VendorComparisonCharts(TestCase):
         frame_magnify = frame[
             (frame['Cluster'] == config.CLUSTER_PI5.name)
             | (frame['Cluster'] == config.CLUSTER_PETALINUX.name)
+            | (frame['Cluster'] == config.CLUSTER_TK1.name)
         ]
 
         chart = FigureContainer(
@@ -85,8 +86,8 @@ class VendorComparisonCharts(TestCase):
                         column_hue='Vendor'
                     )],
                     title="Baseline Performance by Vendor and Cluster",
-                    xticks=[1.5, 6, 10.5, ],
-                    xticklabels=["Raspberry-Pi 4", "Raspberry-Pi 5", "Petalinux", ],
+                    xticks=[1.5, 6, 10.5, 15],
+                    xticklabels=["R-Pi 4", "R-Pi 5", "Petalinux", "TK-1"],
                     ylimit_top=50 * units.us,
                 ),
                 TimeAxisContainer(
@@ -96,8 +97,8 @@ class VendorComparisonCharts(TestCase):
                         column_y='Value',
                         column_hue='Vendor',
                     )],
-                    xticks=[6, 10.5],
-                    xticklabels=["Raspberry-Pi 5", "Petalinux"],
+                    xticks=[6, 10.5, 15],
+                    xticklabels=["R-Pi 5", "Petalinux", "TK-1"],
                     ylabel='',
                     ylimit_top=5.5 * units.us,
                     yminorticks=True,
@@ -112,7 +113,7 @@ class VendorComparisonCharts(TestCase):
         boundary = 5 * units.us
         ax1.add_artist(
             ConnectionPatch(
-                (1.0, boundary / ax1.get_ylim()[1]), (0.333, 0),
+                (1.0, boundary / ax1.get_ylim()[1]), (0.265, 0),
                 coordsA='axes fraction', coordsB='axes fraction',
                 axesA=ax1, axesB=ax1,
                 linestyle='dashed', color='0.7', connectionstyle=ConnectionStyle('angle', angleA=180, angleB=90, rad=0),
@@ -231,6 +232,10 @@ class VendorComparisonCharts(TestCase):
                         continue
 
                     for quantile, value in summary.clock_quantiles().items():
+                        # We don't want the max value in the graphics.
+                        if quantile == 1.0:
+                            continue
+
                         output_data.append({
                             'Benchmark': benchmark.name,
                             'Cluster': cluster.name,
