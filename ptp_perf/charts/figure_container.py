@@ -14,7 +14,8 @@ import seaborn
 from matplotlib.ticker import MultipleLocator, PercentFormatter, LogLocator
 
 from ptp_perf.charts.chart_container import ChartContainer
-from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT
+from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT, PAPER_GENERATED_RESOURCES_DIR
+from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
 
 @dataclass(kw_only=True)
@@ -24,7 +25,8 @@ class DataElement:
     column_y: str = None
     column_hue: str = None
 
-    color_map: Dict = field(default_factory=lambda: ChartContainer.VENDOR_COLORS)
+    color_map: Optional[Dict] = field(default_factory=lambda: ChartContainer.VENDOR_COLORS)
+    hue_norm: Optional[Union[tuple, matplotlib.colors.Normalize]] = None
 
     def get_data_as_timeseries(self) -> pd.Series:
         """Get the y-data as a series indexed by x-data. Works only if there is no hue. """
@@ -58,6 +60,7 @@ class AxisContainer:
     title: str = None
 
     xlabel: str = None
+    xlog: bool = False
     xticks: Optional[Iterable] = None
     xticklabels: Optional[Iterable] = None
     xticklabels_format_time: bool = False
@@ -103,6 +106,8 @@ class AxisContainer:
             self.axis.set_title(self.title)
 
         # X-axis
+        if self.xlog:
+            self.axis.set_xscale('log')
         self.axis.xaxis.set_label_text(self.xlabel)
         if self.xticks is not None:
             self.axis.set_xticks(self.xticks)
@@ -303,3 +308,7 @@ class FigureContainer:
             columns = self.columns
         rows = math.ceil(len(self.axes_containers) / columns)
         return rows, columns
+
+    def save_default_locations(self, basename: str, benchmark: Benchmark):
+        self.save(benchmark.storage_base_path.joinpath(f"{basename}.png"))
+        self.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"{basename}.pdf"))

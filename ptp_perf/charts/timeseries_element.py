@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 import seaborn
-from matplotlib import patheffects
+from matplotlib import patheffects, pyplot as plt
 from matplotlib.ticker import EngFormatter
 
 from ptp_perf.charts.figure_container import DataElement, AxisContainer
@@ -86,17 +86,34 @@ class TimeseriesElement(DataElement):
                 )
 
 
+@dataclass
 class ScatterElement(DataElement):
+    column_style: str = None
+    color_map_as_palette: bool = False
+    """By default, we use discrete colours and make the edges darkers. Use this to set the colormap directly as a palette e.g. for continuous hues."""
 
     def plot(self, axis_container: "AxisContainer"):
-        seaborn.scatterplot(
+        extra_args = {
+            'palette': self.color_map
+        }
+        if self.color_map_as_palette:
+            extra_args['palette'] = {key: value + '55' for key, value in self.color_map.items() if self.color_map is not None}
+            extra_args['edge_colors'] = self.data[self.column_hue].map({key: value + 'AA' for key, value in self.color_map.items()})
+
+        scatter = seaborn.scatterplot(
             ax=axis_container.axis,
             data=self.data,
             x=self.column_x,
             y=self.column_y,
             hue=self.column_hue,
-            # Default color and border palette.
-            palette={key: value + '55' for key, value in self.color_map.items()},
-            edgecolors=self.data[self.column_hue].map({key: value + 'AA' for key, value in self.color_map.items()}),
-            legend=False,
+            hue_norm=self.hue_norm,
+            style=self.column_style,
+            **extra_args,
+            # legend="auto" if axis_container.legend else False,
         )
+
+        # cbar = plt.colorbar(
+        #     scatter.collections[0],
+        # )
+        # cbar.set_ticks([1e-9, 1e-6, 1e-3])
+        # cbar.set_ticklabels(['1ns', '1us', '1ms'])

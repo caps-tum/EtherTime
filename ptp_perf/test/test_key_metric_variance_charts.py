@@ -50,8 +50,7 @@ class KeyMetricVarianceCharts(TestCase):
             comparison_chart.share_x = False
             comparison_chart.share_y = False
             comparison_chart.plot()
-            comparison_chart.save(benchmark.storage_base_path.joinpath(f"key_metric_variance_compare_pi.png"))
-            comparison_chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"key_metric_variance_compare_pi.pdf"))
+            comparison_chart.save_default_locations("key_metric_variance_compare_pi", benchmark)
 
 
     @staticmethod

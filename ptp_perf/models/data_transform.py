@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Union, Iterable, List, Callable, Type
+from dataclasses import dataclass, field
+from typing import Union, Iterable, List, Callable, Type, Optional
 
 import pandas as pd
 from django.db.models import Model, Field
@@ -22,10 +22,10 @@ class DataQueryMelt:
 
 @dataclass
 class DataTransform:
-    expansions: List[Union[Model, Field]]
+    expansions: List[Union[Model, Field]] = field(default_factory=list)
 
     # Sorting function
-    sort_key: Callable
+    sort_key: Optional[Callable] = None
 
     # Melting (merging columns)
     use_melt: bool = False
@@ -39,6 +39,9 @@ class DataTransform:
         return frame
 
     def sort_objects(self, objects: Iterable[SUPPORTED_MODELS]) -> List[SUPPORTED_MODELS]:
+        if self.sort_key is None:
+            return list(objects)
+
         return [
             object_instance for object_instance in
             sorted(objects, key=self.sort_key)
