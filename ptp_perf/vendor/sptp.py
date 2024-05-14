@@ -55,6 +55,7 @@ class SPTPVendor(Vendor):
         elif effective_client_type.is_slave():
             self._process.append_arg_if_present("-config")
             self._process.append_arg_if_present(str(self.config_file_path)),
+            # Very important: The address should go last, otherwise options will be ignored silently :/.
             self._process.append_arg_if_present(endpoint.cluster.ptp_master.ptp_address)
         else:
             raise NotImplementedError()

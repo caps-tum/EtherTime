@@ -17,6 +17,9 @@ class VendorDB(BaseRegistry):
     LINUXPTP = LinuxPTPVendor()
     SPTP = SPTPVendor()
     CHRONY = ChronyVendor()
+    SPTP_SOFTWARE_TIMESTAMPING = SPTPVendor(
+        id="sptp-soft-ts", name="SPTP (Software Timestamping)"
+    )
 
     ANALYZED_VENDORS: List[Vendor] = [PTPD, LINUXPTP, SPTP, CHRONY]
 
@@ -27,4 +30,5 @@ VendorDB.register_all(
     VendorDB.LINUXPTP,
     VendorDB.SPTP,
     VendorDB.CHRONY,
+    VendorDB.SPTP_SOFTWARE_TIMESTAMPING,
 )
