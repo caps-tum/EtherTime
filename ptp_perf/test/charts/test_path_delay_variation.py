@@ -19,7 +19,10 @@ class PathDelayChart(TestCase):
         data = DataTransform(
             expansions=[PTPEndpoint.profile],
         ).run(
-            PTPEndpoint.objects.filter(profile__cluster_id=CLUSTER_PI.id).select_related("profile").all()
+            PTPEndpoint.objects.filter(
+                # Use data from all clusters
+                # profile__cluster_id=CLUSTER_PI.id
+            ).select_related("profile").all()
         )
         data[frame_column(PTPEndpoint.clock_diff_median) + '_log'] = np.log10(data[frame_column(PTPEndpoint.clock_diff_median)])
 
@@ -58,7 +61,8 @@ class PathDelayChart(TestCase):
         figure.axes_containers[0].axis.legend(
             handles,
             # labels,
-            ["Clock Diff", "1μs", "10μs", "100μs", "1ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
+            # ["Clock Diff", "1μs", "10μs", "100μs", "1ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
+            ["Clock Diff", "1μs", "100μs", "10ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
             loc="center left",
             bbox_to_anchor=(1, 0.5),
         )
