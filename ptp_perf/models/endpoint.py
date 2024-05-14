@@ -614,7 +614,17 @@ class PTPEndpoint(models.Model):
             records_parsed = [json.loads(record.message) for record in records]
             self.sys_cpu_frequency = pd.Series(record["system"]["cpu_freq"]["current"] for record in records_parsed).mean()
             # The sensor is a single-element list for some reason, needs to be unpacked
-            self.sys_sensors_temperature_cpu = pd.Series(unpack_one_value(record["system"]["sensors_temperature"]["cpu_thermal"])["current"] for record in records_parsed).mean()
+            sensor_temperature_data = [
+                record["system"]["sensors_temperature"] for record in records_parsed
+                if len(record["system"]["sensors_temperature"]) != 0
+            ]
+            if len(sensor_temperature_data) != 0:
+                try:
+                    self.sys_sensors_temperature_cpu = pd.Series(
+                        unpack_one_value(record["cpu_thermal"])["current"] for record in sensor_temperature_data
+                    ).mean()
+                except KeyError:
+                    raise RuntimeError(f"Unknown temperature sensor set:\n{sensor_temperature_data}")
 
             memory_frame = pd.DataFrame(record["process"]["memory_full_info"] for record in records_parsed)
             self.proc_mem_uss = memory_frame["uss"].max()
