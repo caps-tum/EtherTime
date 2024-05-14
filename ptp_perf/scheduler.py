@@ -158,7 +158,7 @@ def queue_benchmarks(result):
             ScheduleTask(
                 name="Manual Pause",
                 command=r"/bin/bash -c 'read -p \'Press any key to continue...\' -n 1 -r",
-                estimated_time=timedelta(seconds=0),
+                estimated_time=timedelta(hours=1),
                 priority=priority
             )
         )
