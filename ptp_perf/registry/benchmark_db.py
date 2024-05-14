@@ -17,15 +17,17 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     DEMO = Benchmark("test/demo", "Demo", tags=[], duration=timedelta(minutes=5))
 
     NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[])
-    BASE_TWO_CLIENTS = Benchmark(
-        "scalability/1_to_2", "1 Master 2 Clients", tags=[],
-        num_machines=3,
-    )
 
-    Base_ALL_CLIENTS = Benchmark(
-        "scalability/1_to_9", "1 Master 9 Clients", tags=[],
-        num_machines=10,
-    )
+    @staticmethod
+    def scalability(num_nodes: int):
+        return Benchmark(
+            f"scalability/1_to_{num_nodes-1}", f"{num_nodes} Nodes", tags=[],
+            num_machines=num_nodes,
+            monitor_resource_consumption=True,
+        )
+
+    BASE_TWO_CLIENTS = scalability(num_nodes=3)
+    BASE_ALL_CLIENTS = scalability(num_nodes=12)
 
     _FAULT_TIMING_SETTINGS = {
         'duration': timedelta(minutes=15),
@@ -189,13 +191,17 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.Base_ALL_CLIENTS,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.BASE_ALL_CLIENTS,
     BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,
     BenchmarkDB.NO_SWITCH,
     BenchmarkDB.RESOURCE_CONSUMPTION,
 )
+
+# 3 nodes and all nodes (12) defined above already
+for extra_nodes in range(4, 12):
+    BenchmarkDB.register_all(BenchmarkDB.scalability(num_nodes=extra_nodes))
 
 for component in [ResourceContentionComponent.NET, ResourceContentionComponent.CPU]:
     for load_level in [10, 20, 33, 50, 66, 80, 90, 100]:
