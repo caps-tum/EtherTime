@@ -143,10 +143,11 @@ MACHINE_TK1_1 = Machine(
     id="tk1-1", address="tk1-1", remote_root="/home/ubuntu/ptp-perf",
     ptp_address="10.0.0.71",
     endpoint_type=EndpointType.MASTER,
-    ptp_interface='eth0',
+    ptp_interface='enp1s0',
     ptp_use_phc2sys=False,
     ptp_software_timestamping=False,
     ptp_priority_1=200,
+    python_executable='python3.11',
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.171",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -156,10 +157,11 @@ MACHINE_TK1_2 = Machine(
     ptp_address="10.0.0.72",
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
-    ptp_interface='enp1s0',
+    ptp_interface='eth0',
     ptp_use_phc2sys=False,
     ptp_software_timestamping=False,
     ptp_priority_1=200,
+    python_executable='python3.11',
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.82", iperf_secondary_address="192.168.1.172",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -189,6 +191,7 @@ machines = {
         MACHINE_RPISERV, MACHINE_SWITCH,
         MACHINE_SWITCH2,
         MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
+        MACHINE_TK1_1, MACHINE_TK1_2,
     ]
 }
 ANALYZED_MACHINES = [
