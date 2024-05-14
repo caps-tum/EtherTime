@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Optional, Tuple, List
@@ -50,6 +51,7 @@ def run_scheduler(result):
         if task is not None:
             logging.info(f"Running task: {task}")
             task.run()
+            time.sleep(5)
 
 
 def queue_task(result):
