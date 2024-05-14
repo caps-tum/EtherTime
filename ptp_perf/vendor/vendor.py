@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
+from django.template import Template, Context
+
 from ptp_perf.constants import LOCAL_DIR, PTPPERF_REPOSITORY_ROOT
 from ptp_perf.invoke.invocation import Invocation
 
@@ -86,7 +88,11 @@ class Vendor:
             PTPPERF_REPOSITORY_ROOT.joinpath("deploy").joinpath("config"), endpoint
         )
         template = template_source_path.read_text()
-        output = template.format(ptp_config=endpoint.benchmark.ptp_config, machine=endpoint.machine, cluster=endpoint.cluster)
+        output = Template(template).render(
+            Context({
+                'ptp_config': endpoint.benchmark.ptp_config, 'machine': endpoint.machine, 'cluster':endpoint.cluster,
+            })
+        )
         output_file = self.config_file_path
         output_file.write_text(output)
         return output_file

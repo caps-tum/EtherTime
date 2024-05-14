@@ -45,6 +45,7 @@ class PTPDVendor(Vendor):
             "stdbuf", "-eL", "-oL",
             "ptpd",
             "-i", endpoint.machine.ptp_interface,
+            "--config-file", self.config_file_path,
             "--verbose",
         ).append_arg_if_present(
             # We don't supply this on failover

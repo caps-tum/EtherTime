@@ -190,8 +190,11 @@ class Cluster:
         return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.MASTER])
 
     @property
-    def ptp_failover_master(self) -> Machine:
-        return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.SECONDARY_SLAVE])
+    def ptp_failover_master(self) -> Optional[Machine]:
+        try:
+            return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.SECONDARY_SLAVE])
+        except ValueError:
+            return None
 
     def __str__(self):
         return self.name
