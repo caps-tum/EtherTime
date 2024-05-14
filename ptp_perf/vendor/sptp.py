@@ -47,8 +47,9 @@ class SPTPVendor(Vendor):
         ).set_environment_variable("PATH", f"/home/rpi/go/bin/", extend=True).as_privileged()
 
         if effective_client_type.is_primary_master():
-            self._process.append_arg_if_present("--timestamptype", endpoint.machine.ptp_software_timestamping)
-            self._process.append_arg_if_present("software", endpoint.machine.ptp_software_timestamping)
+            if endpoint.machine.ptp_software_timestamping:
+                self._process.append_arg_if_present("--timestamptype")
+                self._process.append_arg_if_present("software")
         elif effective_client_type.is_slave():
             self._process.append_arg_if_present("-config")
             self._process.append_arg_if_present(str(self.config_file_path)),
