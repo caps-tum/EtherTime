@@ -640,7 +640,7 @@ class PTPEndpoint(models.Model):
             self.proc_io_write_count = first_last_difference["process"]["io_counters"]["write_count"]
             self.proc_io_write_bytes = first_last_difference["process"]["io_counters"]["write_bytes"]
 
-            interface_stats = first_last_difference["system"]["net_io_counters"]["eth0"]
+            interface_stats = first_last_difference["system"]["net_io_counters"][self.machine.ptp_interface]
             self.sys_net_ptp_iface_bytes_sent = interface_stats["bytes_sent"]
             self.sys_net_ptp_iface_packets_sent = interface_stats["packets_sent"]
             self.sys_net_ptp_iface_bytes_received = interface_stats["bytes_recv"]
