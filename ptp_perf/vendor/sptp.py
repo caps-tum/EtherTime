@@ -44,7 +44,9 @@ class SPTPVendor(Vendor):
         }[effective_client_type]
         self._process = Invocation.of_command(
             executable, "-iface", endpoint.machine.ptp_interface,
-        ).set_environment_variable("PATH", f"/home/rpi/go/bin/", extend=True).as_privileged()
+        ).set_environment_variable(
+            "PATH", str(Path(endpoint.machine.remote_root).joinpath(f"../go/bin/")), extend=True
+        ).as_privileged()
 
         if effective_client_type.is_primary_master():
             if endpoint.machine.ptp_software_timestamping:
