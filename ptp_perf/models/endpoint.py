@@ -226,7 +226,7 @@ class PTPEndpoint(models.Model):
 
         Timeseries._validate_series(frame_no_clock_step)
 
-        minimum_convergence_time = timedelta(seconds=1)
+        minimum_convergence_time = timedelta(seconds=10)
         detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
 
         if detected_clock_convergence is None:
