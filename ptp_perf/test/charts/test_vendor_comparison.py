@@ -231,11 +231,7 @@ class VendorComparisonCharts(TestCase):
                     except BenchmarkSummary.DoesNotExist:
                         continue
 
-                    for quantile, value in summary.clock_quantiles().items():
-                        # We don't want the max value in the graphics.
-                        if quantile == 1.0:
-                            continue
-
+                    for quantile, value in summary.clock_quantiles(include_p99_and_max=False).items():
                         output_data.append({
                             'Benchmark': benchmark.name,
                             'Cluster': cluster.name,

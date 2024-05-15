@@ -2,7 +2,6 @@ from typing import Dict
 
 import pandas as pd
 from django.db import models
-from django.db.models import FloatField
 
 from ptp_perf.machine import Cluster
 from ptp_perf.models import Sample
@@ -10,9 +9,8 @@ from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
-from ptp_perf.utilities.django_utilities import FormattedFloatField, DataFormatFloatField, GenericEngineeringFloatField, \
+from ptp_perf.utilities.django_utilities import DataFormatFloatField, GenericEngineeringFloatField, \
     PercentageFloatField, TimeFormatFloatField, TemperatureFormatFloatField, FrequencyFormatFloatField
-from ptp_perf.utilities.units import format_time_offset
 from ptp_perf.vendor.vendor import Vendor
 
 
@@ -28,10 +26,12 @@ class BenchmarkSummary(models.Model):
     clock_diff_median = TimeFormatFloatField(null=True)
     clock_diff_p05 = TimeFormatFloatField(null=True)
     clock_diff_p95 = TimeFormatFloatField(null=True)
+    clock_diff_p99 = TimeFormatFloatField(null=True)
     clock_diff_max = TimeFormatFloatField(null=True)
     path_delay_median = TimeFormatFloatField(null=True)
     path_delay_p05 = TimeFormatFloatField(null=True)
     path_delay_p95 = TimeFormatFloatField(null=True)
+    path_delay_p99 = TimeFormatFloatField(null=True)
     path_delay_max = TimeFormatFloatField(null=True)
     path_delay_std = TimeFormatFloatField(null=True)
 
@@ -88,7 +88,7 @@ class BenchmarkSummary(models.Model):
             normalize_time=TimeNormalizationStrategy.NONE, timestamp_merge_append=False
         )
 
-        quantiles = [0.05, 0.5, 0.95, 1]
+        quantiles = [0.05, 0.5, 0.95, 0.99, 1]
 
         clock_data = data_query.run(Sample.SampleType.CLOCK_DIFF)
         count = len(clock_data.index.get_level_values("endpoint_id").unique())
@@ -110,11 +110,13 @@ class BenchmarkSummary(models.Model):
             clock_diff_p05=clock_quantiles[0],
             clock_diff_median=clock_quantiles[1],
             clock_diff_p95=clock_quantiles[2],
-            clock_diff_max=clock_quantiles[3],
+            clock_diff_p99=clock_quantiles[3],
+            clock_diff_max=clock_quantiles[4],
             path_delay_p05=path_delay_quantiles[0],
             path_delay_median=path_delay_quantiles[1],
             path_delay_p95=path_delay_quantiles[2],
-            path_delay_max=path_delay_quantiles[3],
+            path_delay_p99=path_delay_quantiles[3],
+            path_delay_max=path_delay_quantiles[4],
         )
 
         # Fault tolerance
@@ -160,18 +162,25 @@ class BenchmarkSummary(models.Model):
             cluster_id=cluster.id
         )
 
-    def clock_quantiles(self) -> Dict[float, float]:
-        return {
+    def clock_quantiles(self, include_p99_and_max: bool = True) -> Dict[float, float]:
+        quantiles = {
             0.05: self.clock_diff_p05,
             0.5: self.clock_diff_median,
             0.95: self.clock_diff_p95,
-            1.0: self.clock_diff_max,
         }
+        if include_p99_and_max:
+            quantiles.update({
+                0.99: self.clock_diff_p95,
+                1.0: self.clock_diff_max,
+            })
+        return quantiles
+
     def path_delay_quantiles(self) -> Dict[float, float]:
         return {
             0.05: self.path_delay_p05,
             0.5: self.path_delay_median,
             0.95: self.path_delay_p95,
+            0.99: self.path_delay_p95,
             1.0: self.path_delay_max,
         }
 
