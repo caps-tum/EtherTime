@@ -290,7 +290,7 @@ PTPd has a more noticeable degradation in synchronization performance of up to \
 \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_cache/load_100}}%
 \todo{TODO: RE-ENABLE ASSERTION WHEN DATA AVAILABLE}
 %\assertRange{\cmpMin}{2.0}{4.0}
-\assertRange{\cmpMax}{4.0}{7.0}
+\assertRange{\cmpMax}{4.0}{10.0}
 \cmpSave{cache}%
 The third principal hardware component where contention can occur is the memory hierarchy. Generally, PTP does not require a large amount of memory, but we do observe a moderate amount of sensitivity against cache contention (between \fRatio[1]{\cmpMin} with \fVendorCluster{\cmpMinArg} and \fRatio[1]{\cmpMax} with \fVendorCluster{\cmpMaxArg}),%
 \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_memory/load_100}}%

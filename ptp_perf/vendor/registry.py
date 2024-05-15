@@ -22,6 +22,7 @@ class VendorDB(BaseRegistry):
     )
 
     ANALYZED_VENDORS: List[Vendor] = [PTPD, LINUXPTP, SPTP, CHRONY]
+    ANALYZED_VENDOR_IDS: List[str] = [vendor.id for vendor in ANALYZED_VENDORS]
 
 
 VendorDB.register_all(

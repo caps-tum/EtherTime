@@ -9,6 +9,15 @@ from ptp_perf.profiles.taxonomy import ResourceContentionType, ResourceContentio
 from ptp_perf.registry.base_registry import BaseRegistry
 
 
+# Some benchmark recipies
+def benchmark_scalability(num_nodes: int):
+    return Benchmark(
+        f"scalability/1_to_{num_nodes - 1}", f"{num_nodes} Nodes", tags=[],
+        num_machines=num_nodes,
+        monitor_resource_consumption=True,
+    )
+
+
 class BenchmarkDB(BaseRegistry[Benchmark]):
 
     BASE = Benchmark("base", "Baseline", tags=[])
@@ -18,16 +27,15 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
     NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[])
 
-    @staticmethod
-    def scalability(num_nodes: int):
-        return Benchmark(
-            f"scalability/1_to_{num_nodes-1}", f"{num_nodes} Nodes", tags=[],
-            num_machines=num_nodes,
-            monitor_resource_consumption=True,
-        )
 
-    BASE_TWO_CLIENTS = scalability(num_nodes=3)
-    BASE_ALL_CLIENTS = scalability(num_nodes=12)
+    BASE_TWO_CLIENTS = benchmark_scalability(num_nodes=3)
+    BASE_ALL_CLIENTS = benchmark_scalability(num_nodes=12)
+
+    # 3 nodes and all nodes (12) defined above already
+    SCALABILITY_REMAINING_CLIENTS = [
+        benchmark_scalability(num_nodes=extra_nodes) for extra_nodes in range(4, 12)
+    ]
+    SCALABILITY_ALL = [BASE_TWO_CLIENTS, *SCALABILITY_REMAINING_CLIENTS, BASE_ALL_CLIENTS]
 
     _FAULT_TIMING_SETTINGS = {
         'duration': timedelta(minutes=15),
@@ -191,17 +199,13 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.BASE_ALL_CLIENTS,
+    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.BASE_ALL_CLIENTS, *BenchmarkDB.SCALABILITY_REMAINING_CLIENTS,
     BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,
     BenchmarkDB.NO_SWITCH,
     BenchmarkDB.RESOURCE_CONSUMPTION,
 )
-
-# 3 nodes and all nodes (12) defined above already
-for extra_nodes in range(4, 12):
-    BenchmarkDB.register_all(BenchmarkDB.scalability(num_nodes=extra_nodes))
 
 for component in [ResourceContentionComponent.NET, ResourceContentionComponent.CPU]:
     for load_level in [10, 20, 33, 50, 66, 80, 90, 100]:

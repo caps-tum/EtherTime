@@ -62,22 +62,24 @@ def format_engineering(value: float, unit: str = "") -> str:
     if value == 0:
         return f"{value}{unit}"
     log_value = math.floor(math.log10(abs(value)))
-    print(log_value)
-    suffix, multiplier, places = {
-        0: ('', 1, 1),
-        1: ('', 1, 0),
-        2: ('', 1, 0),
-        3: ('K', 1e-3, 0),
-        4: ('K', 1e-3, 0),
-        5: ('K', 1e-3, 0),
-        6: ('M', 1e-6, 0),
-        7: ('M', 1e-6, 0),
-        8: ('M', 1e-6, 0),
-        9: ('G', 1e-9, 0),
-        10: ('G', 1e-9, 0),
-        11: ('G', 1e-9, 0),
-    }[log_value]
-    return f"{value * multiplier:.{places}f}{suffix}{unit}"
+    try:
+        suffix, multiplier, places = {
+            0: ('', 1, 1),
+            1: ('', 1, 0),
+            2: ('', 1, 0),
+            3: ('K', 1e-3, 0),
+            4: ('K', 1e-3, 0),
+            5: ('K', 1e-3, 0),
+            6: ('M', 1e-6, 0),
+            7: ('M', 1e-6, 0),
+            8: ('M', 1e-6, 0),
+            9: ('G', 1e-9, 0),
+            10: ('G', 1e-9, 0),
+            11: ('G', 1e-9, 0),
+        }[log_value]
+        return f"{value * multiplier:.{places}f}{suffix}{unit}"
+    except KeyError:
+        return f"{value:f}{unit}"
 
 
 def format_percentage(x: float) -> str:
