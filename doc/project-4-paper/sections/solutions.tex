@@ -8,7 +8,7 @@ Because we are interested in evaluating time synchronization for dependable embe
 
 Clock synchronization protocols have been proposed for many different applications including packet-switched networks~\cite{sptp, white-rabbit, time-protocol-flooding, time-protocol-low-power} and their strengths and weaknesses have been evaluated analytically~\cite{clock-synchronization-packet-switched-networks}. Due to the need for dependability, multiple studies have compared how time protocols can fail~\cite{ptp-failures}, how fault tolerance and redundancy can be offered~\cite{fault-tolerant-clock-synchronization-distributed-systems}, and how timing protocols might be attacked by malicious actors~\cite{ptp-internal-attacks, byzantine-ptp}. However, we find that there is a lack of literature collecting empirical findings across implementations and protocols, with an early study~\cite{ntp-vs-ptp} from 2006 focusing on technologies that were available at the time and more recent studies~\cite{time-enough} not incorporating fault-tolerance as a central aspect.
 
-We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure (specifically the Elasticsearch/Logstash/Kibana stack) making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report\todo{@arpan: cannot cite like requested: submitted via email because no public issue tracker is available} has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required (White Rabbit-capable synchronous Ethernet switches and NICs with \emph{synctonization} support) makes it less suitable for embedded systems.
+We surveyed available PTP implementations and found that while there are plenty of commercial products available, the number of viable freely available implementations is rather limited. We excluded three vendors from our evaluation: OpenPTP~\cite{openptp} due to the unmaintained state of the project (last activity $>10$ years ago, the solution has since been commercialized), Timebeat~\cite{timebeat} due to the reliance on heavy-weight infrastructure (specifically the Elasticsearch/Logstash/Kibana stack) making it unsuitable for embedded applications, and PPSI~\cite{ppsi} due to stability issues caused by buffer overruns (bug report\cite{ppsi-bug-report}\todo{@arpan: cited as personal communication: submitted via email because no public issue tracker is available} has been filed), respectively. White rabbit~\cite{white-rabbit}, an open extension to PTP for ultra-precise (sub-nanosecond) timing was also reviewed, but the highly specialized hardware required (White Rabbit-capable synchronous Ethernet switches and NICs with \emph{synctonization} support) makes it less suitable for embedded systems.
 
 This left us with four vendors suitable for our analysis: PTPd, LinuxPTP, SPTP and Chrony (summarized in Table~\ref{tbl:vendors}).
 PTPd is a traditional implementation of the PTP protocol that, despite being less maintained in recent years~\cite{ptpd-maintainers} and lacking modern features such as hardware timestamping~\cite{ptpd-manpage}, spawned a variety of derivates (also commercial) and is still being deployed according to the Debian package tracker~\cite{debian-popularity-contest}, perhaps due to its relative simplicity and wider support of non-Linux UNIX systems.
@@ -119,7 +119,7 @@ PTP is built to be configurable, and settings include anything from the underlyi
         \intervalAnnotationAbove{discovery}{bmca}{0.5cm}{Network Domain Logic}
 
     \end{tikzpicture}
-    \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. }
+    \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. For stability of the system clock, some state transitions are typically restricted.}
     \label{fig:ptp-lifecycle}
 \end{figure*}
 
@@ -139,22 +139,24 @@ For calculating metrics on the quality of the clock synchronization, it is impor
 
 
 \subsection{Synchronization Performance}
-It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}\todo{An evaluation of this using our data would be nice}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
+It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
 
 \subsection{Hardware Support}
 
 \begin{figure}
+    \centering
     \newcommand{\timestampClock}[1][100]{\textcolor{black!#1}{\faClock[regular]}}
+    \small
 
     \begin{tikzpicture}[
         start chain=components going below,
         start chain=components2 going below,
-        component block/.style={draw, minimum height=0.75cm},
+        component block/.style={draw, minimum height=0.6cm},
         node distance=0cm,
     ]
 
-            \begin{scope}[name prefix=stack1-, component/.style={component block, text width=3.5cm}]
-                \node[on chain=components, component] at (0, 0) (PTP) {PTP Client \hfill \rotatebox{45}{\faStamp{}} \timestampClock{} \faEnvelope[regular]};
+            \begin{scope}[name prefix=stack1-, component/.style={component block, text width=3.25cm}]
+                \node[on chain=components, component] at (0, 0) (PTP) {PTP Client \hfill \smash{\raisebox{-0.2ex}{\rotatebox{45}{\faStamp{}}}} \timestampClock{} \faEnvelope[regular]};
                 \node[on chain=components, component] (Kernel) {Kernel \hfill \timestampClock[60] \faEnvelope[regular]};
                 \node[on chain=components, component] (IP-Stack) {IP Stack \hfill \timestampClock[40] \faEnvelope[regular]};
                 \node[on chain=components, component] (Hardware Queue) {Hardware Queue \hfill \timestampClock[30] \faEnvelope[regular]};
@@ -163,21 +165,21 @@ It is generally understood that network clock synchronization accuracy is a func
                 \node[above=of PTP] (title) {Software PTP};
             \end{scope}
 
-            \begin{scope}[name prefix=stack2-, component/.style={component block, text width=3.5cm}]
-                \node[on chain=components2, component] at (5.5, 0) (PTP) {\faEnvelope[regular] \hfill PTP Client};
+            \begin{scope}[name prefix=stack2-, component/.style={component block, text width=3.25cm}]
+                \node[on chain=components2, component] at (5.25, 0) (PTP) {\faEnvelope[regular] \hfill PTP Client};
                 \node[on chain=components2, component] (Kernel) {\faEnvelope[regular] \hfill Kernel};
                 \node[on chain=components2, component] (IP-Stack) {\faEnvelope[regular] \hfill IP Stack };
                 \node[on chain=components2, component] (Hardware Queue) {\faEnvelope[regular] \hfill Hardware Queue};
-                \node[on chain=components2, component] (NIC) {\faEnvelope[regular] \faClock[regular] \rotatebox{-45}{\faStamp{}}  \hfill \faEthernet{} NIC};
+                \node[on chain=components2, component] (NIC) {\faEnvelope[regular] \faClock[regular] \smash{\raisebox{1.2ex}{\rotatebox{-45}{\faStamp{}}}}  \hfill \faEthernet{} NIC};
 
                 \node[above=of PTP] (title) {Hardware PTP};
             \end{scope}
 
             \draw[Stealth-Stealth, very thick] (stack1-NIC) -- (stack2-NIC) node[midway, draw, fill=white] (network) {\faNetworkWired};
 
-            \node[draw, dashed, below=0.25cm of network] (network-annotation) {\faClock[regular] $\rightarrow$ \faHistory{}\,\textsuperscript{\textbf{*}}};
-            \draw[dotted] (network.south west) -- (network-annotation.north west);
-            \draw[dotted] (network.south east) -- (network-annotation.north east);
+            \node[draw, dashed, above=0.25cm of network] (network-annotation) {\faClock[regular] $\rightarrow$ \faHistory{}\,\textsuperscript{\textbf{*}}};
+            \draw[dotted] (network.north west) -- (network-annotation.south west);
+            \draw[dotted] (network.north east) -- (network-annotation.south east);
 
     \end{tikzpicture}
     \caption{
