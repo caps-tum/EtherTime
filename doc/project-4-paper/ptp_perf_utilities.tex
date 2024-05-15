@@ -9,6 +9,7 @@
 \newcommand{\fTimeMS}[2][0]{\fpeval{round((#2) * 10e2, #1)}\,ms}
 \newcommand{\fTimeMin}[2][0]{\fpeval{round((#2) / 60, #1)}\,min}
 \newcommand{\fTimeKey}[2][0]{\fTime[#1]{\ptpKey{#2}}}
+\newcommand{\fTimeKeyOmitIfUndefined}[2][0]{\strcmpfullexpand{\ptpKey{#2}}{\ptpKeyUndefinedValue}{--\,\textmu{}s}{\fTime[#1]{\ptpKey{#2}}}}
 \newcommand{\fTimeMath}[2][0]{\fTime{\fpeval{round(#2, #1)}}}
 \newcommand{\fNum}[2][0]{\fpeval{round(#2, #1)}}
 \newcommand{\fRatio}[2][0]{\fpeval{round(#2, #1)}$\times$}

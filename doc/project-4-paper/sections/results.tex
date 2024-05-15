@@ -72,9 +72,9 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
                     \begin{scope}[start branch=row going right]
                     \renewcommand{\ptpKeyUndefinedValue}{-0.000001}
                     \node[on chain] {\fVendor{\vendor}};
-                    \node[on chain] {\fTimeKey[1]{base/\system/\vendor/q50}};
-                    \node[on chain] {\fTimeKey[1]{base/\system/\vendor/q95}};
-                    \node[on chain] {\fTimeKey[0]{base/\system/\vendor/q100}};
+                    \node[on chain] {\fTimeKeyOmitIfUndefined[1]{base/\system/\vendor/q50}};
+                    \node[on chain] {\fTimeKeyOmitIfUndefined[1]{base/\system/\vendor/q95}};
+                    \node[on chain] {\fTimeKeyOmitIfUndefined[0]{base/\system/\vendor/q100}};
                     \end{scope}
                 }
             }
