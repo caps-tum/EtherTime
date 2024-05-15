@@ -348,13 +348,21 @@ def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int
 
     return get_admin_redirect_link(PTPEndpoint, filters)
 
+def get_profile_admin_link(benchmark_id, vendor_id, cluster_id):
+    filters = {
+        'benchmark_id': benchmark_id,
+        'cluster_id': cluster_id,
+        'vendor_id': vendor_id,
+    }
+    return get_admin_redirect_link(PTPProfile, filters)
+
 
 @admin.register(BenchmarkSummary)
 class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
                     'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
-    actions_row = ('summary_create_timeseries', 'details')
+    actions_row = ('summary_create_timeseries', 'endpoints', 'profiles')
 
     def vs_baseline(self, summary: BenchmarkSummary):
         baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
@@ -368,15 +376,22 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
 
     p95_vs_baseline.short_description = 'Vs Baseline'
 
-    def details(self, request, pk):
+    def endpoints(self, request, pk):
         summary = BenchmarkSummary.objects.get(pk=pk)
         return redirect(
             get_endpoint_admin_link(summary.benchmark_id, summary.vendor_id, summary.cluster_id,
                                     endpoint_type=EndpointType.PRIMARY_SLAVE)
         )
+    endpoints.short_description = 'Endpoints'
+    endpoints.url_path = 'endpoints'
 
-    details.short_description = 'Details'
-    details.url_path = 'details'
+    def profiles(self, request, pk):
+        summary = BenchmarkSummary.objects.get(pk=pk)
+        return redirect(
+            get_profile_admin_link(summary.benchmark_id, summary.vendor_id, summary.cluster_id)
+        )
+    profiles.short_description = 'Profiles'
+    profiles.url_path = 'Profiles'
 
     def summary_create_timeseries(self, request, pk):
         summary = BenchmarkSummary.objects.get(pk=pk)
