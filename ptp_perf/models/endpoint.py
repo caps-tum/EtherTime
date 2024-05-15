@@ -2,7 +2,7 @@ import json
 import logging
 import re
 import typing
-from datetime import timedelta
+from datetime import timedelta, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Optional, Tuple
@@ -156,14 +156,21 @@ class PTPEndpoint(models.Model):
             series *= units.NANOSECONDS_TO_SECONDS
 
         if normalize_time != TimeNormalizationStrategy.NONE:
-            reference_points = {
-                TimeNormalizationStrategy.PROFILE_START: self.profile.start_time,
-                TimeNormalizationStrategy.CLOCK_STEP: self.clock_step_timestamp,
-                TimeNormalizationStrategy.CONVERGENCE: self.convergence_timestamp,
-            }
-            series.index -= reference_points[normalize_time]
+            series.index -= self.get_normalization_origin(normalize_time)
 
         return series
+
+    def get_normalization_origin(self, normalization_strategy):
+        reference_points = {
+            TimeNormalizationStrategy.PROFILE_START: self.profile.start_time,
+            TimeNormalizationStrategy.CLOCK_STEP: self.clock_step_timestamp,
+            TimeNormalizationStrategy.CONVERGENCE: self.convergence_timestamp,
+        }
+        return reference_points[normalization_strategy]
+
+    def normalize(self, data: typing.Union[datetime, pd.Series], normalization: TimeNormalizationStrategy):
+        return data - self.get_normalization_origin(normalization)
+
 
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
@@ -418,7 +425,7 @@ class PTPEndpoint(models.Model):
             chart_convergence.add_clock_difference(clock_diff)
         if self.convergence_duration is not None:
             chart_convergence.add_boundary(
-                chart_convergence.axes[0], self.convergence_duration
+                chart_convergence.axes[0], self.normalize(self.convergence_timestamp, normalization)
             )
         return chart_convergence
 
