@@ -170,7 +170,7 @@ class BenchmarkSummary(models.Model):
         }
         if include_p99_and_max:
             quantiles.update({
-                0.99: self.clock_diff_p95,
+                0.99: self.clock_diff_p99,
                 1.0: self.clock_diff_max,
             })
         return quantiles
@@ -180,7 +180,7 @@ class BenchmarkSummary(models.Model):
             0.05: self.path_delay_p05,
             0.5: self.path_delay_median,
             0.95: self.path_delay_p95,
-            0.99: self.path_delay_p95,
+            0.99: self.path_delay_p99,
             1.0: self.path_delay_max,
         }
 
