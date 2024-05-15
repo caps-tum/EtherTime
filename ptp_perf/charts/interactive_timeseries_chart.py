@@ -25,7 +25,7 @@ class InteractiveTimeseriesChart:
         figure.sizing_mode = 'stretch_both'
         figure.toolbar.active_scroll = figure.select_one(WheelZoomTool)
 
-        normalization = TimeNormalizationStrategy.CONVERGENCE
+        normalization = TimeNormalizationStrategy.PROFILE_START
         data = endpoint.load_samples_to_series(
                 Sample.SampleType.CLOCK_DIFF, converged_only=False, remove_clock_step=False,
                 normalize_time=normalization
