@@ -62,6 +62,7 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
             \node[on chain] {Vendor};
             \node[on chain] {Median};
             \node[on chain] {$P_{95}$};
+            \node[on chain] {$P_{99}$};
             \node[on chain] {Max};
         \end{scope}
 
@@ -74,6 +75,7 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
                     \node[on chain] {\fVendor{\vendor}};
                     \node[on chain] {\fTimeKeyOmitIfUndefined[1]{base/\system/\vendor/q50}};
                     \node[on chain] {\fTimeKeyOmitIfUndefined[1]{base/\system/\vendor/q95}};
+                    \node[on chain] {\fTimeKeyOmitIfUndefined[1]{base/\system/\vendor/q99}};
                     \node[on chain] {\fTimeKeyOmitIfUndefined[0]{base/\system/\vendor/q100}};
                     \end{scope}
                 }
