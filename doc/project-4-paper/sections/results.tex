@@ -7,7 +7,18 @@ To conduct our evaluation we employ a total of four hardware testbeds. These inc
 
 \subsection{Baseline: The 1-to-1 benchmark}
 
-We start by establishing a baseline for each tested system and vendor which we can later use as a comparison for different environment configurations. We collect data in 20 minute runs (corresponding to just above 1000 samples per run), while retaining the default setting of one synchronization and one measurement of the path delay per second, as our results suggest that a higher frequency does not significantly improve clock synchronization while it does negatively impact the stability of the measurement\todo{This is stated but not shown. Do we need to show?}.
+\newcommand{\configIntervalVsBaselineRatioQuantile}{q50}
+\newcommand{\configIntervalVsBaselineRatio}[1]{\ptpKey{config/interval/#1/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}/\ptpKey{base/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}}
+
+% good results for slow sample rate, bad ones for faster
+\foreach \i in {-1,+0,+1,+2,+3}{
+    \assertRange{\configIntervalVsBaselineRatio{\i}}{0.8}{1.2}
+}
+\foreach \i in {-2,-3,-4,-5,-6}{
+    \assertRange{\configIntervalVsBaselineRatio{\i}}{1.2}{10}
+}
+
+We start by establishing a baseline for each tested system and vendor which we can later use as a comparison for different environment configurations. We collect data in 20 minute runs (corresponding to just above 1000 samples per run), while retaining the default setting of one synchronization and one measurement of the path delay per second, as our results suggest that a higher frequency does not significantly improve clock synchronization (we observe the best synchronization quality results for LinuxPTP on the Raspberry-Pi 4 at 2 samples/second or slower) while it does negatively impact the stability of the measurement (for the highest rate setting -7, corresponding to \fpeval{1/(2^(-7))} samples/s, we observe a \fRatio{\configIntervalVsBaselineRatio{-7}} worse median accuracy and \renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}} at the 95\textsuperscript{th} percentile).
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/base/rpi08-convergence_2.pdf}
@@ -74,27 +85,37 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
 \cmpSave{base/rpi-4}
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q50}}
 \cmpSave{base/rpi-5}
+
+\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/rpi-5}
+
 \cmpSearchVendor{\ptpKey{base/petalinux/\vendor/q50}}
 \cmpSave{base/petalinux}
+\assert{\cmpMinArg}{sptp}
+\assert{\cmpMaxArg}{ptpd}
+
 \cmpSearchVendorNoSPTP{\ptpKey{base/tk-1/\vendor/q50}}
 \cmpSave{base/tk-1}
+\assert{\cmpMinArg}{linuxptp}
+\assert{\cmpMaxArg}{ptpd}
 
 % Best and worst vendors are the same
-\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/rpi-5}
-\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/petalinux}
-\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/tk-1}
+%\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/petalinux}
+%\assertMultiCmpMinArgMaxArgSame{base/rpi-4}{base/tk-1}
 
-\newcommand{\baselineWorseFactor}{\fRelative{min(
-    \cmpKey{base/rpi-4}{max}/\cmpKey{base/rpi-4}{min},
-    \cmpKey{base/rpi-5}{max}/\cmpKey{base/rpi-5}{min},
-    \cmpKey{base/petalinux}{max}/\cmpKey{base/petalinux}{min},
-    \cmpKey{base/tk-1}{max}/\cmpKey{base/tk-1}{min},
-)}}
+\cmpSearch{\cluster}{rpi-4,rpi-5,petalinux,tk-1}{\cmpKey{base/\cluster}{max}/\cmpKey{base/\cluster}{min}}
+\cmpSave{base/minmax_difference_percentage}
+%\newcommand{\baselineWorseFactor}{\fRelative{min(
+%    \cmpKey{base/rpi-4}{max}/\cmpKey{base/rpi-4}{min},
+%    \cmpKey{base/rpi-5}{max}/\cmpKey{base/rpi-5}{min},
+%    \cmpKey{base/petalinux}{max}/\cmpKey{base/petalinux}{min},
+%    \cmpKey{base/tk-1}{max}/\cmpKey{base/tk-1}{min},
+%)}}
 
-A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even with our 32-bit patches, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset of \fTime[1]{\cmpKey{base/rpi-4}{max}} on the Raspberry-Pi 4 and \fTimeKey[1]{cmp/base/rpi-5/max} on the Raspberry-Pi 5. Across all systems, \fVendor{\cmpKey{base/rpi-4}{maxarg}} performs at least \baselineWorseFactor{} worse than the best performing vendor.
-\fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on both systems, with the clock offset estimate at just \fTimeKey[1]{cmp/base/rpi-4/min} and \fTimeKey[1]{cmp/base/rpi-5/min}, respectively.
-\assert{\cmpMinArg}{chrony}%
-That a regular NTP client can outperform all of our PTP clients might come as a surprise, with PTP being engineered specifically for precision, but Chrony is very much state-of-the-art and can take advantage of the same hardware acceleration that our PTP clients can while providing a lot more features\todo{this claim might need to be backed up}.
+A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even with our 32-bit patches, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset between \fRelative{\cmpKey{base/minmax_difference_percentage}{min}} worse than the best performing vendor on \fCluster{\cmpKey{base/minmax_difference_percentage}{minarg}} and \fRelative{\cmpKey{base/minmax_difference_percentage}{max}} on \fCluster{\cmpKey{base/minmax_difference_percentage}{maxarg}}.
+\fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on the Raspberry-Pi systems, with the clock offset estimates at \fRelativeInverted{\cmpKey{base/rpi-4}{min}/\cmpKey{base/rpi-4}{mean}} and \fRelativeInverted{\cmpKey{base/rpi-5}{min}/\cmpKey{base/rpi-5}{mean}} lower than the mean performance, respectively. On the Petalinux and TK-1 systems, \todo{INSERT NEW BASELINE DATA ONCE AVAILABLE.}
+
+\assert{\cmpKey{base/rpi-4}{minarg}}{chrony}%
+That a regular NTP client can match or outperform all the tested PTP clients might come as a surprise, with PTP being engineered specifically for precision, but Chrony is very much state-of-the-art and can take advantage of the same hardware acceleration that our PTP clients can while providing a lot more features\todo{this claim might need to be backed up}.
 
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
 
@@ -257,19 +278,22 @@ Interestingly, CPU load can actually boost performance relative to the baseline 
 \assert{\ptpKey{cmp/q50/minarg}}{\ptpKey{cmp/q95/minarg}}%
 %
 We assume that this benefit originates from less scheduling variance when the processor is kept busy due to less power saving.
-\cmpSearch{\vendor}{chrony,linuxptp}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+\cmpSearch{\vendor}{chrony,linuxptp,sptp}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
 \assertRange{\cmpMax}{1.0}{1.2}%
-On the Raspberry-Pi 5, things look a little different. While Chrony and LinuxPTP are mostly unaffected (up to just \fRelative{\cmpMax} overhead),
-\cmpSearch{\vendor}{sptp,ptpd}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
+On the Raspberry-Pi 5, things look a little different. While Chrony, LinuxPTP and SPTP are mostly unaffected (up to just \fRelative{\cmpMax} overhead),
+\cmpSearch{\vendor}{ptpd}{\ptpKey{load/cpu_unprioritized/load_100/rpi-5/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
 \assertRange{\cmpMin}{1.6}{3.0}%
-SPTP and PTPd have a more noticeable degradation in synchronization performance of up to \fRatio[1]{\cmpMax}, which is however not nearly as critical as the previous degradation through network congestion.
+PTPd has a more noticeable degradation in synchronization performance of up to \fRelative{\cmpMax}, which is however not nearly as critical as the previous degradation through network congestion.
 
 \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_cache/load_100}}%
+\todo{TODO: RE-ENABLE ASSERTION WHEN DATA AVAILABLE}
+%\assertRange{\cmpMin}{2.0}{4.0}
+\assertRange{\cmpMax}{4.0}{7.0}
 \cmpSave{cache}%
-The third principal hardware component where contention can occur is the memory hierarchy. Generally, PTP does not require a huge amount of resources, and we can see this reflected in the sensitivities against cache contention (between \fRatio[1]{\cmpMin} with \fVendorCluster{\cmpMaxArg} and \fRatio[1]{\cmpMax} with \fVendorCluster{\cmpMaxArg})\todo{Await results},%
+The third principal hardware component where contention can occur is the memory hierarchy. Generally, PTP does not require a large amount of memory, but we do observe a moderate amount of sensitivity against cache contention (between \fRatio[1]{\cmpMin} with \fVendorCluster{\cmpMinArg} and \fRatio[1]{\cmpMax} with \fVendorCluster{\cmpMaxArg}),%
 \cmpSearchVendorCluster{\cmpRatioVendorClusterVsBaseline{load/aux_memory/load_100}}%
 \cmpSave{memory}%
-which is slightly higher than what we observe for memory bandwidth contention (up to \fRatio{\cmpMax} with \fVendorCluster{\cmpMaxArg}).
+and memory bandwidth contention (up to \fRatio{\cmpMax} with \fVendorCluster{\cmpMaxArg}), though cache contention appears to be slightly more important.
 \assertRange{\cmpKey{memory}{max}}{0}{\cmpKey{cache}{max}*0.75}%
 In the end, both memory bandwidth contention and cache contention turn out to be more important than CPU contention.%
 % q50 is cpu_unprioritized, ugh.

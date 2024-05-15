@@ -92,21 +92,32 @@ PTP is built to be configurable, and settings include anything from the underlyi
         start chain=stages going right,
         stage/.style={
             draw, on chain=stages,
-            every on chain/.style={join}, every join/.style={-Stealth}
+        },
+        connected/.style={
+            every on chain/.style={join=by -Stealth}
         },
         text depth=0cm,
         ]
         \node[stage] (discovery) {Discovery};
-        \node[stage] (bmca) {Best Master Clock Algorithm};
-        \node[stage] (calibrate) {Calibration};
-        \node[stage] (step) {Clock Step};
-        \node[stage] (slew) {Clock Slew};
-        \node[stage] (maintain) {Stable};
+        \draw[-Stealth] (discovery.west) -| ++(-0.2, 0.5) -| ($(discovery.north west) + (0.2, 0)$);
 
-        \intervalAnnotation{step}{slew}{-0.25cm}{Converging}
-        \intervalAnnotation{maintain}{maintain}{-0.25cm}{Synchronized}
-        \intervalAnnotationAbove{calibrate}{maintain}{0.25cm}{Slave bound to Grandmaster}
-        \intervalAnnotationAbove{discovery}{bmca}{0.25cm}{Peer}
+        \node[stage] (bmca) {Best Master Clock Algorithm};
+        \draw[{Straight Barb[reversed]}-{Straight Barb[]}, dotted] (discovery) -- (bmca) node[midway, align=center] {\footnotesize{} Peer\\\footnotesize{} Data};
+        \node[stage, connected] (calibrate) {Calibration};
+        \node[stage, connected] (step) {Clock Step};
+        \node[stage, connected] (slew) {Clock Slew};
+        \node[stage, connected] (maintain) {Stable};
+
+        \foreach \linkNode in {step,slew,maintain}{
+            \draw[-Stealth] (\linkNode) -- ++(0, 0.5) -| (calibrate);
+            \draw[-Stealth] (\linkNode) -- ++(0, 0.5) -| (bmca);
+            \draw[-Stealth] (calibrate) -- ++(0, -0.5) -| (\linkNode);
+        }
+
+        \intervalAnnotation{step}{slew}{-0.5cm}{Converging}
+        \intervalAnnotation{maintain}{maintain}{-0.5cm}{Synchronized}
+        \intervalAnnotationAbove{calibrate}{maintain}{0.5cm}{Clock Synchronization}
+        \intervalAnnotationAbove{discovery}{bmca}{0.5cm}{Network Domain Logic}
 
     \end{tikzpicture}
     \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. }
