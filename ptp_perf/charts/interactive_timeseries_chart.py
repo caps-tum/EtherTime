@@ -57,11 +57,12 @@ class InteractiveTimeseriesChart:
         figure.legend.location = "top_right"
 
         # Box invalid data
-        convergence_zone_annotation = BoxAnnotation(
-            right=(endpoint.normalize(endpoint.convergence_timestamp, normalization)).total_seconds() * BOKEH_TIME_SCALE, fill_alpha=0.1,
-            fill_color='#D55E00'
-        )
-        figure.add_layout(convergence_zone_annotation)
+        if endpoint.convergence_timestamp is not None:
+            convergence_zone_annotation = BoxAnnotation(
+                right=(endpoint.normalize(endpoint.convergence_timestamp, normalization)).total_seconds() * BOKEH_TIME_SCALE, fill_alpha=0.1,
+                fill_color='#D55E00'
+            )
+            figure.add_layout(convergence_zone_annotation)
 
         formatter = CustomJSTickFormatter(code="""
         let prescale=1000 * 1000;
