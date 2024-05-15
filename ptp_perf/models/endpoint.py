@@ -69,6 +69,9 @@ class PTPEndpoint(models.Model):
     convergence_max_offset = models.FloatField(null=True)
     convergence_rate = models.FloatField(null=True)
 
+    converged_percentage = PercentageFloatField(null=True)
+    converged_samples = models.IntegerField(null=True)
+
     # Clock step
     clock_step_timestamp = models.DateTimeField(null=True)
     clock_step_magnitude = models.FloatField(null=True)
@@ -254,6 +257,9 @@ class PTPEndpoint(models.Model):
         self.convergence_duration = detected_clock_convergence.duration
         self.convergence_rate = convergence_statistics.convergence_rate
         self.convergence_max_offset = convergence_statistics.convergence_max_offset
+        self.converged_percentage = detected_clock_convergence.ratio_converged_samples
+        self.converged_samples = detected_clock_convergence.num_converged_samples
+
 
         # Now create the actual data
         converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]

@@ -46,59 +46,84 @@ class DetectedClockConvergence:
     converged: pd.Series
 
     @property
-    def divergence_ratio(self) -> Optional[float]:
+    def ratio_converged_samples(self) -> Optional[float]:
         """The amount of samples after the convergence time that were in diverged state."""
-        cropped = self.converged[self.converged.index > self.timestamp]
+        cropped = self.converged_after_clock_step
 
         if len(cropped) == 0:
             logging.warning(f"No convergence data after convergence time of {self.timestamp}.")
             return None
 
-        return len(cropped[cropped == 0]) / len(cropped)
+        return cropped.sum() / len(cropped)
 
     @property
-    def divergence_counts(self):
-        return (self.converged.diff() < 0).sum()
+    def num_converged_samples(self) -> Optional[int]:
+        return len(self.converged_after_clock_step == 1)
+
+    @property
+    def converged_after_clock_step(self):
+        return self.converged[self.converged.index > self.timestamp]
 
 
 def detect_clock_convergence(series_with_convergence: pd.Series, minimum_convergence_time: timedelta) -> Optional[DetectedClockConvergence]:
     # Detect when the clock is synchronized and crop the convergence.
+
     # We say that the signal is converged when there are both negative and positive offsets within the window.
-    window_centered = 10
-    window_converged = 60
-    rolling_data = series_with_convergence.rolling(window=window_centered, center=True)
-    centered: pd.Series = (rolling_data.min() < 0) & (rolling_data.max() > 0)
-    converged: pd.Series = centered.rolling(window=window_converged, center=True).median().apply(np.floor)
+    # window_centered_interval = 10
+    # We stabilize by majority voting of 3 10-second windows.
+    # window_converged_interval = 10 * 3
+
+    # This is number of samples, *not time*
+    window_size = 15
+
+    # rolling_data = series_with_convergence.rolling(window=window_centered_interval, center=True)
+    # centered: pd.Series = (rolling_data.min() < 0) & (rolling_data.max() > 0)
+    # converged: pd.Series = centered.rolling(window=window_converged_interval, center=True).mean() > 90
+
+    # np.sign(data): This computes the sign of each number in the series (1 for positive, -1 for negative, 0 for zero).
+    sign_changes_series = np.sign(series_with_convergence).diff().abs() / 2
+    sign_changes_only = sign_changes_series[sign_changes_series > 0]
+    rolling_sign_changes = sign_changes_series.astype(float).rolling(window=window_size).sum()
+
+    # Converged is where we have at least 3 flips within {window_size} samples
+    # We use this for calculating statistics
+    assert minimum_convergence_time.total_seconds() == 10
+    converged = rolling_sign_changes > 3
+
     # Fill the NA values that we have at the boundaries
     # Not optimal, this might also fill N/A values somewhere in the center.
-    converged.ffill(inplace=True)
-    converged.bfill(inplace=True)
-    convergence_changes = converged[converged.diff() != 0]
-
-    # Once we converge, we should stay converged.
-    if not converged.any():
-        logging.warning(f"Clock never converged.")
-        return None
-    if converged.isna().all():
-        logging.warning(f"Profile too short, convergence test resulted in only N/A values.")
-        return None
+    # converged.ffill(inplace=True)
+    # converged.bfill(inplace=True)
+    # New solution (safer): If we don't know, then its not converged.
+    converged.fillna(0, inplace=True)
 
     # Initial convergence point
-    # This is the first point where the converged value becomes 1.0
-    convergence_timestamp = converged[converged == 1].index.min()
+    # We allow the sign to flip 5 times during initial synchronization
+    num_flips_during_convergence = 5
+    if len(sign_changes_only) < num_flips_during_convergence:
+        logging.warning(f"Clock never converged.")
+        return None
+    convergence_timestamp = (sign_changes_only == 1).index[num_flips_during_convergence]
+
+    # if converged.isna().all():
+    #     logging.warning(f"Profile too short, convergence test resulted in only N/A values.")
+    #     return None
+
     convergence_duration = calculate_convergence_duration(convergence_timestamp, series_with_convergence)
 
     if convergence_duration < minimum_convergence_time:
-        logging.warning(f"Convergence too fast: {convergence_duration}. Assuming 1 second.")
+        logging.warning(f"Convergence too fast: {convergence_duration}. Assuming {minimum_convergence_time} seconds.")
         # Set convergence to start of profile + minimum convergence time
         convergence_timestamp = series_with_convergence.index.min() + minimum_convergence_time
         convergence_duration = calculate_convergence_duration(convergence_timestamp, series_with_convergence)
 
     detected_convergence = DetectedClockConvergence(convergence_timestamp, convergence_duration, converged)
 
-    if detected_convergence.divergence_ratio is not None and detected_convergence.divergence_ratio > 0.1:
-        logging.warning(f"Clock diverged {detected_convergence.divergence_counts}x after converging "
-                        f"({detected_convergence.divergence_ratio * 100:.0f}% of samples in diverged state).")
+    ratio_converged_samples = detected_convergence.ratio_converged_samples
+    if ratio_converged_samples is not None and ratio_converged_samples < 0.9:
+        logging.warning(
+            f"Clock stability low: ({ratio_converged_samples * 100:.0f}% of samples in converged state)."
+        )
 
     return detected_convergence
 
