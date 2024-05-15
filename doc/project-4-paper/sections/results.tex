@@ -1,5 +1,6 @@
 
 \section{Baseline Results}
+\label{sec:baseline}
 
 \subsection{Testbed -- Hardware and Software}
 
@@ -190,6 +191,7 @@ Needless to say, a vendor that cannot deliver stable timing guarantees is risky 
 }
 
 \section{Resource Contention}
+\label{sec:resource_contention}
 
 One aspect that influences how reliable PTP can operate is the outside interference originating from resource sharing. Through our research, we examined a range of shared resources that might impact synchronization accuracy and therefore need to be carefully managed so that PTP can provide synchronization even in the presence of stress. Unsurprisingly, the key resource tends to be the network.
 
@@ -320,6 +322,7 @@ While resource contention, especially network congestion, can lead to degradatio
 %We assume this occurs due to the hardware switching less into power saving states when more load is present, which may actually cause packets to be delivered faster.
 
 \section{Fault Tolerance}
+\label{sec:fault_tolerance}
 \newcommand{\faultLength}{30 seconds}
 
 \begin{figure}
@@ -424,6 +427,7 @@ Another possible root cause for a fault is the network. While a network outage i
 
 
 \section{Resource Consumption}
+\label{sec:resource_consumption}
 \todo{Find where to place this section.}
 
 \begin{figure*}

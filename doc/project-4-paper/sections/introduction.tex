@@ -8,8 +8,35 @@ Time is both ubiquitous and critical, no computer system today can run without i
 %Nowadays, with the availability of the internet, satellite communications and digital clocks, we often take for granted that we can tell the time anywhere and anytime. And for most human use cases, a rough estimate of the current time on the order of magnitude of seconds is perfectly sufficient.
 %After all, sub-second granularity is irrelevant as people follow their daily schedules, and for project plans that span years or even decades a day or two more will not make a difference. \todo{colloquial/irrelevant}
 However, in communications, real-time systems and circuitry, we operate on a scale where things are not so simple, with sub-nanosecond-level accuracies gaining significance in areas like networks and chip design~\cite{nanopu,sub-nanosecond-comms-design}.
-There is a broad range of accuracies that we need to keep time in, but to what degree we can truly rely on modern   computer timekeeping in distributed embedded systems when failures could affect correctness?
-We evaluate the performance and resilience of four implementations of prevalent time synchronization protocols, including the Precision Time Protocol (PTP) and the Network Time Protocol (NTP), across two hardware testbeds, showing strengths and weaknesses in a variety of configurations. We offer the following contributions:
+
+Global Navigation Satellite Systems (GNNS), a classical application enabled by precision time-synchronization, relies on signal propagation delays to determine relative positioning~\cite{intro-to-gnss}.
+High-quality location estimates hinge on accurate timing and -compensation mechanisms, so GNSS is frequently leveraged as a nanoscale clock source~\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing}.
+%Failure to compensate clock differences or even the presence of adversarial signals can quickly degrade the resulting location quality~\cite{gps-jamming}, but in general GNNS systems enjoy widespread popularity not only as a way of acquiring location estimates but also as a way of obtaining highly accurate estimates of time~\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing}.
+The precision incurs expense though, it requires dedicated hardware, strains limited power budgets, and inhibits e.g. indoor deployments.
+
+Timing is also critical for fault-tolerant systems. Architectures such as double- or triple-modular lock-step redundancy~\cite{triple-modular-redundancy,triple-modular-redundancy-evaluation,triple-modular-lock-step-arm}, where algorithms are run independently on different machines to automatically detect and correct errors, rely on a common notion of time and deadlines to make progress even when a machine has failed. Such systems are found frequently in high-reliability and -availability applications such as aviation, where computer systems are relied on for controlling machinery with strict timing requirements.
+%Failed safety-critical redundancy engineering has seen some infamous examples recently, with deadly Boeing 737-Max incidents prompting the introduction of new laws for flight control computer error resilience~\cite{boeing-requirements}\todo{better citation}.
+\todo{@Arpan I removed the example, it's too much for the intro.}
+Without a common notion of time, it would not be possible for resilient systems to judge internally missed deadlines correctly, thus preventing the system from providing proper error-detection and correction, voiding the fault-tolerance it was designed for.
+
+However, time is not only critical in fault-tolerant systems, it pervades all distributed systems.
+High-performance and datacenter computing are areas large amounts of resources are being spent on maximizing hardware utilization by reducing I/O or communications bottlenecks~\cite{hpc-understanding-bottlenecks, hpc-solving-io-bottleneck, hpc-diagnosing-io-bottlenecks}, and a common notion of time is a prerequisite enabling technology to effective profiling and optimization on distributed systems.
+%The better the time source, the easier it becomes to perform efficient handovers by precise scheduling, thus improving overall performance and resource consumption.
+Google and Facebook\todo{cite} have come up with time synchronization implementations based on the notion of windows of uncertainty that can be used to ensure transaction ordering across a distributed system without an application having to explicitly synchronize, a property useful not only to databases but also to real-time control, fault detection/mitigation and parallel data structures.
+Time synchronization techniques also transfer to edge computing, where scheduling computation and communication to efficiently manage load can conserve power and connectivity resources, allowing applications to achieve more with less hardware.
+Even large scale deployments like the internet cannot function without timing, as SSL/TLS cryptographic certificate validation, renewal of leases (DHCP) and caches (DNS, HTTP), and various other state machines built into systems and protocols (TCP, firewalls, etc.) all rely on clocks to function.
+
+Clearly, clock synchronization is essential in almost all aspects of computing, and there is a broad range of accuracies that we need to keep time in. But to what degree we can truly rely on modern computer timekeeping in distributed embedded systems when failures affect correctness?
+We need to evaluate what our systems are capable of and what sort of reliability guarantees they can provide for our algorithms to work with.
+Especially in industrial and embedded computing/IoT, deployments are often characterized by dependability/redundancy requirements and a general necessity to conserve all types of resources to reduce costs, as well as their relative isolation regarding connectivity.
+This sets it apart from more traditional computer timekeeping scenarios, where an external source of truth can be relied upon, here internal consistency is the primary motivation.
+%Good timekeeping allows a reduction in the amount of comparatively resource-intensive manual synchronization required, which directly leads to cost savings, however a high level of trust in the clock is needed to ensure ordering correctness. Across distributed embedded systems, we can use local network time synchronization to achieve this, however the question of accuracy and dependability under adverse conditions is open.
+Before we can trust a synchronization algorithm, we need to understand how it performs and what causes it to break, which is what we will be investigating throughout the rest of this paper.
+%\todo{Need a part here on what we are actually doing.}
+%\todo{Dependable embedded systems.}
+
+
+We evaluate the performance and resilience of four implementations of prevalent time synchronization protocols, including the Precision Time Protocol (PTP) and the Network Time Protocol (NTP), across four hardware testbeds, showing strengths and weaknesses in a variety of configurations. We offer the following contributions:
 
 \begin{itemize}
     \item Development of a tool, PTP-Perf, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations,
@@ -19,4 +46,7 @@ We evaluate the performance and resilience of four implementations of prevalent 
     \item Provide lessons-learned and best practices for configuring time-synchronization deployments for high reliability and availability.
 \end{itemize}
 
-The rest of this paper is structured into the following sections: Section~\ref{sec:motivation} motivates typical use-cases of time synchronization, \todo{Sections once structure is final}.
+To the best of our knowledge, with PTP-Perf we provide the first data collection and analysis tooling available open-source\todo{anonymize} that supports the empirical evaluation of multiple Ethernet-based time synchronization protocols and implementations across several embedded hardware testbeds with an explicit focus on dependability and fault-tolerance.
+%We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
+%
+The rest of this paper is structured into the following sections: Section~\ref{sec:background} covers time synchronization and PTP background, as well as related work, while Section~\ref{sec:failure_scenarios} looks at potential failure scenarios. Results are presented in Sections~\ref{sec:baseline} Baseline, \ref{sec:resource_contention} Resource Contention, \ref{sec:fault_tolerance} Fault Tolerance and \ref{sec:resource_consumption} Resource Consumption. Finally, we present some lessons learned and best practices in Section~\ref{sec:learnings_conclusion}.

@@ -1,5 +1,6 @@
 
 \section{Time Synchronization, PTP \& Related Work}
+\label{sec:background}
 
 Over the years, many different protocols, algorithms and solutions to time synchronization across computer networks have been explored~\cite{ntpv4-spec, sntp-spec, linuxptp, time-protocol-flooding, time-protocol-pulsesync, white-rabbit, time-protocol-wsn, time-protocol-low-power}. In today's most widely deployed network stack for general purpose computing, IP, two protocols have established themselves as standard for time synchronization: the Network Time Protocol (NTP)~\cite{ntpv4-spec} for Wide Area Networks (WANs) and the Precision Time Protocol (PTP)~\cite{ptp-spec} for Local Area Networks (LANs) that require a greater degree of time synchronization precision. Both protocols are standardized and each have multiple implementations available at the time of writing.
 
@@ -32,8 +33,6 @@ Finally, Chrony is included as a reference representing the state of the art imp
     \label{tbl:vendors}
     \textsuperscript{*} Note that we had to patch 32-bit support into SPTP for our ARMv7 boards.
 \end{table}
-
-To the best of our knowledge, we provide the first empirical evaluation of multiple Ethernet-based time synchronization protocols and implementations across several embedded hardware testbeds with an explicit focus on dependability and fault-tolerance. We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 
 \subsection{PTP -- Background and Architecture}
 
