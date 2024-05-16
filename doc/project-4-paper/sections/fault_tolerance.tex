@@ -12,7 +12,7 @@ Naturally, the exact factor varies between use-cases, but for the purpose of our
 %Thus, for our testbed of Raspberry Pis, a failure constitutes any time when the measured clock offset exceeds 40\,\textmu{}s\todo{out-of-place: hardware not introduced.}\todo{Actually insert the baseline.}.
 
 \subsection{Sources of Error}
-
+\todo{Should this be listed as a contribution?}
 Error can originate from 2 principal sources: either the clock fails to perform according to specifications, or PTP's ability to measure and compensate the difference between clock sources is degraded or disrupted entirely. To understand what constitutes a failure in a timing system, we need to consider the guarantees that a timing system is required to provide to be useful and how they might be broken.
 
 \paragraph*{Invariants of Timing Sources} Many of the assumptions made when using a clock are made implicitly because they seem natural in the real world, and a surprising number of software systems rely on them perhaps without being specifically aware of it. Timing systems need to fulfill all the following invariants, ranked in decreasing order of importance:
