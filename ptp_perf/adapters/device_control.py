@@ -8,6 +8,7 @@ from ptp_perf.adapters.adapter import Adapter
 from ptp_perf.config import Configuration
 from ptp_perf.machine import Machine
 from ptp_perf.models import PTPEndpoint
+from ptp_perf.util import str_join
 
 
 class DeviceControl(Adapter):
@@ -75,27 +76,45 @@ class DeviceControl(Adapter):
 
 
     async def run(self):
-        machine = self.configuration.cluster.machine_by_type(self.endpoint.benchmark.fault_location)
+        machines = self.configuration.cluster.machines_by_type(self.endpoint.benchmark.fault_location)
+        if len(machines) == 0:
+            raise RuntimeError(
+                f"Could not find machines in cluster to create faults on: {self.endpoint.benchmark.fault_location}"
+            )
+
         interval = self.endpoint.benchmark.fault_interval
         duration = self.endpoint.benchmark.fault_duration
 
-        self.log(f"Scheduling hardware faults every {interval} on {machine}")
+        self.log(f"Scheduling hardware faults every {interval} on {str_join(machines)}")
 
         if self.endpoint.benchmark.fault_ssh_keepalive:
             self.log(f"Turning SSH session keep-alive on")
-            machine._ssh_session.keep_alive = True
+            for machine in machines:
+                machine._ssh_session.keep_alive = True
         else:
             self.log(f"Not engaging SSH session keep-alive")
 
         try:
             while True:
-                self.toggle_machine(machine, True)
+                # Ensure that machines are always turned on at the beginning of the run
+                for machine in machines:
+                    self.toggle_machine(machine, True)
+
+                # Wait for the first fault
                 await asyncio.sleep(interval.total_seconds())
+
+                # Create first fault
                 # self.configuration.cluster.machine_by_id(machine)._ssh_session.keep_alive = True
-                self.log(f"Scheduled hardware fault imminent on {machine}.")
-                self.toggle_machine(machine, False)
+                for machine in machines:
+                    self.log(f"Scheduled hardware fault imminent on {machine}.")
+                    self.toggle_machine(machine, False)
+
+                # Fault duration
                 await asyncio.sleep(delay=duration.total_seconds())
-                self.log(f"Scheduled hardware fault resolved on {machine}.")
+
+                # Print resolved, machines will be turned back on in next iteration.
+                for machine in machines:
+                    self.log(f"Scheduled hardware fault resolved on {machine}.")
                 # self.configuration.cluster.machine_by_id(machine)._ssh_session.keep_alive = False
         finally:
             self.toggle_machine(machine, True)

@@ -8,6 +8,7 @@ from bokeh.models import WheelZoomTool, BoxAnnotation, CustomJSTickFormatter, \
     DatetimeTicker, Slider, CustomJS, RangeSlider
 
 from ptp_perf.models import Sample, PTPEndpoint
+from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.utilities import units
 
 BOKEH_TIME_SCALE = 1000
@@ -24,9 +25,10 @@ class InteractiveTimeseriesChart:
         figure.sizing_mode = 'stretch_both'
         figure.toolbar.active_scroll = figure.select_one(WheelZoomTool)
 
+        normalization = TimeNormalizationStrategy.PROFILE_START
         data = endpoint.load_samples_to_series(
                 Sample.SampleType.CLOCK_DIFF, converged_only=False, remove_clock_step=False,
-                # normalize_time=TimeNormalizationStrategy.PROFILE_START
+                normalize_time=normalization
         )
         abs_data = data.abs()
         for abs_value in [True, False]:
@@ -55,11 +57,12 @@ class InteractiveTimeseriesChart:
         figure.legend.location = "top_right"
 
         # Box invalid data
-        convergence_zone_annotation = BoxAnnotation(
-            right=endpoint.convergence_duration.total_seconds() * BOKEH_TIME_SCALE, fill_alpha=0.1,
-            fill_color='#D55E00'
-        )
-        figure.add_layout(convergence_zone_annotation)
+        if endpoint.convergence_timestamp is not None:
+            convergence_zone_annotation = BoxAnnotation(
+                right=(endpoint.normalize(endpoint.convergence_timestamp, normalization)).total_seconds() * BOKEH_TIME_SCALE, fill_alpha=0.1,
+                fill_color='#D55E00'
+            )
+            figure.add_layout(convergence_zone_annotation)
 
         formatter = CustomJSTickFormatter(code="""
         let prescale=1000 * 1000;

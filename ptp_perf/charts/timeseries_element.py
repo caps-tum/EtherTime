@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, List, Any
 
 import pandas as pd
 import seaborn
@@ -89,6 +89,7 @@ class TimeseriesElement(DataElement):
 @dataclass
 class ScatterElement(DataElement):
     column_style: str = None
+    style_order: List[Any] = None
     color_map_as_palette: bool = False
     """By default, we use discrete colours and make the edges darkers. Use this to set the colormap directly as a palette e.g. for continuous hues."""
 
@@ -108,6 +109,7 @@ class ScatterElement(DataElement):
             hue=self.column_hue,
             hue_norm=self.hue_norm,
             style=self.column_style,
+            style_order=self.style_order,
             **extra_args,
             # legend="auto" if axis_container.legend else False,
         )

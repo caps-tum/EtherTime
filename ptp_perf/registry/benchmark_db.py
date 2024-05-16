@@ -28,6 +28,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     NO_SWITCH = Benchmark("configuration/no_switch", "No Switch", tags=[])
 
 
+    BASE_AS_SCALABILITY = benchmark_scalability(num_nodes=2)
     BASE_TWO_CLIENTS = benchmark_scalability(num_nodes=3)
     BASE_ALL_CLIENTS = benchmark_scalability(num_nodes=12)
 
@@ -35,7 +36,7 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
     SCALABILITY_REMAINING_CLIENTS = [
         benchmark_scalability(num_nodes=extra_nodes) for extra_nodes in range(4, 12)
     ]
-    SCALABILITY_ALL = [BASE_TWO_CLIENTS, *SCALABILITY_REMAINING_CLIENTS, BASE_ALL_CLIENTS]
+    SCALABILITY_ALL = [BASE_AS_SCALABILITY, BASE_TWO_CLIENTS, *SCALABILITY_REMAINING_CLIENTS, BASE_ALL_CLIENTS]
 
     _FAULT_TIMING_SETTINGS = {
         'duration': timedelta(minutes=15),
@@ -199,7 +200,8 @@ class BenchmarkDB(BaseRegistry[Benchmark]):
 
 BenchmarkDB.register_all(
     BenchmarkDB.BASE, BenchmarkDB.TEST, BenchmarkDB.DEMO,
-    BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.BASE_ALL_CLIENTS, *BenchmarkDB.SCALABILITY_REMAINING_CLIENTS,
+    BenchmarkDB.BASE_AS_SCALABILITY, BenchmarkDB.BASE_TWO_CLIENTS, BenchmarkDB.BASE_ALL_CLIENTS,
+    *BenchmarkDB.SCALABILITY_REMAINING_CLIENTS,
     BenchmarkDB.SOFTWARE_FAULT_SLAVE,
     BenchmarkDB.HARDWARE_FAULT_SWITCH, BenchmarkDB.HARDWARE_FAULT_SLAVE, BenchmarkDB.HARDWARE_FAULT_MASTER,
     BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER,

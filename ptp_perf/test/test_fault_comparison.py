@@ -8,10 +8,12 @@ from django.test import TestCase
 
 from ptp_perf import config, util
 from ptp_perf.charts.comparison_bar_element import ComparisonLineElement
-from ptp_perf.charts.figure_container import FigureContainer, TimeseriesAxisContainer
+from ptp_perf.charts.figure_container import FigureContainer, TimeseriesAxisContainer, AxisContainer
+from ptp_perf.charts.timeseries_element import ScatterElement
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.machine import Cluster
-from ptp_perf.models import Sample, PTPEndpoint
+from ptp_perf.models import Sample, PTPEndpoint, PTPProfile
+from ptp_perf.models.data_transform import DataTransform
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
@@ -21,6 +23,7 @@ from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.util import setup_logging
 from ptp_perf.utilities import units
+from ptp_perf.utilities.pandas_utilities import foreign_frame_column, frame_column
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -31,6 +34,59 @@ class FaultComparisonCharts(TestCase):
     def setUpClass(cls):
         setup_logging()
         super().setUpClass()
+
+    def test_fault_scatter_comparison_chart(self):
+        for benchmark, log_scale in [
+            (BenchmarkDB.HARDWARE_FAULT_SLAVE, True),
+            (BenchmarkDB.HARDWARE_FAULT_MASTER, True),
+            (BenchmarkDB.HARDWARE_FAULT_SWITCH, False),
+            (BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER, True),
+        ]:
+            axis_containers = []
+            clusters = [config.CLUSTER_PI, config.CLUSTER_PI5]
+            if benchmark == BenchmarkDB.HARDWARE_FAULT_SWITCH or benchmark == BenchmarkDB.SOFTWARE_FAULT_SLAVE:
+                clusters += [config.CLUSTER_PETALINUX, config.CLUSTER_TK1]
+
+            for cluster in clusters:
+                frame = DataTransform(
+                    expansions=[PTPEndpoint.profile]
+                ).run(
+                    PTPEndpoint.objects.filter(
+                        profile__cluster_id=cluster.id, profile__benchmark_id=benchmark.id,
+                        profile__vendor_id__in=VendorDB.ANALYZED_VENDOR_IDS,
+                    )
+                )
+
+                # Set nan return to normal == (never reconverged) to 4 minutes (at end of benchmark)
+                # We label this manually later as never
+                return_to_normal_column = frame_column(PTPEndpoint.fault_clock_diff_return_to_normal_time)
+                timeout_value = 4
+                frame[return_to_normal_column] = frame[return_to_normal_column].fillna(
+                    timedelta(minutes=timeout_value)
+                )
+
+                axis_container = AxisContainer(
+                    [ScatterElement(
+                        data=frame,
+                        column_x=return_to_normal_column,
+                        column_y=frame_column(PTPEndpoint.fault_clock_diff_post_max),
+                        column_hue=foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id),
+                        column_style=foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id),
+                        style_order=VendorDB.ANALYZED_VENDOR_IDS,
+                    )],
+                    title=f'{cluster}',
+                    xlabel='Resynchronization Time',
+                    xticks=units.convert_all_units(units.NANOSECONDS_IN_SECOND, [0 * 60, 2 * 60, timeout_value * 60]),
+                    xticklabels=["0 m", "2 m", "Timeout"],
+                    ylabel='Maximum Offset',
+                    yticklabels_format_time=True,
+                )
+                self.configure_fault_ylog_axis(axis_container)
+                axis_containers.append(axis_container)
+            # axis_containers[-1].legend = True
+            figure = FigureContainer(axis_containers, title=benchmark.name, tight_layout=True, size=(4, 2))
+            figure.plot()
+            figure.save_default_locations("fault_scatter", benchmark)
 
     def test_hardware_fault_cluster_comparison_chart(self):
         for benchmark, log_scale in [
@@ -50,34 +106,11 @@ class FaultComparisonCharts(TestCase):
                     max_fault_start = max(fault.start for fault in faults)
                     min_fault_end = min(fault.end for fault in faults)
 
-                    yticks = [
-                        1 * units.NANOSECONDS_TO_SECONDS, 10 * units.NANOSECONDS_TO_SECONDS,
-                        100 * units.NANOSECONDS_TO_SECONDS,
-                        1 * units.MICROSECONDS_TO_SECONDS, 10 * units.MICROSECONDS_TO_SECONDS,
-                        100 * units.MICROSECONDS_TO_SECONDS,
-                        1 * units.MILLISECONDS_TO_SECONDS, 10 * units.MILLISECONDS_TO_SECONDS,
-                        100 * units.MILLISECONDS_TO_SECONDS,
-                        1, 60, 3600
-                    ]
-                    yticklabels = [
-                        "1 ns", "", "",
-                        "1 μs", "", "",
-                        "1 ms", "", "",
-                        "1 s", "1 m", "1 h",
-                    ]
                     xticks, xlabels = self.xticks_and_labels_from_fault(max_fault_start)
                     axis_container = TimeseriesAxisContainer(
                         title=cluster.name,
                         xticks=xticks,
                         xticklabels=xlabels,
-                        ylog=log_scale,
-                        yticks_interval=None,
-                        yminorticks=True, yminorticks_interval=None,
-                        yminorticks_fixed=[0.5 * ytick for ytick in yticks],
-                        yticks=yticks,
-                        yticklabels=yticklabels,
-                        yticklabels_format_time=False,
-                        grid=False,
                     ).add_elements(
                         *ComparisonLineElement(
                             data=frame,
@@ -86,6 +119,8 @@ class FaultComparisonCharts(TestCase):
                             x_coord_aggregate_exclude_column='exclude_column' if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE else None,
                         ).configure_for_timeseries_input().split_data(self.fault_split)
                     )
+                    if log_scale:
+                        self.configure_fault_ylog_axis(axis_container)
                     axis_containers.append(axis_container)
 
                     if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE and frame is not None:
@@ -198,6 +233,33 @@ class FaultComparisonCharts(TestCase):
              fault_start.total_seconds(),
              fault_start.total_seconds() + 120]
         ), ["-2m", "0m", "2m"]
+
+    def configure_fault_ylog_axis(self, axis_container: AxisContainer) -> None:
+        yticks = [
+            1 * units.NANOSECONDS_TO_SECONDS, 10 * units.NANOSECONDS_TO_SECONDS,
+            100 * units.NANOSECONDS_TO_SECONDS,
+            1 * units.MICROSECONDS_TO_SECONDS, 10 * units.MICROSECONDS_TO_SECONDS,
+            100 * units.MICROSECONDS_TO_SECONDS,
+            1 * units.MILLISECONDS_TO_SECONDS, 10 * units.MILLISECONDS_TO_SECONDS,
+            100 * units.MILLISECONDS_TO_SECONDS,
+            1, 60, 3600
+        ]
+        yticklabels = [
+            "1 ns", "", "",
+            "1 μs", "", "",
+            "1 ms", "", "",
+            "1 s", "1 m", "1 h",
+        ]
+        axis_container.ylog=True
+        axis_container.yticks_interval=None
+        axis_container.yminorticks=True
+        axis_container.yminorticks_interval=None
+        axis_container.yminorticks_fixed=[0.5 * ytick for ytick in yticks]
+        axis_container.yticks=yticks
+        axis_container.yticklabels=yticklabels
+        axis_container.yticklabels_format_time=False
+        axis_container.grid=False
+
 
     def prepare_multi_vendor_scatter_data(self,
                                           benchmark: Benchmark, cluster: Cluster,

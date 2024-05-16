@@ -1,8 +1,9 @@
+import math
 import json
 import logging
 import re
 import typing
-from datetime import timedelta
+from datetime import timedelta, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Optional, Tuple
@@ -69,6 +70,9 @@ class PTPEndpoint(models.Model):
     convergence_max_offset = models.FloatField(null=True)
     convergence_rate = models.FloatField(null=True)
 
+    converged_percentage = PercentageFloatField(null=True)
+    converged_samples = models.IntegerField(null=True)
+
     # Clock step
     clock_step_timestamp = models.DateTimeField(null=True)
     clock_step_magnitude = models.FloatField(null=True)
@@ -95,6 +99,7 @@ class PTPEndpoint(models.Model):
 
     fault_clock_diff_post_max = models.FloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
+    fault_clock_diff_return_to_normal_time = models.DurationField(null=True)
 
     # Resource consumption data
     resource_profile_length: timedelta = models.DurationField(null=True)
@@ -156,14 +161,21 @@ class PTPEndpoint(models.Model):
             series *= units.NANOSECONDS_TO_SECONDS
 
         if normalize_time != TimeNormalizationStrategy.NONE:
-            reference_points = {
-                TimeNormalizationStrategy.PROFILE_START: self.profile.start_time,
-                TimeNormalizationStrategy.CLOCK_STEP: self.clock_step_timestamp,
-                TimeNormalizationStrategy.CONVERGENCE: self.convergence_timestamp,
-            }
-            series.index -= reference_points[normalize_time]
+            series.index -= self.get_normalization_origin(normalize_time)
 
         return series
+
+    def get_normalization_origin(self, normalization_strategy):
+        reference_points = {
+            TimeNormalizationStrategy.PROFILE_START: self.profile.start_time,
+            TimeNormalizationStrategy.CLOCK_STEP: self.clock_step_timestamp,
+            TimeNormalizationStrategy.CONVERGENCE: self.convergence_timestamp,
+        }
+        return reference_points[normalization_strategy]
+
+    def normalize(self, data: typing.Union[datetime, pd.Series], normalization: TimeNormalizationStrategy):
+        return data - self.get_normalization_origin(normalization)
+
 
     def process_timeseries_data(self):
         from ptp_perf.models.sample import Sample
@@ -226,7 +238,7 @@ class PTPEndpoint(models.Model):
 
         Timeseries._validate_series(frame_no_clock_step)
 
-        minimum_convergence_time = timedelta(seconds=1)
+        minimum_convergence_time = timedelta(seconds=10)
         detected_clock_convergence = detect_clock_convergence(frame_no_clock_step, minimum_convergence_time)
 
         if detected_clock_convergence is None:
@@ -247,6 +259,9 @@ class PTPEndpoint(models.Model):
         self.convergence_duration = detected_clock_convergence.duration
         self.convergence_rate = convergence_statistics.convergence_rate
         self.convergence_max_offset = convergence_statistics.convergence_max_offset
+        self.converged_percentage = detected_clock_convergence.ratio_converged_samples
+        self.converged_samples = detected_clock_convergence.num_converged_samples
+
 
         # Now create the actual data
         converged_series = frame_no_clock_step[frame_no_clock_step.index > detected_clock_convergence.timestamp]
@@ -312,6 +327,16 @@ class PTPEndpoint(models.Model):
 
                 self.fault_clock_diff_post_max = post_fault_series.max()
                 self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
+
+                # Calculate how long it takes to return to normal (within 2x of pre-fault median)
+                post_fault_series_smoothed = post_fault_series.rolling(5).median()
+                post_fault_under_2x_median = post_fault_series[
+                    post_fault_series_smoothed < 2 * self.fault_clock_diff_pre_median
+                ]
+                if not post_fault_under_2x_median.empty:
+                    self.fault_clock_diff_return_to_normal_time = post_fault_under_2x_median.index[0] - fault_end.timestamp
+                else:
+                    self.fault_clock_diff_return_to_normal_time = None
 
         except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:
@@ -418,7 +443,7 @@ class PTPEndpoint(models.Model):
             chart_convergence.add_clock_difference(clock_diff)
         if self.convergence_duration is not None:
             chart_convergence.add_boundary(
-                chart_convergence.axes[0], self.convergence_duration
+                chart_convergence.axes[0], self.normalize(self.convergence_timestamp, normalization)
             )
         return chart_convergence
 
