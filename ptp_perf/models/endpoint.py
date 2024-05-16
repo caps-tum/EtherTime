@@ -1,3 +1,4 @@
+import math
 import json
 import logging
 import re
@@ -98,6 +99,7 @@ class PTPEndpoint(models.Model):
 
     fault_clock_diff_post_max = models.FloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
+    fault_clock_diff_return_to_normal_time = models.DurationField(null=True)
 
     # Resource consumption data
     resource_profile_length: timedelta = models.DurationField(null=True)
@@ -325,6 +327,14 @@ class PTPEndpoint(models.Model):
 
                 self.fault_clock_diff_post_max = post_fault_series.max()
                 self.fault_ratio_clock_diff_post_max_pre_median = self.fault_clock_diff_post_max / self.fault_clock_diff_pre_median
+
+                # Calculate how long it takes to return to normal (within 2x of pre-fault median)
+                post_fault_series_smoothed = post_fault_series.rolling(5).median()
+                post_fault_under_2x_median = (post_fault_series_smoothed < 2 * self.fault_clock_diff_pre_median)
+                if not post_fault_under_2x_median.empty:
+                    self.fault_clock_diff_return_to_normal_time = post_fault_under_2x_median.index[0] - fault_end.timestamp
+                else:
+                    self.fault_clock_diff_return_to_normal_time = math.nan
 
         except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:

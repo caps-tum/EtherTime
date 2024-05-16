@@ -241,7 +241,7 @@ def create_modeladmin(modeladmin, model, name=None):
 
 class PTPEndpointFaultAdmin(PTPEndpointAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
-                    'clock_diff_pre_median_formatted', 'clock_diff_post_max_formatted',
+                    'clock_diff_pre_median_formatted', 'clock_diff_post_max_formatted', 'fault_clock_diff_return_to_normal_time',
                     'fault_ratio_clock_diff_median_formatted', 'fault_actual_duration')
 
     def get_queryset(self, request):
