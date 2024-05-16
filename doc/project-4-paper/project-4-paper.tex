@@ -49,6 +49,8 @@
 
 \begin{document}
 
+\newcommand{\toolName}{ChroNet-Prof}
+
 \title{Precision Time Synchronization on COTS Devices: A Reliable Primitive or Work-in-progress?}
 %\title{Precision Time Synchronization in Embedded Systems: A Systematic Evaluation}
 %\thanks{Identify applicable funding agency here. If none, delete this.}
@@ -101,7 +103,7 @@ such as different variants of Precision Time Protocol (PTP) and Network Time Pro
 To what degree can we truly rely on these for distributed embedded systems that
 use commodity processors and networks,
 especially for applications in which failures affect correctness?
-To answer this question, we build a novel benchmarking tool, TS-Perf,
+To answer this question, we build a novel benchmarking tool, \toolName{},
 and carry out an exhaustive measurement-based performance evaluation of four
 time synchronization protocols (PTPd, LinuxPTP, SPTP, and Chrony) across
 four embedded hardware testbeds
@@ -114,7 +116,7 @@ high-precision network time can truly be relied upon.
 
 %Timekeeping systems are pervasive in the modern world and most real-time control systems could not function without them. However, while our embedded systems are becoming more and more distributed and have to fulfill ever more stringent fault-tolerance requirements, the ability to maintain a common notion of time across commodity computer networks is not yet perfected despite recent advancements in hardware support.
 %
-%We use the capabilities provided by our novel PTP benchmarking tool, PTP-Perf, to conduct a systematic study of four time synchronization protocols (PTPd, LinuxPTP, SPTP, and Chrony) across four embedded hardware testbeds (based on two generations of Raspberry-Pis, Xilinx AVNet, and NVIDIA Jetson boards).
+%We use the capabilities provided by our novel PTP benchmarking tool, \toolName{}, to conduct a systematic study of four time synchronization protocols (PTPd, LinuxPTP, SPTP, and Chrony) across four embedded hardware testbeds (based on two generations of Raspberry-Pis, Xilinx AVNet, and NVIDIA Jetson boards).
 %Our study determines how these protocols perform under normal operating conditions, how many system resources they consume when scaling the embedded systems network, and under what stress conditions they break down.
 %
 %Overall, we find that Chrony is the most well-rounded system, with competitive synchronization accuracy, resilience and resource efficiency, while both LinuxPTP and SPTP offer synchronization accuracy but exhibit stability problems or require more resources to run. PTPd, which despite its age is still being deployed, shows shortcomings in synchronization accuracy due to the lack of support for modern hardware features. The most capable hardware platform evaluated is the Raspberry-Pi 5, both due to hardware timestamping support and importantly because of the real-time clock, which helps with fault-tolerance.

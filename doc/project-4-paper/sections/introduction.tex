@@ -1,7 +1,7 @@
 
 \section{Introduction}
 \todo{From last discussion: Diagram showing Testbed setup (including Database)}
-\todo{From last discussion: Short section explaining what PTP-Perf is}
+\todo{From last discussion: Short section explaining what \toolName{} is}
 \todo{Find places to insert the word ``real-time'' to solidify applicability to RTSS.}
 
 %``Time is of the essence'', to many readers this might only be an idiom but the relevance of time throughout our daily lives, processes and systems is so ubiquitous that we frequently fail to appreciate its significance. While the phrase is said to have originated from the legal domain, time-criticality and the necessity of having a common notion of time permeates all sectors, from logistics and manufacturing in industry, to service-level objectives in service providers, emergency response in public healthcare systems, activities in people's day-to-day routines, and even to academia, as everybody perpetually works towards the next deadline. In computer systems and communications, time has been with us from the very beginnings, with its significance showing from the most basic synchronized digital circuits even to places where one might not expect, such as in the world's most pervasive digital cryptography deployment, the SSL/TLS PKI~\cite{ssl-client-warnings}.
@@ -69,7 +69,7 @@ We thus extensively study how well-known time synchronization protocols perform 
 showing their strengths and weaknesses in a variety of configurations.
 We offer the following contributions.
 
-\textbf{(1)}~We develop PTP-Perf, an open-source tool\footnote{PTP-Perf will be made publicly available upon acceptance.}, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations.
+\textbf{(1)}~We develop \toolName{}, an open-source tool\footnote{\toolName{} will be made publicly available upon acceptance.}, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations.
 
 \textbf{(2)}~We evaluate %the performance and resilience of
 four implementations of prevalent time synchronization protocols for packet-switched Ethernet,
@@ -91,7 +91,7 @@ for configuring time-synchronization deployments for high reliability and availa
 \todo{Link to Table 1}
 \todo{Create Table 2: Hardware Testbeds}
 
-To the best of our knowledge, PTP-Perf is the first data collection and
+To the best of our knowledge, \toolName{} is the first data collection and
 analysis tool %available open-source\todo{anonymize}
 that supports the empirical evaluation of multiple Ethernet-based time
 synchronization protocols and implementations across several embedded hardware
@@ -112,7 +112,7 @@ clock. These need to be addressed before
 high-precision network time can truly be relied upon.
 
 %\begin{itemize}
-%    \item PTP-Perf, an open-source tool for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations,
+%    \item \toolName{}, an open-source tool for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations,
 %    \item Establishment of a baseline of observed time-synchronization performance on several hardware testbeds across four vendors,
 %    \item Evaluation of synchronization resilience against adverse conditions/faults and possibilities of mitigating risk of synchronization failure,
 %    \item Assessment of deployability/resource consumption on embedded platforms,
