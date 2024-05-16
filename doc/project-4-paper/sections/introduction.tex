@@ -88,6 +88,26 @@ and assessment of deployability/resource consumption on embedded platforms.
 \textbf{(4)}~We discuss the lessons learned, best practices, and recommendations
 for configuring time-synchronization deployments for high reliability and availability.
 
+To the best of our knowledge, PTP-Perf is the first data collection and
+analysis tool %available open-source\todo{anonymize}
+that supports the empirical evaluation of multiple Ethernet-based time
+synchronization protocols and implementations across several embedded hardware
+testbeds with an explicit focus on dependability and fault-tolerance.
+
+Overall, we find that Chrony is the most well-rounded system, with competitive
+synchronization accuracy, resilience and resource efficiency, while both
+LinuxPTP and SPTP offer synchronization accuracy but exhibit stability problems
+or require more resources to run. PTPd, which despite its age is still being
+deployed, shows shortcomings in synchronization accuracy due to the lack of
+support for modern hardware features. The most capable hardware platform
+evaluated is the Raspberry-Pi 5, both due to hardware timestamping support and
+importantly because of the real-time clock, which helps with fault-tolerance.
+However, critical challenges remain for maintaining accurate clock synchronization,
+including resource contention (specifically network and memory, CPU is less of an
+issue) and faults on the master node when the master node lacks a real-time
+clock. These need to be addressed before
+high-precision network time can truly be relied upon.
+
 %\begin{itemize}
 %    \item PTP-Perf, an open-source tool for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations,
 %    \item Establishment of a baseline of observed time-synchronization performance on several hardware testbeds across four vendors,
@@ -96,11 +116,6 @@ for configuring time-synchronization deployments for high reliability and availa
 %    \item Provide lessons-learned and best practices for configuring time-synchronization deployments for high reliability and availability.
 %\end{itemize}
 
-To the best of our knowledge, PTP-Perf is the first data collection and
-analysis tool %available open-source\todo{anonymize}
-that supports the empirical evaluation of multiple Ethernet-based time
-synchronization protocols and implementations across several embedded hardware
-testbeds with an explicit focus on reliability. %dependability and fault-tolerance.
 
 %We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 %
