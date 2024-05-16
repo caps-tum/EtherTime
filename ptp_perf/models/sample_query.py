@@ -14,6 +14,7 @@ from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
+from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
 
 
@@ -26,6 +27,8 @@ class SampleQuery:
     endpoint_type: Optional[EndpointType] = None
 
     profile: Optional[PTPProfile] = None
+
+    analyzed_vendors_only: bool = True
 
     processed_only: bool = True
     converged_only: bool = True
@@ -80,6 +83,8 @@ class SampleQuery:
             endpoint_query = endpoint_query.filter(profile__benchmark_id=self.benchmark.id)
         if self.vendor is not None:
             endpoint_query = endpoint_query.filter(profile__vendor_id=self.vendor.id)
+        if self.analyzed_vendors_only:
+            endpoint_query = endpoint_query.filter(profile__vendor_id__in=VendorDB.ANALYZED_VENDOR_IDS)
         if self.cluster is not None:
             endpoint_query = endpoint_query.filter(profile__cluster_id=self.cluster.id)
         if self.machine is not None:
