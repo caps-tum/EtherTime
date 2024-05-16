@@ -248,7 +248,8 @@ class FigureContainer:
     axes_containers: List[AxisContainer]
 
     figure: plt.Figure = None
-    size: Tuple[int, int] = (6, 4)
+    size: Tuple[float, float] = (6, 4)
+    title: Optional[str] = None
     columns: int = None
     weights: List[int] = None
     w_space: float = None
@@ -269,6 +270,9 @@ class FigureContainer:
         )
         if self.w_space is not None:
             plt.subplots_adjust(wspace=self.w_space)
+
+        if self.title:
+            self.figure.suptitle(self.title)
 
         axes = axes.flatten()
 
@@ -310,5 +314,5 @@ class FigureContainer:
         return rows, columns
 
     def save_default_locations(self, basename: str, benchmark: Benchmark):
-        self.save(benchmark.storage_base_path.joinpath(f"{basename}.png"))
-        self.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"{basename}.pdf"))
+        self.save(benchmark.storage_base_path.joinpath(f"{basename}.png"), make_parents=True)
+        self.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"{basename}.pdf"), make_parents=True)

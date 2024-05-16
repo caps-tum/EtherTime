@@ -11,6 +11,7 @@ from ptp_perf.models import BenchmarkSummary, PTPEndpoint, PTPProfile
 from ptp_perf.models.data_transform import DataTransform
 from ptp_perf.registry.benchmark_db import BenchmarkDB
 from ptp_perf.utilities.pandas_utilities import frame_column, foreign_frame_column
+from ptp_perf.vendor.registry import VendorDB
 
 
 class PathDelayChart(TestCase):
@@ -37,6 +38,7 @@ class PathDelayChart(TestCase):
                             column_y=frame_column(PTPEndpoint.path_delay_std),
                             column_hue=frame_column(PTPEndpoint.clock_diff_median),
                             column_style=foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id),
+                            style_order=VendorDB.ANALYZED_VENDOR_IDS,
                             # color_map=seaborn.cubehelix_palette(gamma=1, rot=-.2, as_cmap=True),
                             color_map=seaborn.color_palette('viridis', as_cmap=True),
                             hue_norm=matplotlib.colors.LogNorm(vmin=1e-6, vmax=2.5e-3,),
