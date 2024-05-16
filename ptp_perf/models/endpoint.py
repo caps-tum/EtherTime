@@ -330,11 +330,13 @@ class PTPEndpoint(models.Model):
 
                 # Calculate how long it takes to return to normal (within 2x of pre-fault median)
                 post_fault_series_smoothed = post_fault_series.rolling(5).median()
-                post_fault_under_2x_median = (post_fault_series_smoothed < 2 * self.fault_clock_diff_pre_median)
+                post_fault_under_2x_median = post_fault_series[
+                    post_fault_series_smoothed < 2 * self.fault_clock_diff_pre_median
+                ]
                 if not post_fault_under_2x_median.empty:
                     self.fault_clock_diff_return_to_normal_time = post_fault_under_2x_median.index[0] - fault_end.timestamp
                 else:
-                    self.fault_clock_diff_return_to_normal_time = math.nan
+                    self.fault_clock_diff_return_to_normal_time = None
 
         except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:
