@@ -123,3 +123,15 @@ high-precision network time can truly be relied upon.
 %We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 %
 %The rest of this paper is structured into the following sections: Section~\ref{sec:background} covers time synchronization and PTP background, as well as related work, while Section~\ref{sec:failure_scenarios} looks at potential failure scenarios. Results are presented in Sections~\ref{sec:baseline} Baseline, \ref{sec:resource_contention} Resource Contention, \ref{sec:fault_tolerance} Fault Tolerance and \ref{sec:resource_consumption} Resource Consumption. Finally, we present some lessons learned and best practices in Section~\ref{sec:learnings_conclusion}.
+
+%The remainder of the paper is structured as follows.
+We start by summarizing the protocols surveyed and evaluated in this study (\cref{sec:protocols}),
+and the embedded platforms used for evaluation, including an overview of our testbed and our profiling tool \toolName{} (\cref{sec:testbed}).
+We then provide a brief overview of PTP and identify common invariants and failure scenarios (\cref{sec:ptp-overview}).
+We split the measurement study into to four parts: baseline, resource
+contention, fault tolerance, and resource consumption experiments
+(\cref{sec:baseline} to \cref{sec:resource_consumption}).
+Finally, we discuss the key takeaways and lessons learnt from this
+measurement study
+(\cref{sec:learnings_conclusion}),
+and related work and conclusion (\cref{sec:related,sec:conclusion}).
