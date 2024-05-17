@@ -239,7 +239,7 @@ with the master's clock.
     clock offset are derived, but no local clock modifications are made.
     \textbf{S4.} \text{Clock step} attempts to directly overwrite the slave's
     local clock. This may break applications
-    (e.g., violation of invariants I2 and potentially I1).
+    (e.g., violation of invariants I2 and potentially I1 in \cref{sec:}).
     Hence, many profiles restrict this to once during initial synchronization.
     \textbf{S5.} The \textit{clock slew} stage gradually reduces the clock offset.
     The rate of change is limited, e.g., to 500 parts per million or 0.05\% in
@@ -282,10 +282,28 @@ which we ensure in our evaluation.
 %\end{enumerate}
 
 
-\subsection{Synchronization Performance}
-It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
+%\subsection{Synchronization Performance}
+When tuning clock synchronization algorithms for precision and dependability,
+the path delay variation is another concern.
+A timestamp sent from the master to the slave is off by a propagation
+delay~\cite{managin-pdv-for-ptp}.
+PTP compensates for this delay using path delay estimation.
+This is difficult when multiple software and hardware components,
+such as the kernel, network stack, and network hardware,
+each introduce latency variability.
+Asymmetric latencies caused by uneven loads also cannot easily be compensated for.
+With appropriate hardware support (i.e.,~\textit{hardware timestamping}),
+though, the path delay variability can be tamed. % to an extent.
+\cref{fig:ptp-sw-hw} illustrates how this approach differs from
+the \textit{software timestamping} approach.
 
-\subsection{Hardware Support}
+%It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
+
+%Since delay variation is a primary concern, techniques have been developed to reduce the variability. While PTP can run entirely in software, the path that packets need to traverse between two PTP clients not only includes several hardware components but also some software layers (Figure~\ref{fig:ptp-sw-hw} left). Each component along the path introduces latency and packet delay variation, deteriorating the signal quality. With the appropriate hardware support, message timestamps can instead be generated directly by the NIC driver/hardware (Figure~\ref{fig:ptp-sw-hw} right), which ensures that the timestamp is not affected by the layers above it. This increases the clock synchronization's resilience against interference from adverse conditions, such as high network-, CPU- or kernel load.
+%
+%However, hardware timestamping alone does not guarantee a high level of dependability. In order to determine what can go wrong, we need to take a look at what constraints the timing system needs to observe and what might lead to potential failures.
+
+%\subsection{Hardware Support}
 
 \begin{figure}
     \centering
@@ -327,12 +345,8 @@ It is generally understood that network clock synchronization accuracy is a func
 
     \end{tikzpicture}
     \caption{
-        Timestamping for PTP messages when using software timestamping (left) and hardware timestamping (right). For software timestamping, the timestamp is generated inside the PTP client and traverses many layers in both egress and ingress, causing additional path delay and delay variation. With hardware timestamping, a timestamp is only added to the message just before it is written to wire by the NIC, thus ensuring a more up-to-date timestamp is sent to the network.\\
-        \textsuperscript{\textbf{*}}Network hardware (switches, routers, etc.) also introduces queuing delays. Special PTP-aware hardware can compensate for its own delays to further improve timestamping quality.
+        Timestamping for PTP messages when using software timestamping (left) and hardware timestamping (right). For software timestamping, the timestamp is generated inside the PTP client and traverses many layers in both egress and ingress, causing additional path delay and delay variation. With hardware timestamping, a timestamp is only added to the message just before it is written to wire by the NIC, thus ensuring a more up-to-date timestamp is sent to the network.
+        Network hardware (switches, routers, etc.) also introduces queuing delays. Special PTP-aware hardware can compensate for its own delays to further improve timestamping quality.
     }
     \label{fig:ptp-sw-hw}
 \end{figure}
-
-Since delay variation is a primary concern, techniques have been developed to reduce the variability. While PTP can run entirely in software, the path that packets need to traverse between two PTP clients not only includes several hardware components but also some software layers (Figure~\ref{fig:ptp-sw-hw} left). Each component along the path introduces latency and packet delay variation, deteriorating the signal quality. With the appropriate hardware support, message timestamps can instead be generated directly by the NIC driver/hardware (Figure~\ref{fig:ptp-sw-hw} right), which ensures that the timestamp is not affected by the layers above it. This increases the clock synchronization's resilience against interference from adverse conditions, such as high network-, CPU- or kernel load.
-
-However, hardware timestamping alone does not guarantee a high level of dependability. In order to determine what can go wrong, we need to take a look at what constraints the timing system needs to observe and what might lead to potential failures.
