@@ -4,13 +4,14 @@ import pandas as pd
 from django.db import models
 
 from ptp_perf.machine import Cluster
-from ptp_perf.models import Sample
+from ptp_perf.models import Sample, PTPEndpoint
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities.django_utilities import DataFormatFloatField, GenericEngineeringFloatField, \
     PercentageFloatField, TimeFormatFloatField, TemperatureFormatFloatField, FrequencyFormatFloatField
+from ptp_perf.utilities.pandas_utilities import frame_column
 from ptp_perf.vendor.vendor import Vendor
 
 
@@ -34,6 +35,17 @@ class BenchmarkSummary(models.Model):
     path_delay_p99 = TimeFormatFloatField(null=True)
     path_delay_max = TimeFormatFloatField(null=True)
     path_delay_std = TimeFormatFloatField(null=True)
+
+    # Convergence
+    convergence_duration = models.DurationField(null=True)
+    convergence_max_offset = TimeFormatFloatField(null=True)
+    convergence_rate = TimeFormatFloatField(null=True)
+
+    converged_percentage = PercentageFloatField(null=True)
+    converged_samples = models.IntegerField(null=True)
+
+    missing_samples_percent = PercentageFloatField(null=True)
+
 
     # Fault statistics
     fault_clock_diff_post_max_max = TimeFormatFloatField(null=True)
@@ -123,6 +135,23 @@ class BenchmarkSummary(models.Model):
         # Per-Endpoint summaries: Primary
         endpoints_primary = data_query.get_endpoint_query().all().values()
         endpoint_frame = pd.DataFrame(endpoints_primary)
+
+        # Convergence
+        try:
+            instance.convergence_duration = endpoint_frame[frame_column(PTPEndpoint.convergence_duration)].mean()
+            instance.convergence_max_offset = endpoint_frame[frame_column(PTPEndpoint.convergence_max_offset)].mean()
+            instance.convergence_rate = endpoint_frame[frame_column(PTPEndpoint.convergence_rate)].mean()
+
+            instance.converged_percentage = endpoint_frame[frame_column(PTPEndpoint.converged_percentage)].mean()
+            instance.converged_samples = endpoint_frame[frame_column(PTPEndpoint.converged_samples)].mean()
+        except KeyError:
+            pass
+
+        # Missing samples
+        try:
+            instance.missing_samples_percent = endpoint_frame[frame_column(PTPEndpoint.missing_samples_percent)].mean()
+        except KeyError:
+            pass
 
         try:
             instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()

@@ -67,8 +67,8 @@ class PTPEndpoint(models.Model):
     # Convergence statistics
     convergence_timestamp = models.DateTimeField(null=True)
     convergence_duration = models.DurationField(null=True)
-    convergence_max_offset = models.FloatField(null=True)
-    convergence_rate = models.FloatField(null=True)
+    convergence_max_offset = TimeFormatFloatField(null=True)
+    convergence_rate = TimeFormatFloatField(null=True)
 
     converged_percentage = PercentageFloatField(null=True)
     converged_samples = models.IntegerField(null=True)
@@ -198,7 +198,10 @@ class PTPEndpoint(models.Model):
             raise ProfileCorruptError(f"Timestamps not unique:\n{duplicate_timestamps}")
         if not timestamps.is_monotonic_increasing:
             time_index_diff = entire_series.index.diff()
-            steps_backward = entire_series[time_index_diff < timedelta(seconds=0)]
+            time_rewinds = time_index_diff < timedelta(seconds=0)
+            # Show some context.
+            adjacent_values = pd.Series(time_rewinds).rolling(10).max().astype(bool).reset_index(drop=True)
+            steps_backward = entire_series[adjacent_values]
             raise ProfileCorruptError(
                 f"Timestamps not monotonically increasing:\n{steps_backward}"
             )

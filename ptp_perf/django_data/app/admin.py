@@ -151,7 +151,7 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'machine', 'endpoint_type',
                     'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
                     'missing_samples_percent', 'converged_percentage',
-                    'convergence_duration')
+                    'convergence_duration', 'convergence_max_offset', 'convergence_rate')
     list_select_related = ('profile',)
     list_filter = ('endpoint_type', 'profile__benchmark_id', 'profile__vendor_id', 'profile__cluster_id')
     actions = (create_key_metric_variance_chart,)
@@ -360,7 +360,8 @@ def get_profile_admin_link(benchmark_id, vendor_id, cluster_id):
 @admin.register(BenchmarkSummary)
 class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
-                    'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline')
+                    'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline',
+                    'missing_samples_percent', 'converged_percentage', 'convergence_duration', 'convergence_max_offset', 'convergence_rate')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
     actions_row = ('summary_create_timeseries', 'endpoints', 'profiles')
 
