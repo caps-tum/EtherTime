@@ -112,7 +112,7 @@ class ResourceConsumptionChartTest(TestCase):
             size=(10,2),
         )
         chart.plot()
-        chart.save_default_locations("summary_quality_trend", "resource_consumption")
+        chart.save_default_locations("summary_trend", "resource_consumption")
 
     def test_chart_quality_create(self):
         resource_consumption_slaves = self.get_resource_consumption_endpoints([EndpointType.PRIMARY_SLAVE, EndpointType.SECONDARY_SLAVE, EndpointType.TERTIARY_SLAVE])
