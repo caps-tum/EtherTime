@@ -205,7 +205,7 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
 
     def endpoint_redirect_logrecord(self, request, pk):
         return HttpResponseRedirect(
-            get_admin_redirect_link(LogRecord, {'endpoint_id__exact': pk})
+            get_admin_redirect_link(LogRecord, {'endpoint_id': pk})
         )
     endpoint_redirect_logrecord.short_description = 'Log'
     endpoint_redirect_logrecord.url_path = 'logrecord'

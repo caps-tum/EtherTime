@@ -117,8 +117,6 @@ class Machine(RPCTarget):
     endpoint_type: EndpointType
     ptp_software_timestamping: bool = False
     ptp_use_phc2sys: bool = True
-    ptp_priority_1: int = 128
-    """Clock BMCA priority, lower is better. https://blog.meinbergglobal.com/2013/11/14/makes-master-best/"""
     python_executable: str = "python3"
 
     initial_clock_offset: Optional[timedelta] = None
@@ -144,6 +142,18 @@ class Machine(RPCTarget):
         return Invocation.of_command(
             "ssh", *ssh_options, self.address, command
         )
+
+    @property
+    def ptp_priority_1(self):
+        """Clock BMCA priority, lower is better. https://blog.meinbergglobal.com/2013/11/14/makes-master-best/"""
+        return {
+            EndpointType.MASTER: 1,
+            # This is potentially the failover master
+            EndpointType.SECONDARY_SLAVE: 200,
+            # These are always slaves
+            EndpointType.PRIMARY_SLAVE: 248,
+            EndpointType.TERTIARY_SLAVE: 248,
+        }[self.endpoint_type]
 
     @property
     def ptp_timestamp_type(self):

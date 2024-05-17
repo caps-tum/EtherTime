@@ -14,7 +14,7 @@ import seaborn
 from matplotlib.ticker import MultipleLocator, PercentFormatter, LogLocator
 
 from ptp_perf.charts.chart_container import ChartContainer
-from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT, PAPER_GENERATED_RESOURCES_DIR
+from ptp_perf.constants import PTPPERF_REPOSITORY_ROOT, PAPER_GENERATED_RESOURCES_DIR, MEASUREMENTS_DIR
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities import units
 
@@ -79,6 +79,7 @@ class AxisContainer:
     yticklabels_format_time_units_premultiplied: bool = True
     yticklabels_format_engineering: bool = False
     yticklabels_format_engineering_unit: str = ''
+    yticklabels_format_percent: bool = False
     yticks_interval: Optional[float] = None
 
     yminorticks: bool = False
@@ -136,6 +137,9 @@ class AxisContainer:
         if self.yticklabels_format_time:
             self.decorate_axis_time_formatter(self.axis.yaxis,
                                               units_premultiplied=self.yticklabels_format_time_units_premultiplied)
+        if self.yticklabels_format_percent:
+            self.axis.set_ylim(0, 1)
+            self.axis.yaxis.set_major_formatter(PercentFormatter(xmax=1))
         if self.yticklabels_format_engineering:
             self.decorate_axis_engineering_formatter(self.axis.yaxis, self.yticklabels_format_engineering_unit)
 
@@ -313,6 +317,7 @@ class FigureContainer:
         rows = math.ceil(len(self.axes_containers) / columns)
         return rows, columns
 
-    def save_default_locations(self, basename: str, benchmark: Benchmark):
-        self.save(benchmark.storage_base_path.joinpath(f"{basename}.png"), make_parents=True)
-        self.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath(f"{basename}.pdf"), make_parents=True)
+    def save_default_locations(self, name: str, location: Union[str, Benchmark]):
+        basename = location.id if isinstance(location, Benchmark) else location
+        self.save(MEASUREMENTS_DIR.joinpath(basename).joinpath(f"{name}.png"), make_parents=True)
+        self.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(basename).joinpath(f"{name}.pdf"), make_parents=True)

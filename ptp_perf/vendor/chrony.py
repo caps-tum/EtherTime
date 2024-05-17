@@ -74,7 +74,7 @@ class ChronyVendor(Vendor):
             await Invocation.of_command("service", "chrony", "start").as_privileged().run()
 
             # Wait for offset <1.0
-            await Invocation.of_command("chronyc", "waitsync", "10", "1.0").run()
+            await Invocation.of_command("chronyc", "waitsync", "30", "0.1").run()
         finally:
             await Invocation.of_command("service", "chrony", "stop").as_privileged().run()
 

@@ -51,20 +51,19 @@ This left us with four suitable vendors: PTPd, LinuxPTP, SPTP and Chrony. %(summ
 \textbf{(a)}~PTPd~\cite{ptpd-manpage} %is a traditional implementation of the PTP protocol that, despite being less
 has been less maintained in recent years~\cite{ptpd-maintainers} and lacks
 modern features such as hardware timestamping;
-but it has spawned a variety of derivates (also commercial) and is still being 
+but it has spawned a variety of derivates (also commercial) and is still being
 deployed as per the Debian package tracker~\cite{debian-popularity-contest}
 (perhaps due to its relative simplicity and wider support of non-Linux UNIX systems).
 \textbf{(b)}~LinuxPTP~\cite{linuxptp-homepage} is the most deployed open-source
 PTP solution on Debian.
-Its goal is to provide robustness while being tightly integrated with Linux,
-and taking advantage of the kernel and hardware features provided to improve
+Its goal is to provide robustness while tightly integrating with Linux, taking advantage of the kernel and hardware features provided to improve
 synchronization accuracy.
 \textbf{(c)}~SPTP~\cite{facebook-sptp} is a novel time synchronization protocol
 %consisting of the PTP4U server~\cite{??} and the SPTP client,
 developed at Meta due to difficulties they encountered with deploying PTP.
-It claims to perform at par with PTP in terms of time synchronization,
+It claims to perform on par with PTP in terms of time synchronization,
 %a comparable level of time-synchronization performance
-but consumes lower resources and is more resilient.
+while consumes less resources and offering higher resilience.
 \textbf{(d)}~Finally, we include Chrony~\cite{??}, the state-of-the-art NTP implementation.
 %as a reference.
 It is by far the most feature-complete implementation of time synchronization
@@ -86,10 +85,10 @@ it serves as a baseline for other PTP implementations.
         \checkmark & LinuxPTP (3.1.1) & Advanced capabilities but specific to Linux\\
         \checkmark & SPTP (b27bdba)   & Meta's custom time synchronization protocol\\
         \checkmark & Chrony (4.3)     & State-of-the-art NTP server/client\\
-        -          & OpenPTP (r2)     & Unmaintained for more than 10 years \\
-        -          & Timebeat (2.0.7) & Unsuitable for embedded systems \\
-        -          & PPSI (6.1)       & Critical bug found \\
-        -          & White Rabbit (-) & Requires specialized hardware \\
+        --         & OpenPTP (r2)     & Unmaintained for more than 10 years \\
+        --         & Timebeat (2.0.7) & Unsuitable for embedded systems \\
+        --         & PPSI (6.1)       & Critical bug found \\
+        --         & White Rabbit (-) & Requires specialized hardware \\
     \bottomrule
     \end{tabular}
     \label{tab:vendors}
@@ -236,14 +235,15 @@ PTP clients traverse multiple stages in a lifecycle to synchronize their clock (
 
 \begin{enumerate}[label=S\arabic*.]
     \item \textbf{Discovery} is the stage where remote clocks are identified, usually via periodic multicast announcements. Discovered clients are collected into a PTP domain.
-    \item \textbf{Best Master Clock Algorithm (BMCA)} is the predefined algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties~\cite{bmca-deep-dive}. By the end of this phase, each peer will become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
+    \item \textbf{Best Master Clock Algorithm (BMCA)} is the standardized algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties~\cite{bmca-deep-dive}. By the end of this phase, each peer will deterministically become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
     \item \textbf{Calibration} is a brief phase where no local clock modifications are made yet to allow the estimate of the offset to increase in precision through multiple synchronization intervals and path delay estimates.
-    \item \textbf{Clock Step} Having arrived at a reasonably precise estimate of the offset, an attempt is made to immediately rectify the offset by directly resetting the slave's local time. Since this is a direct violation of invariants I2 and potentially I1 (i.e. this is expected to break applications), it is only done when the offset is large (e.g.~$>1$~second) and many PTP profiles usually allow this to happen only once during the initial synchronization where only using clock-slew would take too long.
-    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune the clocks position, thus further reducing offset. The rate of change is usually limited via software and configuration parameters, e.g. the Linux kernel limits the rate of change to 500 parts per million, equivalent to 0.05\%~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- the 0.05\% limit implies that correcting 1 second of offset takes at least 33 minutes.
-    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to lack of offset estimation precision, but at this point the clock signal is the most stable and most useful.
+    \item \textbf{Clock Step} Using a reasonably precise estimate of the offset, an attempt is made to directly reset the slave's local time. Since this is expected to break applications (violation of invariants I2 and potentially I1), it is only used where clock-slew is infeasible (e.g. offset~$>1$~second) and many profiles restrict clock steps to once during the initial synchronization.
+    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune, thus further reducing offset. The rate of change is limited via software and configuration parameters, e.g. to 500 parts per million/0.05\% in the Linux kernel~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- 0.05\% implies that correcting 1 second of offset takes at least 33 minutes.
+    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to imperfections in offset estimation, but at this point the clock signal is ready to be consumed by applications.
 \end{enumerate}
 
 For calculating metrics on the quality of the clock synchronization, it is important to consider what should be measured. Often, comparisons are only meaningful when PTP is in comparable states (stable synchronization is usually of most interest), but ensuring this is the case is not always trivial, especially across vendors.
+In terms of resilience, it is also important to determine what causes clocks to become unstable.
 %pre-process the data to exclude data during the convergence phase and only consider observations from the synchronized/stable state. We apply this processing offline by determining the rate of change of the estimated offset's sign -- when frequent switches from positive to negative happen then the algorithm is no longer sure whether its own clock is early or tardy, thus we are close to the optimum synchronization.
 
 

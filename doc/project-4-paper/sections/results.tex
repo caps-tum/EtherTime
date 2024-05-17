@@ -4,7 +4,19 @@
 
 \subsection{Testbed -- Hardware and Software}
 
-To conduct our evaluation we employ a total of four hardware testbeds. These include a cluster consisting of three Raspberry Pi 4 attached to an isolated wired Ethernet network via a single Gigabit Ethernet switch and a second cluster consisting of three Raspberry Pi 5 in the same hardware layout (both on Debian 12 and Linux 6.6.20). There are two key differences relevant to timekeeping between the Raspberry-Pi 4 and the Raspberry-Pi 5: The Raspberry-Pi 5 has support for PTP hardware timestamping on the network interface, and it has an integrated real-time clock (RTC) that can be powered by an external battery, both of which the Raspberry-Pi 4 lacks~\cite{raspberry-pi-datasheets}. Furthermore, we utilize a cluster of four Xilinx ZUBoard 1CGs, which feature a combination of ARM Cortex A53 and ARM Cortex R5F cores. These boards were adapted to run Debian with the standard Xilinx Kernels for access to the larger package repository. The base kernel was 5.15, which we patched for R8152/R8153 support for our secondary Ethernet adapters. However, we observed that under Kernel 5.15 hardware timestamping only worked on the transmission path for this board but not on the receiving path, which degraded synchronization accuracy and prevented SPTP from running at all, so we replaced it with a Xilinx 6.6.10 kernel. Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7, painstakingly updated to Ubuntu 22.04 LTS for software compability but still running the comparatively ancient NVIDIA-customized 3.10.40 kernel. This selection of hardware is representative of a range of embedded systems/edge devices available between 2014 and 2024, both 32-bit and 64-bit and with/without real-time clocks and hardware timestamping across a range of network interface manufacturers. All clusters are controlled by programmable power delivery units so that we can simulate hardware failures in each component individually.
+\begin{table}
+    \caption{Hardware Testbeds}
+    \begin{tabular}{rrccl}
+               Testbed & Nodes & HW Timestamp &    RTC     & Kernel\\
+        Raspberry-Pi 4 &     3 &   $\times$   &  $\times$  & 6.6.20+rpt-rpi-v8 \\
+        Raspberry-Pi 5 &     3 &  \checkmark  & \checkmark & 6.6.20+rpt-rpi-2712 \\
+                Xilinx &     3 &  \checkmark  &            & Petalinux 6.6.10 \\
+           Jetson TK-1 &     3 &  $\times$  &				& Tegra 3.10.40\\
+    \end{tabular}
+    \label{tbl:hardware_testbeds}
+\end{table}
+
+To conduct our evaluation we employ a total of four hardware testbeds (Table~\ref{tbl:hardware_testbeds}). These include a cluster consisting of three Raspberry Pi 4 attached to an isolated wired Ethernet network via a single Gigabit Ethernet switch and a second cluster consisting of three Raspberry Pi 5 in the same hardware layout (both on Debian 12 and Linux 6.6.20). There are two key differences relevant to timekeeping between the Raspberry-Pi 4 and the Raspberry-Pi 5: The Raspberry-Pi 5 has support for PTP hardware timestamping on the network interface, and it has an integrated real-time clock (RTC) that can be powered by an external battery, both of which the Raspberry-Pi 4 lacks~\cite{raspberry-pi-datasheets}. Furthermore, we utilize a cluster of four Xilinx ZUBoard 1CGs, which feature a combination of ARM Cortex A53 and ARM Cortex R5F cores. These boards were adapted to run Debian with the standard Xilinx Kernels for access to the larger package repository. The base kernel was 5.15, which we patched for R8152/R8153 support for our secondary Ethernet adapters. However, we observed that under Kernel 5.15 hardware timestamping only worked on the transmission path for this board but not on the receiving path, which degraded synchronization accuracy and prevented SPTP from running at all, so we replaced it with a Xilinx 6.6.10 kernel. Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7, painstakingly updated to Ubuntu 22.04 LTS for software compability but still running the comparatively ancient NVIDIA-customized 3.10.40 kernel. This selection of hardware is representative of a range of embedded systems/edge devices available between 2014 and 2024, both 32-bit and 64-bit and with/without real-time clocks and hardware timestamping across a range of network interface manufacturers. All clusters are controlled by programmable power delivery units so that we can simulate hardware failures in each component individually.
 
 \subsection{Baseline: The 1-to-1 benchmark}
 
@@ -46,14 +58,14 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
 \end{figure}
 
 \begin{table}
-\centering
-\caption{Baseline Values by Vendor and System}
+%\centering
+\caption{Baseline Clock Offsets by Vendor and System}
 
-    \begin{tikzpicture}[start chain=rows going below, on grid, node distance=0.35cm and 1.5cm, text width=2cm, align=right]
+    \begin{tikzpicture}[start chain=rows going below, on grid, node distance=0.35cm and 1.35cm, text width=1.8cm, align=right]
         \node[on chain=rows] {};
         \begin{scope}[start branch=row going right]
-            \node[on chain] {};
-            \node[on chain] {Clock Offset};
+%            \node[on chain] {};
+%            \node[on chain] {Clock Offset};
 %            \node[on chain] {Clock Offset};
         \end{scope}
 
@@ -116,6 +128,7 @@ Logically, the absolute clock difference exhibits some amount of skew due to the
 
 A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even with our 32-bit patches, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset between \fRelative{\cmpKey{base/minmax_difference_percentage}{min}} worse than the best performing vendor on \fCluster{\cmpKey{base/minmax_difference_percentage}{minarg}} and \fRelative{\cmpKey{base/minmax_difference_percentage}{max}} on \fCluster{\cmpKey{base/minmax_difference_percentage}{maxarg}}.
 \fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on the Raspberry-Pi systems, with the clock offset estimates at \fRelativeInverted{\cmpKey{base/rpi-4}{min}/\cmpKey{base/rpi-4}{mean}} and \fRelativeInverted{\cmpKey{base/rpi-5}{min}/\cmpKey{base/rpi-5}{mean}} lower than the mean performance, respectively. On the Petalinux and TK-1 systems, \todo{INSERT NEW BASELINE DATA ONCE AVAILABLE.}
+\todo{Convergence duration.}
 
 \assert{\cmpKey{base/rpi-4}{minarg}}{chrony}%
 That a regular NTP client can match or outperform all the tested PTP clients might come as a surprise, with PTP being engineered specifically for precision, but Chrony is very much state-of-the-art and can take advantage of the same hardware acceleration that our PTP clients can while providing a lot more features\todo{this claim might need to be backed up}.
@@ -353,7 +366,7 @@ While resource contention, especially network congestion, can lead to degradatio
     \label{fig:fault_architecture}
 \end{figure}
 
-Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the network, a fault in the software, and a fault in the hardware. The software/hardware faults can either occur on a PTP slave, in which case they are less critical as the expectation is that the failure will be relatively contained within a single node, or on the PTP master, in which case they are more critical as the failure could propagate across the PTP domain. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine that scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard terminating the PTP client in software -- in reality such a fault might come from within the client due to e.g. a bug, or from an external source (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but real-life production hardware faults and system hang-ups could also come from other component failures.
+Apart from resource contention, faults are another key threat to the functioning of the timing system. We examine faults originating from three distinct causes: a fault in the PTP software, a fault in a node's hardware, and a fault on the network. The software/hardware faults can either occur on a PTP slave, in which case they are less critical as the expectation is that the failure will be relatively contained within a single node, or on the PTP master, in which case they are more critical as the failure could propagate across the PTP domain. In high-reliability deployments, there will typically be a failover master to take over upon a fault in the master, so we examine that scenario too. Figure~\ref{fig:fault_architecture} shows an overview of the locations and types of faults that may occur. We emulate software faults by hard terminating the PTP client in software -- in reality such a fault might come from within the client due to e.g. a bug, or from an external source (e.g. a process kill during an out-of-memory situation). We produce simulated hardware faults using our programmable power delivery unit, which is equivalent to a loss-of-power scenario, but real-life production hardware faults and system hang-ups could also come from other component failures.
 
 \subsection{Software Fault -- Slave}
 

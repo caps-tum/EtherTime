@@ -7,27 +7,20 @@ from ptp_perf.machine import Cluster, Machine, PluginSettings
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.util import ImmediateException, str_join
 
+PTP_SLAVE_SETTINGS = {
+    'initial_clock_offset': timedelta(minutes=-1),
+}
+
 RASPBERRY_PI_4_PTP_SETTINGS = {
     'ptp_interface': 'eth0',
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': True,
 }
-RASPBERRY_PI_5_PTP_SETTINGS = {
-    'ptp_interface': 'eth0',
-    'ptp_use_phc2sys': False,
-    'ptp_software_timestamping': False,
-}
-
-PTP_SLAVE_SETTINGS = {
-    'initial_clock_offset': timedelta(minutes=-1),
-}
-
 MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.6",
     endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_4_PTP_SETTINGS,
-    ptp_priority_1=1,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.6", iperf_secondary_address="192.168.1.106",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -38,7 +31,6 @@ MACHINE_RPI08 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
     **RASPBERRY_PI_4_PTP_SETTINGS,
-    ptp_priority_1=248,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -49,18 +41,28 @@ MACHINE_RPI07 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_4_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
+CLUSTER_PI = Cluster(
+    id="rpi-4",
+    name="Raspberry-Pi 4",
+    machines=[
+        MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
+    ]
+)
 
+RASPBERRY_PI_5_PTP_SETTINGS = {
+    'ptp_interface': 'eth0',
+    'ptp_use_phc2sys': False,
+    'ptp_software_timestamping': False,
+}
 MACHINE_RPI56 = Machine(
     id="rpi56", address="rpi56", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.56",
     endpoint_type=EndpointType.MASTER,
     **RASPBERRY_PI_5_PTP_SETTINGS,
-    ptp_priority_1=1,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.56", iperf_secondary_address="192.168.1.156",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -71,7 +73,6 @@ MACHINE_RPI58 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
     **RASPBERRY_PI_5_PTP_SETTINGS,
-    ptp_priority_1=248,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.58", iperf_secondary_address="192.168.1.158",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
@@ -82,10 +83,16 @@ MACHINE_RPI57 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **RASPBERRY_PI_5_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.57", iperf_secondary_address="192.168.1.157",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+CLUSTER_PI5 = Cluster(
+    id="rpi-5",
+    name="Raspberry-Pi 5",
+    machines=[
+        MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
+    ]
 )
 
 # New boards
@@ -94,13 +101,11 @@ PETALINUX_PTP_SETTINGS = {
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': False,
 }
-
 MACHINE_PETALINUX01 = Machine(
     id="petalinux01", address="petalinux01", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.81",
     endpoint_type=EndpointType.MASTER,
     **PETALINUX_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=True, iperf_address="10.0.0.81", iperf_secondary_address="192.168.1.181",
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
@@ -111,7 +116,6 @@ MACHINE_PETALINUX02 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.PRIMARY_SLAVE,
     **PETALINUX_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.82", iperf_secondary_address="192.168.1.182",
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
@@ -122,7 +126,6 @@ MACHINE_PETALINUX03 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.SECONDARY_SLAVE,
     **PETALINUX_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.83", iperf_secondary_address="192.168.1.183",
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
@@ -133,10 +136,16 @@ MACHINE_PETALINUX04 = Machine(
     **PTP_SLAVE_SETTINGS,
     endpoint_type=EndpointType.TERTIARY_SLAVE,
     **PETALINUX_PTP_SETTINGS,
-    ptp_priority_1=200,
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.84", iperf_secondary_address="192.168.1.184",
         stress_ng_cpus=2, stress_ng_cpu_restrict_cores="1")
+)
+CLUSTER_PETALINUX = Cluster(
+    id="petalinux",
+    name="Xilinx",
+    machines=[
+        MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
+    ]
 )
 
 MACHINE_TK1_1 = Machine(
@@ -146,7 +155,6 @@ MACHINE_TK1_1 = Machine(
     ptp_interface='enp1s0',
     ptp_use_phc2sys=False,
     ptp_software_timestamping=True,
-    ptp_priority_1=200,
     python_executable='python3.11',
     shutdown_delay=timedelta(minutes=1),
     plugin_settings=PluginSettings(
@@ -161,12 +169,18 @@ MACHINE_TK1_2 = Machine(
     ptp_interface='eth0',
     ptp_use_phc2sys=False,
     ptp_software_timestamping=True,
-    ptp_priority_1=200,
     python_executable='python3.11',
     shutdown_delay=timedelta(minutes=1),
     plugin_settings=PluginSettings(
         iperf_server=False, iperf_address="10.0.0.82", iperf_secondary_address="192.168.1.172",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
+)
+CLUSTER_TK1 = Cluster(
+    id="tk-1",
+    name="Jetson TK-1",
+    machines=[
+        MACHINE_TK1_1, MACHINE_TK1_2
+    ]
 )
 
 
@@ -175,6 +189,13 @@ MACHINE_RPISERV = Machine(
     ptp_address="0.0.0.0",
     endpoint_type=EndpointType.ORCHESTRATOR,
     ptp_interface="",
+)
+CLUSTER_RPI_SERV = Cluster(
+    id="rpi-serv",
+    name='RPI Server',
+    machines=[
+        MACHINE_RPISERV
+    ]
 )
 
 MACHINE_SWITCH = Machine(
@@ -186,6 +207,31 @@ MACHINE_SWITCH2 = Machine(
     address=None, ptp_address=None, ptp_interface=None,
 )
 
+def create_big_bad_cluster_machines():
+    machines=[
+        dataclasses.replace(
+            machine,
+            endpoint_type=EndpointType.TERTIARY_SLAVE,
+            initial_clock_offset=timedelta(minutes=-1),
+            id=f"bb-{machine.id}"
+        ) for machine in itertools.chain(
+            CLUSTER_PI5.machines, CLUSTER_PETALINUX.machines, CLUSTER_PI.machines, CLUSTER_TK1.machines,
+        )
+    ]
+    machines[0].endpoint_type = EndpointType.MASTER
+    machines[0].initial_clock_offset = None
+    machines[1].endpoint_type = EndpointType.PRIMARY_SLAVE
+    machines[2].endpoint_type = EndpointType.SECONDARY_SLAVE
+
+    return machines
+
+MACHINES_BIG_BAD_CLUSTER = create_big_bad_cluster_machines()
+CLUSTER_BIG_BAD = Cluster(
+    id="big-bad",
+    name="Big Bad Cluster",
+    machines=create_big_bad_cluster_machines(),
+)
+
 machines = {
     machine.id: machine for machine in [
         MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08,
@@ -194,71 +240,15 @@ machines = {
         MACHINE_SWITCH2,
         MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
         MACHINE_TK1_1, MACHINE_TK1_2,
+        *MACHINES_BIG_BAD_CLUSTER,
     ]
 }
 ANALYZED_MACHINES = [
     MACHINE_RPI06, MACHINE_RPI07, MACHINE_RPI08,
     MACHINE_RPI56, MACHINE_RPI57, MACHINE_RPI58,
     MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
+    MACHINE_TK1_1, MACHINE_TK1_2,
 ]
-
-CLUSTER_PI = Cluster(
-    id="rpi-4",
-    name="Raspberry-Pi 4",
-    machines=[
-        MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
-    ]
-)
-CLUSTER_PI5 = Cluster(
-    id="rpi-5",
-    name="Raspberry-Pi 5",
-    machines=[
-        MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
-    ]
-)
-CLUSTER_PETALINUX = Cluster(
-    id="petalinux",
-    name="Petalinux",
-    machines=[
-        MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
-    ]
-)
-CLUSTER_TK1 = Cluster(
-    id="tk-1",
-    name="Jetson TK-1",
-    machines=[
-        MACHINE_TK1_1, MACHINE_TK1_2
-    ]
-)
-CLUSTER_RPI_SERV = Cluster(
-    id="rpi-serv",
-    name='RPI Server',
-    machines=[
-        MACHINE_RPISERV
-    ]
-)
-
-def create_big_bad_cluster_machines():
-    machines=[
-        dataclasses.replace(
-            machine, endpoint_type=EndpointType.TERTIARY_SLAVE,
-            initial_clock_offset=timedelta(minutes=-1),
-        ) for machine in itertools.chain(
-            CLUSTER_PI5.machines, CLUSTER_PI.machines, CLUSTER_PETALINUX.machines, CLUSTER_TK1.machines,
-        )
-    ]
-    machines[0].endpoint_type = EndpointType.MASTER
-    machines[0].initial_clock_offset = None
-    machines[1].endpoint_type = EndpointType.PRIMARY_SLAVE
-    machines[2].initial_clock_offset = EndpointType.SECONDARY_SLAVE
-
-    return machines
-
-CLUSTER_BIG_BAD = Cluster(
-    id="big-bad",
-    name="Big Bad Cluster",
-    machines=create_big_bad_cluster_machines(),
-)
 
 clusters = {
     cluster.id: cluster for cluster in [
