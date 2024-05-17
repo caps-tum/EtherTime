@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Iterable
 
 import pandas as pd
 from django.test import TestCase
@@ -16,7 +17,7 @@ from ptp_perf.vendor.registry import VendorDB
 class ResourceConsumptionChartTest(TestCase):
 
     def test_create_chart(self):
-        resource_consumption_endpoints = self.get_resource_consumption_endpoints()
+        resource_consumption_masters = self.get_resource_consumption_endpoints([EndpointType.MASTER])
         chart = FigureContainer(
             axes_containers=[
                 DataAxisContainer(
@@ -47,7 +48,7 @@ class ResourceConsumptionChartTest(TestCase):
                                 # ('sptp', 16000000),
                                 # ('chrony', 800000),
                                 # ('chrony', 1000000),
-                                (endpoint.benchmark.num_machines, endpoint.profile.vendor_id, endpoint.proc_mem_rss) for endpoint in resource_consumption_endpoints
+                                (endpoint.benchmark.num_machines, endpoint.profile.vendor_id, endpoint.proc_mem_rss) for endpoint in resource_consumption_masters
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
                         )
@@ -65,7 +66,7 @@ class ResourceConsumptionChartTest(TestCase):
                                 # ('chrony', 6.25),
                                 # ('sptp', 10),
                                 (endpoint.benchmark.num_machines, endpoint.profile.vendor_id, endpoint.proc_cpu_percent * timedelta(hours=1).total_seconds())
-                                for endpoint in resource_consumption_endpoints if endpoint.proc_cpu_percent is not None
+                                for endpoint in resource_consumption_masters if endpoint.proc_cpu_percent is not None
                             ], columns=['x', 'hue', 'y']).sort_values(by='x'),
                             column_x='x', column_y='y', column_hue='hue',
                         )
@@ -80,7 +81,7 @@ class ResourceConsumptionChartTest(TestCase):
                             data=pd.DataFrame([
                                 # ('sptp', 1100000),
                                 (endpoint.benchmark.num_machines, endpoint.profile.vendor_id, endpoint.sys_net_ptp_iface_bytes_total / endpoint.resource_profile_length.total_seconds() * timedelta(hours=1).total_seconds())
-                                for endpoint in resource_consumption_endpoints if endpoint.resource_profile_length is not None
+                                for endpoint in resource_consumption_masters if endpoint.resource_profile_length is not None
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
                         )
@@ -94,7 +95,7 @@ class ResourceConsumptionChartTest(TestCase):
                             data=pd.DataFrame([
                                 # ('sptp', 1100000),
                                 (endpoint.benchmark.num_machines, endpoint.profile.vendor_id, endpoint.sys_net_ptp_iface_packets_total / endpoint.resource_profile_length.total_seconds() * timedelta(hours=1).total_seconds())
-                                for endpoint in resource_consumption_endpoints if endpoint.resource_profile_length is not None
+                                for endpoint in resource_consumption_masters if endpoint.resource_profile_length is not None
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
                         )
@@ -111,18 +112,62 @@ class ResourceConsumptionChartTest(TestCase):
             size=(10,2),
         )
         chart.plot()
-        chart.save(MEASUREMENTS_DIR.joinpath("resource_consumption").joinpath("summary_trend.png"), make_parents=True)
-        chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath("resource_consumption").joinpath("summary_trend.pdf"), make_parents=True)
+        chart.save_default_locations("summary_quality_trend", "resource_consumption")
 
-    def get_resource_consumption_endpoints(self):
+    def test_chart_quality_create(self):
+        resource_consumption_slaves = self.get_resource_consumption_endpoints([EndpointType.PRIMARY_SLAVE, EndpointType.SECONDARY_SLAVE, EndpointType.TERTIARY_SLAVE])
+        chart2 = FigureContainer(
+            axes_containers=[
+                AxisContainer(
+                    [
+                        ComparisonLineElement(
+                            data=pd.DataFrame([
+                                (
+                                    endpoint.benchmark.num_machines,
+                                    endpoint.profile.vendor_id,
+                                    endpoint.clock_diff_median,
+                                    # TODO: What about unknown clock diff?
+                                )
+                                for endpoint in resource_consumption_slaves
+                            ], columns=['x', 'hue', 'y']),
+                            column_x='x', column_y='y', column_hue='hue',
+                            estimator='mean',
+                        )
+                    ],
+                    xlabel="Nodes",
+                    ylabel="Clock Diff",
+                    yticklabels_format_time=True,
+                ),
+                AxisContainer(
+                    [
+                        ComparisonLineElement(
+                            data=pd.DataFrame([
+                                (
+                                    endpoint.benchmark.num_machines,
+                                    endpoint.profile.vendor_id,
+                                    1 - endpoint.missing_samples_percent if endpoint.missing_samples_percent is not None else 0
+                                )
+                                for endpoint in resource_consumption_slaves
+                            ], columns=['x', 'hue', 'y']),
+                            column_x='x', column_y='y', column_hue='hue',
+                            estimator='mean',
+                        )
+                    ],
+                    xlabel="Nodes",
+                    ylabel="Average Connectivity",
+                    yticklabels_format_percent=True,
+                )
+            ],
+            share_y=False,
+        )
+        chart2.plot()
+        chart2.save_default_locations("summary_quality_trend", "resource_consumption")
+
+    def get_resource_consumption_endpoints(self, endpoint_types: Iterable[EndpointType]):
         return PTPEndpoint.objects.filter(
             profile__is_processed=True, profile__is_corrupted=False,
             profile__benchmark_id__in=[benchmark.id for benchmark in BenchmarkDB.SCALABILITY_ALL],
-            endpoint_type__in=[
-                # Only master to make effort comparable across client numbers.
-                EndpointType.MASTER,
-                # EndpointType.PRIMARY_SLAVE
-            ],
+            endpoint_type__in=endpoint_types,
             profile__cluster_id=config.CLUSTER_BIG_BAD.id,
             profile__vendor_id__in=VendorDB.ANALYZED_VENDOR_IDS,
         )

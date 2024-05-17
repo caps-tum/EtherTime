@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Union, Literal, List, Optional
+from typing import Union, Literal, List, Optional, Tuple
 
 import numpy as np
 import seaborn
@@ -46,6 +46,8 @@ class ComparisonLineElement(DataElement):
     x_coord_aggregate: Union[float, timedelta] = None
     x_coord_aggregate_exclude_column: str = None
     x_coord_aggregate_shift_x_extremities: Union[float, timedelta] = None
+    estimator: str = 'median'
+    errorbar: Tuple = ('pi', 100)
 
     def plot(self, axis_container: AxisContainer):
         if self.x_coord_aggregate is not None:
@@ -73,6 +75,6 @@ class ComparisonLineElement(DataElement):
             hue=self.column_hue,
             palette=self.color_map,
             marker=self.marker,
-            estimator='median',
-            errorbar=('pi', 100),
+            estimator=self.estimator,
+            errorbar=self.errorbar,
         )
