@@ -77,21 +77,40 @@ it serves as a baseline for other PTP implementations.
 
 
 \begin{table}
-    \caption{Surveyed Time-Synchronization Protocols}
-    \begin{tabular}{lcc@{\,}rl}
-        Vendor & Protocol & \multicolumn{2}{c}{Included} & Notes\\\hline
-        PTPd & PTP & \checkmark & 2.3.1 & Established implementation with derivatives\\
-        LinuxPTP & PTP & \checkmark & 3.1.1 & Advanced capabilities but specific to Linux\\
-        SPTP\textsuperscript{*} & Custom & \checkmark & b27bdba & Meta's custom time protocol\\
-        Chrony & NTP & \checkmark & 4.3 & Widespread NTP server/client\\
-        OpenPTP & PTP & $\times$ & r2 & Unmaintained \\
-        Timebeat & PTP & $\times$ & 2.0.7 & Unsuitable for embedded \\
-        PPSI & PTP & $\times$ & 6.1 & Critical bug \\
-        White Rabbit & Custom & $\times$ & - & Specialized hardware requirements\\
+    \caption{Time-Synchronization Protocols Surveyed and Evaluated (\checkmark)}
+    \begin{tabular}{lll}
+    \toprule
+        & \textbf{Vendor (Version)} & \textbf{Remarks} \\
+    \midrule
+        \checkmark & PTPd (2.3.1)     & Established implementation with derivatives\\
+        \checkmark & LinuxPTP (3.1.1) & Advanced capabilities but specific to Linux\\
+        \checkmark & SPTP (b27bdba)   & Meta's custom time synchronization protocol\\
+        \checkmark & Chrony (4.3)     & State-of-the-art NTP server/client\\
+        -          & OpenPTP (r2)     & Unmaintained for more than 10 years \\
+        -          & Timebeat (2.0.7) & Unsuitable for embedded systems \\
+        -          & PPSI (6.1)       & Critical bug found \\
+        -          & White Rabbit (-) & Requires specialized hardware \\
+    \bottomrule
     \end{tabular}
     \label{tab:vendors}
-    \textsuperscript{*} Note that we had to patch 32-bit support into SPTP for our ARMv7 boards.
 \end{table}
+
+%\begin{table}
+%    \caption{Surveyed Time-Synchronization Protocols}
+%    \begin{tabular}{lcc@{\,}rl}
+%        Vendor & Protocol & \multicolumn{2}{c}{Included} & Notes\\\hline
+%        PTPd & PTP & \checkmark & 2.3.1 & Established implementation with derivatives\\
+%        LinuxPTP & PTP & \checkmark & 3.1.1 & Advanced capabilities but specific to Linux\\
+%        SPTP\textsuperscript{*} & Custom & \checkmark & b27bdba & Meta's custom time protocol\\
+%        Chrony & NTP & \checkmark & 4.3 & Widespread NTP server/client\\
+%        OpenPTP & PTP & $\times$ & r2 & Unmaintained \\
+%        Timebeat & PTP & $\times$ & 2.0.7 & Unsuitable for embedded \\
+%        PPSI & PTP & $\times$ & 6.1 & Critical bug \\
+%        White Rabbit & Custom & $\times$ & - & Specialized hardware requirements\\
+%    \end{tabular}
+%    \label{tab:vendors}
+%    \textsuperscript{*} Note that we had to patch 32-bit support into SPTP for our ARMv7 boards.
+%\end{table}
 
 \subsection{PTP -- Background and Architecture}
 
