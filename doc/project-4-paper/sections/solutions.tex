@@ -51,20 +51,19 @@ This left us with four suitable vendors: PTPd, LinuxPTP, SPTP and Chrony. %(summ
 \textbf{(a)}~PTPd~\cite{ptpd-manpage} %is a traditional implementation of the PTP protocol that, despite being less
 has been less maintained in recent years~\cite{ptpd-maintainers} and lacks
 modern features such as hardware timestamping;
-but it has spawned a variety of derivates (also commercial) and is still being 
+but it has spawned a variety of derivates (also commercial) and is still being
 deployed as per the Debian package tracker~\cite{debian-popularity-contest}
 (perhaps due to its relative simplicity and wider support of non-Linux UNIX systems).
 \textbf{(b)}~LinuxPTP~\cite{linuxptp-homepage} is the most deployed open-source
 PTP solution on Debian.
-Its goal is to provide robustness while being tightly integrated with Linux,
-and taking advantage of the kernel and hardware features provided to improve
+Its goal is to provide robustness while tightly integrating with Linux, taking advantage of the kernel and hardware features provided to improve
 synchronization accuracy.
 \textbf{(c)}~SPTP~\cite{facebook-sptp} is a novel time synchronization protocol
 %consisting of the PTP4U server~\cite{??} and the SPTP client,
 developed at Meta due to difficulties they encountered with deploying PTP.
-It claims to perform at par with PTP in terms of time synchronization,
+It claims to perform on par with PTP in terms of time synchronization,
 %a comparable level of time-synchronization performance
-but consumes lower resources and is more resilient.
+while consumes less resources and offering higher resilience.
 \textbf{(d)}~Finally, we include Chrony~\cite{??}, the state-of-the-art NTP implementation.
 %as a reference.
 It is by far the most feature-complete implementation of time synchronization
@@ -86,10 +85,10 @@ it serves as a baseline for other PTP implementations.
         \checkmark & LinuxPTP (3.1.1) & Advanced capabilities but specific to Linux\\
         \checkmark & SPTP (b27bdba)   & Meta's custom time synchronization protocol\\
         \checkmark & Chrony (4.3)     & State-of-the-art NTP server/client\\
-        -          & OpenPTP (r2)     & Unmaintained for more than 10 years \\
-        -          & Timebeat (2.0.7) & Unsuitable for embedded systems \\
-        -          & PPSI (6.1)       & Critical bug found \\
-        -          & White Rabbit (-) & Requires specialized hardware \\
+        --         & OpenPTP (r2)     & Unmaintained for more than 10 years \\
+        --         & Timebeat (2.0.7) & Unsuitable for embedded systems \\
+        --         & PPSI (6.1)       & Critical bug found \\
+        --         & White Rabbit (-) & Requires specialized hardware \\
     \bottomrule
     \end{tabular}
     \label{tab:vendors}
