@@ -142,7 +142,7 @@ MACHINE_PETALINUX04 = Machine(
 )
 CLUSTER_PETALINUX = Cluster(
     id="petalinux",
-    name="Petalinux",
+    name="Xilinx",
     machines=[
         MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
     ]
