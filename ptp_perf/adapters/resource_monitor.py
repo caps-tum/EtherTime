@@ -30,7 +30,12 @@ class ResourceMonitor(IntervalActionAdapter):
             try:
                 process = psutil.Process(pid)
                 process_data = process.as_dict(
-                    ["cpu_times", "cpu_percent", 'io_counters', 'memory_full_info', 'num_ctx_switches', 'num_threads']
+                    [
+                        "cpu_times", "cpu_percent",
+                        # This does not work on TK-1
+                        # 'io_counters',
+                        'memory_full_info', 'num_ctx_switches', 'num_threads'
+                    ]
                 )
             except psutil.NoSuchProcess:
                 logging.info(f"Resource monitor: Process {pid} not found.")
