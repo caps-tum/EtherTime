@@ -534,11 +534,20 @@ Another possible root cause for a fault is the network. While a network outage i
 
 \begin{figure*}
 \centering
-\includegraphics[width=\linewidth]{res/generated/resource_consumption/summary.pdf}
+\includegraphics[width=\linewidth]{res/generated/resource_consumption/summary_trend.pdf}
 \legend
 \caption{Resource consumption statistics across vendors and systems. In general, PTP systems use few onboard resources but generate more network traffic, while the evaluated NTP and SPTP implementations reduce network utilization at the cost of additional ROM and other on-board resources.}
 \label{fig:resource_consumption}
 \end{figure*}
+
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{res/generated/resource_consumption/summary_quality_trend.pdf}
+\legend
+\caption{}
+\label{fig:resource_consumption_quality}
+\end{figure}
+
 
 Finally, embedded systems need to take particular care of the resource consumption of their applications. Since time synchronization fulfills only a supporting role in the overall deployment, it is important that it does not detract significantly from the resources available for the actual application. This is not only true for resources with a hard limit (compute, memory, etc.) but also for ``soft'' resources like power draw and heat dissipation. Especially SPTP was created with the intention of less resource consumption in mind~\cite{sptp}, so we will verify whether reality holds up to these claims.
 

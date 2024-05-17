@@ -15,6 +15,7 @@ from ptp_perf.vendor.registry import VendorDB
 
 
 class ResourceConsumptionChartTest(TestCase):
+    nodes_xticks = [2, 12]
 
     def test_create_chart(self):
         resource_consumption_masters = self.get_resource_consumption_endpoints([EndpointType.MASTER])
@@ -53,7 +54,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', ylabel='Resident Set Size',
+                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    ylabel='Resident Set Size',
                     title='RAM Usage',
                 ),
                 AxisContainer(
@@ -71,7 +73,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', ylabel='Activity / Hour',
+                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    ylabel='Activity / Hour',
                     yticklabels_format_engineering=True, yticklabels_format_engineering_unit='s',
                     title='CPU Time',
                 ),
@@ -86,7 +89,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', ylabel='Data / Hour',
+                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    ylabel='Data / Hour',
                     title='Data Rate',
                 ),
                 AxisContainer(
@@ -100,7 +104,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', ylabel='Packets / Hour',
+                    xlabel='Nodes',  xticks=self.nodes_xticks,
+                    ylabel='Packets / Hour',
                     yticklabels_format_engineering=True,
                     title='Packet Rate',
                 ),
@@ -134,7 +139,7 @@ class ResourceConsumptionChartTest(TestCase):
                             estimator='mean',
                         )
                     ],
-                    xlabel="Nodes",
+                    xlabel="Nodes", xticks=self.nodes_xticks,
                     ylabel="Clock Diff",
                     yticklabels_format_time=True,
                 ),
@@ -153,7 +158,7 @@ class ResourceConsumptionChartTest(TestCase):
                             estimator='mean',
                         )
                     ],
-                    xlabel="Nodes",
+                    xlabel="Nodes", xticks=self.nodes_xticks,
                     ylabel="Average Connectivity",
                     yticklabels_format_percent=True,
                 )
