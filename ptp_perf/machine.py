@@ -151,8 +151,8 @@ class Machine(RPCTarget):
             # This is potentially the failover master
             EndpointType.SECONDARY_SLAVE: 200,
             # These are always slaves
-            EndpointType.PRIMARY_SLAVE: 250,
-            EndpointType.TERTIARY_SLAVE: 250,
+            EndpointType.PRIMARY_SLAVE: 248,
+            EndpointType.TERTIARY_SLAVE: 248,
         }[self.endpoint_type]
 
     @property
