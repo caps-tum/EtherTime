@@ -184,8 +184,7 @@ with the master's clock.
 %PTP is built to be configurable, and settings include anything from the underlying transport (unicast/multicast packet switching), the delay mechanism to use (end-to-end or peer-to-peer), message frequencies and leases, as well as rules to discipline the clock. To reduce the complexity of configuring PTP, several so-called profiles are available that provide default settings for the specific use-case, such as general-purpose or ITU telecoms. To conduct our evaluation, we examine each vendor's default profile, as this profile is a widely-applicable general-purpose profile that does not require special configuration, and is thus likely to be deployed in many different contexts.
 
 
-\subsection{PTP Lifecycle}
-
+%\subsection{PTP Lifecycle}
 
 \begin{figure*}
     \newcommand{\intervalAnnotation}[4]{
@@ -227,24 +226,60 @@ with the master's clock.
         \intervalAnnotationAbove{discovery}{bmca}{0.5cm}{Network Domain Logic}
 
     \end{tikzpicture}
-    \caption{Different stages in the PTP lifecycle that a PTP slave traverses while synchronizing its clock. For stability of the system clock, some state transitions are typically restricted.}
+    \caption{Different stages in the life cycle of a PTP client.
+    %For stability of the system clock, some state transitions are typically restricted.
+    \textbf{S1.} Remote clocks are identified during \textit{discovery},
+    usually via multicast announcements.
+    \textbf{S2.} \textit{BMCA} determines if each peer should become a master or
+    a slave.
+    It can be configured using priorities and clock properties~\cite{bmca-deep-dive}.
+    %By the end of this stage, slaves proceed to connect to, and
+    %negotiate with the master clock.
+    \textbf{S3.} During \textit{calibration}, precise estimates of the
+    clock offset are derived, but no local clock modifications are made.
+    \textbf{S4.} \text{Clock step} attempts to directly overwrite the slave's
+    local clock. This may break applications
+    (e.g., violation of invariants I2 and potentially I1).
+    Hence, many profiles restrict this to once during initial synchronization.
+    \textbf{S5.} The \textit{clock slew} stage gradually reduces the clock offset.
+    The rate of change is limited, e.g., to 500 parts per million or 0.05\% in
+    the Linux kernel~\cite{adjtimex},
+    which can slow down clock convergence
+    (0.05\% implies that correcting an offset of 1s takes at least 33m).
+    \textbf{S6.} In the \textit{stable} stage, the clock signal is ready to be
+    consumed by applications.
+    Further clock slew may happen to correct minor clock frequency differences.
+    }
     \label{fig:ptp-lifecycle}
 \end{figure*}
 
-PTP clients traverse multiple stages in a lifecycle to synchronize their clock (Figure~\ref{fig:ptp-lifecycle}). At any point, unexpected conditions such as loss of connectivity can lead PTP to return to an earlier stage in the lifecycle, potentially changing the operating conditions.
+The life cycle of each PTP client (a PTP master or a slave)
+spans multiple stages.
+%and is split into two main phases,
+%\textit{network domain logic} and \textit{clock synchronization}.
+\cref{fig:ptp-lifecycle}) describes these stages in detail.
+A PTP client may return to an earlier stage at any point of time due to
+unexpected conditions, such as loss of connectivity.
+%potentially changing the operating conditions.
+While the \textit{stable} stage is usually of most interest for evaluation,
+it is also important to determine what causes clocks to become unstable,
+especially across vendors.
+Importantly, comparisons are meaningful only when PTP is in comparable states,
+which we ensure in our evaluation.
 
-\begin{enumerate}[label=S\arabic*.]
-    \item \textbf{Discovery} is the stage where remote clocks are identified, usually via periodic multicast announcements. Discovered clients are collected into a PTP domain.
-    \item \textbf{Best Master Clock Algorithm (BMCA)} is the standardized algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties~\cite{bmca-deep-dive}. By the end of this phase, each peer will deterministically become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
-    \item \textbf{Calibration} is a brief phase where no local clock modifications are made yet to allow the estimate of the offset to increase in precision through multiple synchronization intervals and path delay estimates.
-    \item \textbf{Clock Step} Using a reasonably precise estimate of the offset, an attempt is made to directly reset the slave's local time. Since this is expected to break applications (violation of invariants I2 and potentially I1), it is only used where clock-slew is infeasible (e.g. offset~$>1$~second) and many profiles restrict clock steps to once during the initial synchronization.
-    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune, thus further reducing offset. The rate of change is limited via software and configuration parameters, e.g. to 500 parts per million/0.05\% in the Linux kernel~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- 0.05\% implies that correcting 1 second of offset takes at least 33 minutes.
-    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to imperfections in offset estimation, but at this point the clock signal is ready to be consumed by applications.
-\end{enumerate}
 
-For calculating metrics on the quality of the clock synchronization, it is important to consider what should be measured. Often, comparisons are only meaningful when PTP is in comparable states (stable synchronization is usually of most interest), but ensuring this is the case is not always trivial, especially across vendors.
-In terms of resilience, it is also important to determine what causes clocks to become unstable.
+%For calculating metrics on the quality of the clock synchronization, it is important to consider what should be measured. Often, comparisons are only meaningful when PTP is in comparable states (stable synchronization is usually of most interest), but ensuring this is the case is not always trivial, especially across vendors.
+%In terms of resilience, it is also important to determine what causes clocks to become unstable.
 %pre-process the data to exclude data during the convergence phase and only consider observations from the synchronized/stable state. We apply this processing offline by determining the rate of change of the estimated offset's sign -- when frequent switches from positive to negative happen then the algorithm is no longer sure whether its own clock is early or tardy, thus we are close to the optimum synchronization.
+
+%\begin{enumerate}[label=S\arabic*.]
+%    \item \textbf{Discovery} is the stage where remote clocks are identified, usually via periodic multicast announcements. Discovered clients are collected into a PTP domain.
+%    \item \textbf{Best Master Clock Algorithm (BMCA)} is the standardized algorithm used for each peer to determine whether it should become a master clock or a slave, which can be configured using priorities and clock properties~\cite{bmca-deep-dive}. By the end of this phase, each peer will deterministically become either a master clock or a slave. Slaves proceed to connect to, and negotiate with, the master clock.
+%    \item \textbf{Calibration} is a brief phase where no local clock modifications are made yet to allow the estimate of the offset to increase in precision through multiple synchronization intervals and path delay estimates.
+%    \item \textbf{Clock Step} Using a reasonably precise estimate of the offset, an attempt is made to directly reset the slave's local time. Since this is expected to break applications (violation of invariants I2 and potentially I1), it is only used where clock-slew is infeasible (e.g. offset~$>1$~second) and many profiles restrict clock steps to once during the initial synchronization.
+%    \item \textbf{Clock Slew} is the second phase of convergence where time is made to pass slightly slower or slightly quicker via kernel parameters to fine-tune, thus further reducing offset. The rate of change is limited via software and configuration parameters, e.g. to 500 parts per million/0.05\% in the Linux kernel~\cite{adjtimex}. These limits ensure that the clock signal does not drift too rapidly, but can make convergence slow -- 0.05\% implies that correcting 1 second of offset takes at least 33 minutes.
+%    \item \textbf{Stable} is the phase where the clock offset cannot be reduced further, and therefore the clocks are as synchronized as they can get. In this phase, further clock slew is happening to correct clock frequency differences and slight variations still occur due to imperfections in offset estimation, but at this point the clock signal is ready to be consumed by applications.
+%\end{enumerate}
 
 
 \subsection{Synchronization Performance}
