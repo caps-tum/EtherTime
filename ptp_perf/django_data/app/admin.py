@@ -149,7 +149,7 @@ class PTPProfileAdmin(ActionsModelAdmin):
 @admin.register(PTPEndpoint)
 class PTPEndpointAdmin(CustomFormatsAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'machine', 'endpoint_type',
-                    'clock_diff_median_formatted', 'clock_diff_p95_formatted', 'path_delay_median_formatted',
+                    'clock_diff_median', 'clock_diff_p95', 'path_delay_median',
                     'missing_samples_percent', 'converged_percentage',
                     'convergence_duration', 'convergence_max_offset', 'convergence_rate')
     list_select_related = ('profile',)
@@ -171,23 +171,6 @@ class PTPEndpointAdmin(CustomFormatsAdmin):
 
     # inlines = [LogRecordInline]
 
-    def clock_diff_median_formatted(self, endpoint: PTPEndpoint):
-        return format_time_offset(endpoint.clock_diff_median, auto_increase_places=True)
-
-    clock_diff_median_formatted.admin_order_field = 'clock_diff_median'
-    clock_diff_median_formatted.short_description = 'Clock Diff Median'
-
-    def clock_diff_p95_formatted(self, endpoint: PTPEndpoint):
-        return format_time_offset(endpoint.clock_diff_p95, auto_increase_places=True)
-
-    clock_diff_p95_formatted.admin_order_field = 'clock_diff_p95'
-    clock_diff_p95_formatted.short_description = 'Clock Diff 95%'
-
-    def path_delay_median_formatted(self, endpoint: PTPEndpoint):
-        return format_time_offset(endpoint.path_delay_median, auto_increase_places=True)
-
-    path_delay_median_formatted.admin_order_field = 'path_delay_median'
-    clock_diff_p95_formatted.short_description = 'Path Delay Median'
 
     def create_timeseries(self, request, pk):
         endpoint: PTPEndpoint = PTPEndpoint.objects.get(pk=pk)
@@ -241,21 +224,11 @@ def create_modeladmin(modeladmin, model, name=None):
 
 class PTPEndpointFaultAdmin(PTPEndpointAdmin):
     list_display = ('id', 'profile_id', 'benchmark', 'vendor', 'cluster', 'endpoint_type',
-                    'clock_diff_pre_median_formatted', 'clock_diff_post_max_formatted', 'fault_clock_diff_return_to_normal_time',
+                    'clock_diff_pre_median', 'clock_diff_post_max', 'fault_clock_diff_return_to_normal_time',
                     'fault_ratio_clock_diff_median_formatted', 'fault_actual_duration')
 
     def get_queryset(self, request):
         return super().get_queryset(request).filter(fault_actual_duration__isnull=False)
-
-    clock_diff_pre_median_formatted = formatted_field(
-        lambda endpoint: endpoint.fault_clock_diff_pre_median,
-        "Pre Clock Diff Median", "fault_clock_diff_pre_median",
-    )
-
-    clock_diff_post_max_formatted = formatted_field(
-        lambda endpoint: endpoint.fault_clock_diff_post_max,
-        "Post Clock Diff Max", "fault_clock_diff_post_max",
-    )
 
     fault_ratio_clock_diff_median_formatted = formatted_field(
         lambda endpoint: endpoint.fault_ratio_clock_diff_post_max_pre_median,

@@ -78,19 +78,19 @@ class PTPEndpoint(models.Model):
     clock_step_magnitude = models.FloatField(null=True)
 
     # Fault Data
-    fault_clock_diff_pre_median = models.FloatField(null=True)
-    fault_clock_diff_pre_p05 = models.FloatField(null=True)
-    fault_clock_diff_pre_p95 = models.FloatField(null=True)
-    fault_path_delay_pre_median = models.FloatField(null=True)
-    fault_path_delay_pre_p05 = models.FloatField(null=True)
-    fault_path_delay_pre_p95 = models.FloatField(null=True)
+    fault_clock_diff_pre_median = TimeFormatFloatField(null=True)
+    fault_clock_diff_pre_p05 = TimeFormatFloatField(null=True)
+    fault_clock_diff_pre_p95 = TimeFormatFloatField(null=True)
+    fault_path_delay_pre_median = TimeFormatFloatField(null=True)
+    fault_path_delay_pre_p05 = TimeFormatFloatField(null=True)
+    fault_path_delay_pre_p95 = TimeFormatFloatField(null=True)
 
-    fault_clock_diff_post_median = models.FloatField(null=True)
-    fault_clock_diff_post_p05 = models.FloatField(null=True)
-    fault_clock_diff_post_p95 = models.FloatField(null=True)
-    fault_path_delay_post_median = models.FloatField(null=True)
-    fault_path_delay_post_p05 = models.FloatField(null=True)
-    fault_path_delay_post_p95 = models.FloatField(null=True)
+    fault_clock_diff_post_median = TimeFormatFloatField(null=True)
+    fault_clock_diff_post_p05 = TimeFormatFloatField(null=True)
+    fault_clock_diff_post_p95 = TimeFormatFloatField(null=True)
+    fault_path_delay_post_median = TimeFormatFloatField(null=True)
+    fault_path_delay_post_p05 = TimeFormatFloatField(null=True)
+    fault_path_delay_post_p95 = TimeFormatFloatField(null=True)
 
     # Fault Summaries
     fault_actual_duration = models.DurationField(null=True)
