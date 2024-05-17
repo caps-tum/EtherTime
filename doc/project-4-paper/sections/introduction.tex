@@ -45,7 +45,7 @@ rely on a common notion of time and deadlines to make progress even when a machi
 Such systems are routinely used in high-reliability and high-availability applications with strict timing requirements, such as aviation.
 Similar designs are being proposed for commercial off-the-shelf (COTS) platforms~\cite{gujarati2022concretes,gandhi2021rebound,loveless2021igor} to improve the fault tolerance of consumer cyber-physical systems, such as robots and unmanned vehicles.
 %Failed safety-critical redundancy engineering has seen some infamous examples recently, with deadly Boeing 737-Max incidents prompting the introduction of new laws for flight control computer error resilience~\cite{boeing-requirements}\todo{better citation}.
-\todo{@Arpan I removed the example, it's too much for the intro.}
+%\todo{@Arpan I removed the example, it's too much for the intro.}
 Without reliable time synchronization, it is impossible for these systems to judge internally missed deadlines correctly, thus preventing proper error-detection and correction, voiding the fault-tolerance they were designed for.
 
 %However, time is not only critical in fault-tolerant systems, it pervades all distributed systems.
@@ -72,11 +72,11 @@ We offer the following contributions.
 \textbf{(1)}~We develop \toolName{}, an open-source tool\footnote{\toolName{} will be made publicly available upon acceptance.}, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations.
 
 \textbf{(2)}~We evaluate %the performance and resilience of
-four implementations of prevalent time synchronization protocols for packet-switched Ethernet,
-specifically Precision Time Protocol (PTP)~\cite{ptp-spec} and Network Time Protocol (NTP)~\cite{ntpv4-spec},
+four implementations of prevalent time synchronization protocols for packet-switched Ethernet\todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
+including the Precision Time Protocol (PTP)~\cite{ptp-spec} and Network Time Protocol (NTP)~\cite{ntpv4-spec},
 across four distinct hardware testbeds
 based on two generations of Raspberry-Pis~\cite{??, ??},
-Xilinx AVNet~\cite{??}, and NVIDIA Jetson TK-1~\cite{??}.
+Xilinx AVNet~\cite{??}, and NVIDIA Jetson TK-1~\cite{??} (Overview: Tables~\ref{tbl:vendors}~\&~\ref{tbl:hardware_testbeds}).
 
 \textbf{(3)}~For each configuration,
 we present the baseline performance, % (without faults and contention),
