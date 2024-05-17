@@ -158,7 +158,9 @@ class ResourceConsumptionChartTest(TestCase):
                     yticklabels_format_percent=True,
                 )
             ],
+            size=(8, 3),
             share_y=False,
+            tight_layout=True,
         )
         chart2.plot()
         chart2.save_default_locations("summary_quality_trend", "resource_consumption")
