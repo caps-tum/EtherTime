@@ -1,6 +1,6 @@
 
 %\section{Time Synchronization, PTP \& Related Work}
-\section{Background} % \& Related Work}
+\section{Protocols Surveyed} % \& Related Work}
 \label{sec:background}
 
 \todo{Check out related paper suggestions by Arpan}
@@ -112,46 +112,77 @@ it serves as a baseline for other PTP implementations.
 %    \textsuperscript{*} Note that we had to patch 32-bit support into SPTP for our ARMv7 boards.
 %\end{table}
 
-\subsection{PTP -- Background and Architecture}
+%\subsection{PTP -- Background and Architecture}
+\section{PTP Overview}
+\label{sec:ptp-overview}
+%PTP operates across a network and has
+There are two types of endpoints: master nodes and slave nodes.
+The goal is to synchronize the local clocks on slaves nodes with the master's
+clock.
+Obtaining a good clock signal on the master is out of scope for PTP,
+as it is assumed that the master already has a high-quality external clock source,
+e.g., a GPS signal, an atomic clock, or another PTP domain.
 
-PTP operates across a network and has two types of endpoints: master nodes and slave nodes. A PTP master provides signals to the slaves (Figure \ref{fig:ptp-architecture}), which each use the synchronization signal in combination with a path delay estimate to determine an estimate of the local clock offset to the master clock, which is subsequently used to discipline the local clock to keep it synchronized with the master's clock. While the actual protocol is slightly more complex and includes additional messages for synchronization leases and state management, these two core signals/message types are sufficient in principle to synchronize the system clocks. Note that obtaining a good clock signal on the master is considered out of scope for PTP, it is assumed that the master already has a high-quality clock source for the current time -- preferably an external source like an atomic clock or a GPS signal, but the master clock can also be obtained from e.g. a different PTP domain.
+The master node periodically sends a synchronization signal to all slave nodes
+to distribute the current master time.
+Each slave uses the signal in combination with a path delay estimate
+(obtained using a separate delay request/response mechanism)
+to predict its local clock offset with respect to the master clock.
+The clock offset is subsequently used to update and synchronize the local clock
+with the master's clock.
 
-\begin{figure}
-    \begin{tikzpicture}[client/.style={draw}, message/.style={midway, above, sloped, inner sep=0mm}, on grid]
-        \node[client] (master) {PTP Master};
-        \node[client, above=of master] (clock) {\faClock[regular]};
-        \draw[thick, dotted] (master) -- (clock);
+%PTP operates across a network and has two types of endpoints: master nodes and slave nodes. A PTP master provides signals to the slaves (Figure \ref{fig:ptp-architecture}), which each use the synchronization signal in combination with a path delay estimate to determine an estimate of the local clock offset to the master clock, which is subsequently used to discipline the local clock to keep it synchronized with the master's clock. While the actual protocol is slightly more complex and includes additional messages for synchronization leases and state management, these two core signals/message types are sufficient in principle to synchronize the system clocks. Note that obtaining a good clock signal on the master is considered out of scope for PTP, it is assumed that the master already has a high-quality clock source for the current time -- preferably an external source like an atomic clock or a GPS signal, but the master clock can also be obtained from e.g. a different PTP domain.
 
-        \node[client, right=1.75cm of master] (switch) {\faNetworkWired};
-        \draw[-Stealth] (master) -- (switch);
+%\begin{figure}
+%    \begin{tikzpicture}[client/.style={draw}, message/.style={midway, above, sloped, inner sep=0mm}, on grid]
+%        \node[client] (master) {PTP Master};
+%        \node[client, above=of master] (clock) {\faClock[regular]};
+%        \draw[thick, dotted] (master) -- (clock);
+%
+%        \node[client, right=1.75cm of master] (switch) {\faNetworkWired};
+%        \draw[-Stealth] (master) -- (switch);
+%
+%        \foreach \i in {1,...,3}{
+%            \node[client] (slave-\i) at (3.5, \i - 2) {PTP Slave};
+%            \draw[-Stealth] (switch) -- (slave-\i.west);
+%        }
+%
+%        \begin{scope}[xshift=5.5cm, yshift=2cm]
+%            \node (master) at (0,0) {Master};
+%            \node (slave) at (2,0) {Slave};
+%
+%            \draw[-] (master) -- ++(0, -3.75);
+%            \draw[-] (slave) -- ++(0, -3.75);
+%
+%            \foreach \i in {0.5, 1, 1.5}{
+%                \draw[-Stealth] (0, -\i) -- ++(2, -0.5) node[message] {Sync};
+%            }
+%
+%            \draw[-Stealth] (2, -2.5) -- ++(-2, -0.5) node[message] {Delay Req.} -- ++(2, -0.5) node[message, below, inner sep=0.5mm] {Delay Resp.};
+%        \end{scope}
+%    \end{tikzpicture}
+%    \caption{
+%        A PTP master provides a synchronization signal to a number of slaves so that they can keep their local clock synchronized to the master's clock (left). The clock synchronization relies on two types of signals (right): a periodic synchronization signal to distribute the current master time and the delay request/response to estimate the propagation delay.
+%    }
+%    \label{fig:ptp-architecture}
+%\end{figure}
 
-        \foreach \i in {1,...,3}{
-            \node[client] (slave-\i) at (3.5, \i - 2) {PTP Slave};
-            \draw[-Stealth] (switch) -- (slave-\i.west);
-        }
+%\subsection{PTP Profiles}
 
-        \begin{scope}[xshift=5.5cm, yshift=2cm]
-            \node (master) at (0,0) {Master};
-            \node (slave) at (2,0) {Slave};
+\todo{Commented out the PTP profile paragraph. I think you should simply state that we use the default vendor profiles wherever possible, when you first discuss the evaluation.}
+%PTP is built to be configurable, and settings include anything from the
+%underlying transport (unicast/multicast packet switching), the delay mechanism
+%to use (end-to-end or peer-to-peer), message frequencies and leases, as well as
+%rules to update the clock.
+%%To reduce the complexity of configuring PTP, several so-called profiles are
+%%available that provide default settings for the specific use-case, such as
+%%general-purpose or ITU telecoms.
+%In our evaluation, we use each vendor's default profile, as this profile is a
+%widely-applicable general-purpose profile that does not require
+%special configuration, and is thus likely to be deployed in many different
+%contexts.
 
-            \draw[-] (master) -- ++(0, -3.75);
-            \draw[-] (slave) -- ++(0, -3.75);
-
-            \foreach \i in {0.5, 1, 1.5}{
-                \draw[-Stealth] (0, -\i) -- ++(2, -0.5) node[message] {Sync};
-            }
-
-            \draw[-Stealth] (2, -2.5) -- ++(-2, -0.5) node[message] {Delay Req.} -- ++(2, -0.5) node[message, below, inner sep=0.5mm] {Delay Resp.};
-        \end{scope}
-    \end{tikzpicture}
-    \caption{
-        A PTP master provides a synchronization signal to a number of slaves so that they can keep their local clock synchronized to the master's clock (left). The clock synchronization relies on two types of signals (right): a periodic synchronization signal to distribute the current master time and the delay request/response to estimate the propagation delay.
-    }
-    \label{fig:ptp-architecture}
-\end{figure}
-
-\subsection{PTP Profiles}
-PTP is built to be configurable, and settings include anything from the underlying transport (unicast/multicast packet switching), the delay mechanism to use (end-to-end or peer-to-peer), message frequencies and leases, as well as rules to discipline the clock. To reduce the complexity of configuring PTP, several so-called profiles are available that provide default settings for the specific use-case, such as general-purpose or ITU telecoms. To conduct our evaluation, we examine each vendor's default profile, as this profile is a widely-applicable general-purpose profile that does not require special configuration, and is thus likely to be deployed in many different contexts.
+%PTP is built to be configurable, and settings include anything from the underlying transport (unicast/multicast packet switching), the delay mechanism to use (end-to-end or peer-to-peer), message frequencies and leases, as well as rules to discipline the clock. To reduce the complexity of configuring PTP, several so-called profiles are available that provide default settings for the specific use-case, such as general-purpose or ITU telecoms. To conduct our evaluation, we examine each vendor's default profile, as this profile is a widely-applicable general-purpose profile that does not require special configuration, and is thus likely to be deployed in many different contexts.
 
 
 \subsection{PTP Lifecycle}
