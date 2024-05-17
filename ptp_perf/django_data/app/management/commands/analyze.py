@@ -30,7 +30,7 @@ def analyze(force: bool = False):
             )
             converted_profiles += 1
         except Exception as e:
-            profile.log_analyze(f"Failed to convert profile! {e}", level=LogLevel.CRITICAL)
+            profile.log_analyze(f"Failed to convert profile! {e}", level=LogLevel.ERROR)
 
 
     return converted_profiles
