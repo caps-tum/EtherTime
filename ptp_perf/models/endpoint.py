@@ -650,7 +650,13 @@ class PTPEndpoint(models.Model):
                         unpack_one_value(record["cpu_thermal"])["current"] for record in sensor_temperature_data
                     ).mean()
                 except KeyError:
-                    raise RuntimeError(f"Unknown temperature sensor set:\n{sensor_temperature_data}")
+                    # On TK-1, it's of course named differently :/
+                    try:
+                        self.sys_sensors_temperature_cpu = pd.Series(
+                            unpack_one_value(record["CPU-therm"])["current"] for record in sensor_temperature_data
+                        ).mean()
+                    except KeyError:
+                        raise RuntimeError(f"Unknown temperature sensor set:\n{sensor_temperature_data[0]}")
 
             memory_frame = pd.DataFrame(record["process"]["memory_full_info"] for record in records_parsed)
             self.proc_mem_uss = memory_frame["uss"].max()
@@ -661,10 +667,14 @@ class PTPEndpoint(models.Model):
             self.proc_ctx_switches_voluntary = first_last_difference["process"]["num_ctx_switches"]["voluntary"]
             self.proc_ctx_switches_involuntary = first_last_difference["process"]["num_ctx_switches"]["involuntary"]
 
-            self.proc_io_read_count = first_last_difference["process"]["io_counters"]["read_count"]
-            self.proc_io_read_bytes = first_last_difference["process"]["io_counters"]["read_bytes"]
-            self.proc_io_write_count = first_last_difference["process"]["io_counters"]["write_count"]
-            self.proc_io_write_bytes = first_last_difference["process"]["io_counters"]["write_bytes"]
+            #     # Jetson-TK1 does not support these.
+            # try:
+            #     self.proc_io_read_count = first_last_difference["process"]["io_counters"]["read_count"]
+            #     self.proc_io_read_bytes = first_last_difference["process"]["io_counters"]["read_bytes"]
+            #     self.proc_io_write_count = first_last_difference["process"]["io_counters"]["write_count"]
+            #     self.proc_io_write_bytes = first_last_difference["process"]["io_counters"]["write_bytes"]
+            # except KeyError:
+            #     logging.warning(f"Missing proc IO counters on endpoint {self}")
 
             interface_stats = first_last_difference["system"]["net_io_counters"][self.machine.ptp_interface]
             self.sys_net_ptp_iface_bytes_sent = interface_stats["bytes_sent"]
