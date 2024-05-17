@@ -453,8 +453,9 @@ class PTPEndpoint(models.Model):
         parsed_faults = 0
         for record in records:
             # We import faults either directly on the current endpoint.
-            # If we are the orchestrator, then we get faults from the switch.
-            location = self.machine_id if self.machine_id != 'orchestrator' else 'switch'
+            # If we are the orchestrator, then we get faults from switch2 (easier to regex match).
+            # We ignore faults on switch #1 because they are the same.
+            location = self.machine_id if self.machine_id != 'orchestrator' else 'switch2'
             match = re.search(
                 f"Scheduled (?P<type>\S+) fault (?P<status>imminent|resolved) on ({location}).",
                 record.message
