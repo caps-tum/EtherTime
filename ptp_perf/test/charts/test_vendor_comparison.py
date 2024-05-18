@@ -209,6 +209,7 @@ class VendorComparisonCharts(TestCase):
             entries.append(f"{prefix}/fault/secondary/post_max/max/.initial={item.secondary_fault_clock_diff_post_max_max},")
             entries.append(f"{prefix}/fault/secondary/post_max/min/.initial={item.secondary_fault_clock_diff_post_max_min},")
             entries.append(f"{prefix}/fault/secondary/ratio/avg/.initial={item.secondary_fault_ratio_clock_diff_post_max_pre_median_mean},")
+            entries.append(f"{prefix}/sys/proc/cpu/.initial={item.proc_cpu_percent},")
         entries.sort()
         PAPER_GENERATED_RESOURCES_DIR.joinpath("summary_keys.tex").write_text(
             "\\ptpperfLoadKeys{\n"
