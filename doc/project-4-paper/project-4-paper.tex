@@ -98,20 +98,23 @@
 %\end{tabular}
 
 \begin{abstract}
-\todo{Page limit: 11 pages excl. references}
+%\todo{Page limit: 11 pages excl. references}
 Timekeeping systems are pervasive in modern computing systems.
 Several specifications and implementations abound,
 such as different variants of Precision Time Protocol (PTP) and Network Time Protocol (NTP).
-To what degree can we truly rely on these for distributed embedded systems that
-use commodity processors and networks,
-especially for applications in which failures affect correctness?
-To answer this question, we build a novel benchmarking tool, \toolName{},
-and carry out an exhaustive measurement-based performance evaluation of four
+To what degree can we truly rely on these implementations
+when they are deployed on distributed embedded systems with commodity processors and networks,
+and when failures affect correctness?
+
+To answer this question, we carry out a measurement-based performance
+evaluation of four
 time synchronization protocols (PTPd, LinuxPTP, SPTP, and Chrony) across
 four embedded hardware testbeds
 (based on two generations of Raspberry-Pis, Xilinx AVNet, and NVIDIA Jetson boards).
-We assess their strengths and weaknesses in a variety of configurations,
-and find that critical challenges---including resource contention (specifically
+
+We build a novel benchmarking tool, \toolName{}, to assess their strengths and
+weaknesses in a variety of configurations.
+Our results show that critical challenges---including resource contention (specifically
 network and memory, CPU is less of an issue) and faults on the master node when
 the master node lacks a hardware clock---still need to be addressed before
 high-precision network time can truly be relied upon.
