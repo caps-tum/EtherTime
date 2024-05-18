@@ -2,7 +2,7 @@
 \section{PTP Overview}
 \label{sec:ptp-overview}
 %PTP operates across a network and has
-There are two types of endpoints: master nodes and slave nodes.
+There are two types of endpoints in PTP: master and slave nodes.
 The goal is to synchronize the local clocks on slaves nodes with the master's
 clock.
 Obtaining a good clock signal on the master is out of scope for PTP,
@@ -144,7 +144,7 @@ The life cycle of each PTP client (a PTP master or a slave)
 spans multiple stages.
 %and is split into two main phases,
 %\textit{network domain logic} and \textit{clock synchronization}.
-\cref{fig:ptp-lifecycle}) describes these stages in detail.
+\cref{fig:ptp-lifecycle} describes these stages in detail.
 A PTP client may return to an earlier stage at any point of time due to
 unexpected conditions, such as loss of connectivity.
 %potentially changing the operating conditions.
@@ -183,6 +183,7 @@ With appropriate hardware support (i.e.,~\textit{hardware timestamping}),
 though, the path delay variability can be tamed. % to an extent.
 \cref{fig:ptp-sw-hw} illustrates how this approach differs from
 the \textit{software timestamping} approach.
+%We study both types of platforms, with and without hardware support.
 
 %It is generally understood that network clock synchronization accuracy is a function of the signal propagation delay and its variance~\cite{managin-pdv-for-ptp}. A naive approach to clock synchronization that just sends a timestamp from the master to the slave would always be off by the propagation delay, but PTP uses path delay estimation compensate for the propagation delay thus increasing the accuracy. In an ideal world where there is no packet delay variation, the propagation delay could be mitigated entirely, but in reality we have multiple software and hardware components, like the kernel, network stack and network hardware, that each introduce latency variability, which in turn worsens the performance of the delay compensation. Effects, such as asymmetric latencies caused by uneven loads, that cannot easily be compensated for further reduce the synchronization accuracy. Thus, limiting the packet delay variation becomes a primary concern when tuning for precision and dependability.
 

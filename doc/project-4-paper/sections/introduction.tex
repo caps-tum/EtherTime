@@ -1,8 +1,8 @@
 
 \section{Introduction}
-\todo{From last discussion: Diagram showing Testbed setup (including Database)}
-\todo{From last discussion: Short section explaining what \toolName{} is}
-\todo{Find places to insert the word ``real-time'' to solidify applicability to RTSS.}
+%\todo{From last discussion: Diagram showing Testbed setup (including Database)}
+%\todo{From last discussion: Short section explaining what \toolName{} is}
+%\todo{Find places to insert the word ``real-time'' to solidify applicability to RTSS.}
 
 %``Time is of the essence'', to many readers this might only be an idiom but the relevance of time throughout our daily lives, processes and systems is so ubiquitous that we frequently fail to appreciate its significance. While the phrase is said to have originated from the legal domain, time-criticality and the necessity of having a common notion of time permeates all sectors, from logistics and manufacturing in industry, to service-level objectives in service providers, emergency response in public healthcare systems, activities in people's day-to-day routines, and even to academia, as everybody perpetually works towards the next deadline. In computer systems and communications, time has been with us from the very beginnings, with its significance showing from the most basic synchronized digital circuits even to places where one might not expect, such as in the world's most pervasive digital cryptography deployment, the SSL/TLS PKI~\cite{ssl-client-warnings}.
 
@@ -17,29 +17,30 @@ with sub-nanosecond-level accuracies gaining significance in areas such as netwo
 Precision time (clock) synchronization thus plays a key role in modern computing systems.
 
 A classical application enabled by precision time synchronization
-is Global Navigation Satellite Systems~\cite{intro-to-gnss}.
-It is often used as a nanoscale clock source itself %for high-quality location estimates
-\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing},
+is Global Navigation Satellite System~\cite{intro-to-gnss},
+which is often used as a nanoscale clock source itself for high-quality location estimates
+\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing}.
 %Global Navigation Satellite Systems (GNNS), a classical application enabled by precision time-synchronization, relies on signal propagation delays to determine relative positioning~\cite{intro-to-gnss}.
 %High-quality location estimates hinge on accurate timing and -compensation mechanisms, so GNSS is frequently leveraged as a nanoscale clock source~\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing}.
 %Failure to compensate clock differences or even the presence of adversarial signals can quickly degrade the resulting location quality~\cite{gps-jamming}, but in general GNNS systems enjoy widespread popularity not only as a way of acquiring location estimates but also as a way of obtaining highly accurate estimates of time~\cite{gnss-location-and-time-advances,gnss-for-high-precision-timing}.
-but the precision incurs expense though; it requires dedicated hardware, strains limited power budgets, and inhibits indoor deployments.
-
-Precision time synchronization nonetheless remains both ubiquitous and critical.
+%but the precision incurs expense though; it requires dedicated hardware, strains limited power budgets, and inhibits indoor deployments.
+%
+%Precision time synchronization nonetheless remains ubiquitous and critical.
+%
 %, no computer system today can run without it.
 %Timing is also critical for distributed systems
 In datacenter and high-performance computing,
-a common notion of time enables effective profiling and optimization of distributed systems,
-which allows maximizing hardware utilization~\cite{hpc-understanding-bottlenecks, hpc-solving-io-bottleneck, hpc-diagnosing-io-bottlenecks}\todo{Source that refers to clock synchronization for HPC profiling}.
+a common notion of time enables effective profiling and optimization of distributed systems.
+%which allows maximizing hardware utilization~\cite{hpc-understanding-bottlenecks, hpc-solving-io-bottleneck, hpc-diagnosing-io-bottlenecks}\todo{Source that refers to clock synchronization for HPC profiling}.
 For example, Google and Facebook use precision time synchronization to ensure transaction ordering across a distributed system without an application having to explicitly synchronize~\cite{corbett2013spanner,li2020sundial,ouellete2023precision}.
 These techniques also transfer to edge computing, as they allow applications to achieve more with less hardware~\cite{chen2021achieving, wang2019frame}.
-Even large scale deployments like the internet cannot function without coordinate timing,
-e.g., SSL/TLS cryptographic certificate validation, renewal of leases (DHCP) and caches (DNS, HTTP), and various state machines built into TCP and firewalls all rely on global clocks~\cite{TODO}.
+Even large scale deployments like the internet cannot function without coordinated timing,
+e.g., SSL/TLS cryptographic certificate validation, renewal of leases (DHCP) and caches (DNS, HTTP), and various state machines built into TCP and firewalls all rely on global clocks~\cite{??}.
 
-The primary motivation for this study is fault-tolerant real-time systems.
+%The primary motivation for this study is fault-tolerant real-time systems.
 %, for which timing is often absolutely critical.
-%Timing is often absolutely critical for fault-tolerant systems.
-Architectures with double- or triple-modular lock-step redundancy~\cite{triple-modular-redundancy,triple-modular-redundancy-evaluation,triple-modular-lock-step-arm}
+Precise synchronization is also critical for fault-tolerant real-time systems.
+Fault-tolerant architectures with double- or triple-modular lock-step redundancy~\cite{triple-modular-redundancy,triple-modular-redundancy-evaluation,triple-modular-lock-step-arm}
 %where algorithms are run independently on different machines to automatically detect and correct errors,
 rely on a common notion of time and deadlines to make progress even when a machine has failed.
 Such systems are routinely used in high-reliability and high-availability applications with strict timing requirements, such as aviation.
@@ -56,23 +57,41 @@ Without reliable time synchronization, it is impossible for these systems to jud
 %Even large scale deployments like the internet cannot function without timing, as SSL/TLS cryptographic certificate validation, renewal of leases (DHCP) and caches (DNS, HTTP), and various other state machines built into systems and protocols (TCP, firewalls, etc.) all rely on clocks to function.
 
 \textbf{This work.}
-To what degree can we truly rely on modern computer timekeeping in distributed embedded systems where failures affect correctness?
-In industrial and embedded computing,
-deployments are often characterized by dependability/redundancy requirements,
+Out primary motivation is applications of precision time synchronization in real-time computing.
+Specifically, we ask, to what degree can we truly rely on implementations of precision time synchronization protocols
+when building next-generation distributed real-time systems? % where failures affect correctness?
+
+%Modern deployments are not only characterized by dependability/redundancy
+%requirements and resource constraints,
+%but also increasingly rely on commodity processors and networks,
+%which sets them apart from traditional architectures with custom hardware solutions~\cite{wensley1978sift,hopkins1978ftmp}.
+%In addition, industrial and embedded applications are often relatively isolated from the internet,
+%This sets them apart from typical timekeeping scenarios where an external source
+%(wall-clock time) is used as ground truth
+%In industrial and embedded computing,
+These deployments %of distributed real-time systems
+are often %will be %often
+characterized by dependability/redundancy requirements,
 the need to conserve all types of resources to reduce costs,
 relative isolation from the internet, %regarding connectivity.
 and increasing reliance on COTS processors.
 This sets them apart from typical timekeeping scenarios where an external source
 (wall-clock time) is used as ground truth
-and from traditional architectures with custom hardware~\cite{wensley1978sift,hopkins1978ftmp}.
-We thus extensively study how well-known time synchronization protocols perform on COTS devices and what causes them to break,
-showing their strengths and weaknesses in a variety of configurations.
-We offer the following contributions.
+and from traditional architectures with custom time synchronization hardware~\cite{wensley1978sift,hopkins1978ftmp}.
+There is also a lack of literature collecting empirical findings
+across implementations and protocols, with an early study~\cite{ntp-vs-ptp} from 2006
+%focusing on technologies that were available at the time
+and more recent studies~\cite{time-enough} not incorporating fault tolerance as a central aspect.
+
+We thus extensively study how well-known time synchronization protocols perform
+on commodity embedded processors and networks and what causes them to break.
+%showing their strengths and weaknesses in a variety of configurations.
+Specifically, we offer the following main contributions.
 
 \textbf{(1)}~We develop \toolName{}, an open-source tool\footnote{\toolName{} will be made publicly available upon acceptance.}, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations.
 
 \textbf{(2)}~We evaluate %the performance and resilience of
-four implementations of prevalent time synchronization protocols for packet-switched Ethernet\todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
+four implementations of prevalent time synchronization protocols for Ethernet, % \todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
 including the Precision Time Protocol (PTP)~\cite{ptp-spec} and Network Time Protocol (NTP)~\cite{ntpv4-spec},
 across four distinct hardware testbeds
 based on two generations of Raspberry-Pis~\cite{??, ??},
@@ -88,8 +107,8 @@ and assessment of deployability/resource consumption on embedded platforms.
 \textbf{(4)}~We discuss the lessons learned, best practices, and recommendations
 for configuring time-synchronization deployments for high reliability and availability.
 
-\todo{Link to Table 1}
-\todo{Create Table 2: Hardware Testbeds}
+%\todo{Link to Table 1}
+%\todo{Create Table 2: Hardware Testbeds}
 
 To the best of our knowledge, \toolName{} is the first data collection and
 analysis tool %available open-source\todo{anonymize}
@@ -123,3 +142,16 @@ high-precision network time can truly be relied upon.
 %We also make the data collection and analysis tooling available open-source\todo{anonymize} to enable future studies to generate comparable results.
 %
 %The rest of this paper is structured into the following sections: Section~\ref{sec:background} covers time synchronization and PTP background, as well as related work, while Section~\ref{sec:failure_scenarios} looks at potential failure scenarios. Results are presented in Sections~\ref{sec:baseline} Baseline, \ref{sec:resource_contention} Resource Contention, \ref{sec:fault_tolerance} Fault Tolerance and \ref{sec:resource_consumption} Resource Consumption. Finally, we present some lessons learned and best practices in Section~\ref{sec:learnings_conclusion}.
+
+%The remainder of the paper is structured as follows.
+\textbf{Paper organization.}
+We start by summarizing the protocols surveyed and evaluated in this study (\cref{sec:protocols})
+and the embedded platforms used for evaluation, including an overview of our testbed and our profiling tool \toolName{} (\cref{sec:testbed}).
+We then provide a brief overview of PTP and identify common invariants and failure scenarios (\cref{sec:ptp-overview}).
+We split the measurement study into to four parts: baseline, resource
+contention, fault tolerance, and resource consumption experiments
+(\cref{sec:baseline} to \cref{sec:resource_consumption}).
+Finally, we discuss the key takeaways and lessons learnt from this
+measurement study
+(\cref{sec:learnings_conclusion}),
+and related work and conclusion (\cref{sec:related,sec:conclusion}).
