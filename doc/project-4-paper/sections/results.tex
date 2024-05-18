@@ -284,20 +284,25 @@ Needless to say, a vendor that cannot deliver stable timing guarantees is risky 
 \section{Resource Contention}
 \label{sec:resource_contention}
 
-One aspect that influences how reliable PTP can operate is the outside interference originating from resource sharing. Through our research, we examined a range of shared resources that might impact synchronization accuracy and therefore need to be carefully managed so that PTP can provide synchronization even in the presence of stress. Unsurprisingly, the key resource tends to be the network.
+One aspect that influences how reliable PTP can operate is interference originating from resource sharing. Through our research, we examined a range of shared resources that might impact synchronization accuracy and thus need to be carefully managed so that PTP can provide synchronization even in the presence of stress. Unsurprisingly, the key resource tends to be network traffic.
 
 \subsection{Network Contention}
+\cmpSearchVendor{\ptpKey{load/net_unprioritized/load_100/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q95}}
+\cmpSave{load/net_unprioritized/q95}
+\cmpSearchVendor{\ptpKey{load/net_unprioritized/load_100/rpi-4/\vendor/q50}/\ptpKey{base/rpi-4/\vendor/q50}}
+\cmpSave{load/net_unprioritized/q50}
+
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{res/generated/net_unprioritized_trend_rpi-4.pdf}
     \legend
-    \caption{Clock synchronization accuracy at different levels of network load. All vendors experience degradation at higher network loads, though the degree to which they are affected differs. Apart from a change in median clock offset, the 95\textsuperscript{th} percentile is heavily affected, signaling larger and more frequent outliers.}
+    \caption{Clock synchronization accuracy at different levels of network load. All vendors experience degradation at higher network loads, though the degree to which they are affected differs (\cmpLoad{load/net_unprioritized/q50}\fRatio{\cmpMin}--\fRatio{\cmpMax}). Apart from a change in median clock offset, the 95\textsuperscript{th} percentile is heavily affected, signaling larger and more frequent outliers of magnitudes \cmpLoad{load/net_unprioritized/q95}\fRatio[-1]{\cmpMax} as large as the baseline.}
     \label{fig:network_load}
 \end{figure}
 
-\cmpSearchVendor{\ptpKey{load/net_unprioritized/load_100/rpi-4/\vendor/q50}/\ptpKey{base/rpi-4/\vendor/q50}}
 
-Like stated previously, the synchronization accuracy principally depends on the magnitude and the variation of the path delay. Intuition therefore suggests that the more network load is present, the more PTP will struggle to measure the clock offset consistently due to increased queuing in software and hardware causing delay and delay variation in delivery. We simulate network load artificially using iPerf, a traffic generator that allows us to target predefined data rates. By default, when a PTP vendor is installed on a target system and run, there are no special precautions in place to guard against contention, so a decrease in accuracy as the network load increases is exactly what we observe (Figure \ref{fig:network_load}\todo{Add vertical lines so its easier to judge}). Interestingly, the vendor with the smallest increase in clock offset is \fVendor{\cmpMinArg}, with an increase of just \fRatio[1]{\cmpMin} (\fTimeKey{base/rpi-4/\cmpMinArg/q50} -- \fTimeKey{load/net_unprioritized/load_100/rpi-4/\cmpMinArg/q50}) from no network load to 100\% network load. On the other hand, \fVendor{\cmpMaxArg} has a much higher ratio of \fRatio{\cmpMax} (\fTimeKey{base/rpi-4/\cmpMaxArg/q50} -- \fTimeKey{load/net_unprioritized/load_100/rpi-4/\cmpMaxArg/q50}), which can only be partially attributed to the fact that \fVendor{\cmpMaxArg} has a smaller baseline value.
+\cmpLoad{load/net_unprioritized/q50}
+Like stated previously, the synchronization accuracy principally depends on the magnitude and the variation of the path delay. Intuition therefore suggests that the more network load is present, the more PTP will struggle to measure the clock offset consistently due to increased queuing in software and hardware causing delay and delay variation in delivery. We simulate network load artificially using iPerf, a traffic generator that allows us to target predefined data rates. By default, there are no special precautions in place to guard against network traffic contention out of the box, so a decrease in accuracy as the network load increases is exactly what we observe (Figure \ref{fig:network_load}\todo{Add vertical lines so its easier to judge}\todo{Data looks less neat again}). Interestingly, the vendor with the smallest increase in clock offset is \fVendor{\cmpMinArg}, with an increase of just \fRatio[1]{\cmpMin} (\fTimeKey{base/rpi-4/\cmpMinArg/q50} -- \fTimeKey{load/net_unprioritized/load_100/rpi-4/\cmpMinArg/q50}) from no network load to 100\% network load. On the other hand, \fVendor{\cmpMaxArg} has a much higher ratio of \fRatio{\cmpMax} (\fTimeKey{base/rpi-4/\cmpMaxArg/q50} -- \fTimeKey{load/net_unprioritized/load_100/rpi-4/\cmpMaxArg/q50}), which can only be partially attributed to the fact that \fVendor{\cmpMaxArg} has a smaller baseline value.
 % Assert SPTP is worst
 \assert{\cmpMaxArg}{sptp}%
 SPTP is the only vendor that relies solely on unicast message exchange (a design choice by Meta), whether this is why SPTP appears to be more susceptible to contention is subject to further investigation.%
@@ -317,7 +322,7 @@ To show that the path delay is a good predictor of the synchronization quality, 
 
 \newcommand{\loadFaultyNumFailures}{9}
 \newcommand{\loadFaultyNumTrials}{34}
-Note that under heavier network load PTP sometimes fails to even synchronize at all, when it gets stuck in an infinite loop of transmission timeouts indefinitely cycling between ``state init'' and ``state faulty''. In this case the timing system breaks entirely, and no synchronization can be established. These measurements have been excluded from the shown data, but we encountered them rather frequently at high load levels ($\sim$\fPercentage{\loadFaultyNumFailures/\loadFaultyNumTrials} of 20 minute runs for 100\% network load on the Raspberry-Pi 5 did not synchronize at all, with LinuxPTP accounting for most failures while Chrony produced no errors). Preventing this is paramount, as having no synchronization and potentially not even being aware of it is a lot worse than having a bad quality signal.
+Note that under heavier network load, PTP sometimes fails to even synchronize at all, when it gets stuck in an infinite loop of transmission timeouts indefinitely cycling between ``state init'' and ``state faulty''. In this case the timing system breaks entirely, and no synchronization can be established. These measurements have been excluded from the shown data, but we encountered them rather frequently at high load levels ($\sim$\fPercentage{\loadFaultyNumFailures/\loadFaultyNumTrials} of 20 minute runs for 100\% network load on the Raspberry-Pi 5 did not synchronize at all, with LinuxPTP accounting for most failures while Chrony produced no errors). Preventing this is paramount, as having no synchronization and potentially not even being aware of it is a lot worse than having a bad quality signal.
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/net_isolation_comparison.pdf}
@@ -544,7 +549,7 @@ Another possible root cause for a fault is the network. While a network outage i
 \centering
 \includegraphics[width=\linewidth]{res/generated/resource_consumption/summary_quality_trend.pdf}
 \legend
-\caption{}
+\caption{Synchronization quality for increasing numbers of nodes, with clock difference median (left) and 95\textsuperscript{th} percentile (center). Note: Error bars represent the range between the best node's median/95\textsuperscript{th} percentile and the worst node's median/95\textsuperscript{th} percentile. As the number of nodes increases, some slaves start to occasionally lose the synchronization signal (right).}
 \label{fig:resource_consumption_quality}
 \end{figure}
 

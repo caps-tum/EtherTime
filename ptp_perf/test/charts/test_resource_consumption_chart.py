@@ -139,8 +139,32 @@ class ResourceConsumptionChartTest(TestCase):
                             estimator='mean',
                         )
                     ],
+                    title="Median",
                     xlabel="Nodes", xticks=self.nodes_xticks,
-                    ylabel="Clock Diff",
+                    ylabel="Clock Difference", ylog=True,
+                    yticklabels_format_time=True,
+                ),
+                AxisContainer(
+                    [
+                        ComparisonLineElement(
+                            data=pd.DataFrame([
+                                (
+                                    endpoint.benchmark.num_machines,
+                                    endpoint.profile.vendor_id,
+                                    endpoint.clock_diff_p95,
+                                    # TODO: What about unknown clock diff?
+                                )
+                                for endpoint in resource_consumption_slaves
+                            ], columns=['x', 'hue', 'y']),
+                            column_x='x', column_y='y', column_hue='hue',
+                            estimator='mean',
+                            errorbar=('pi', 90),
+                        )
+                    ],
+                    title="95-th Percentile",
+                    xlabel="Nodes", xticks=self.nodes_xticks,
+                    ylabel="Clock Difference",
+                    ylog=True,
                     yticklabels_format_time=True,
                 ),
                 AxisContainer(
@@ -158,12 +182,14 @@ class ResourceConsumptionChartTest(TestCase):
                             estimator='mean',
                         )
                     ],
+                    title='Signal Presence',
                     xlabel="Nodes", xticks=self.nodes_xticks,
-                    ylabel="Average Connectivity",
+                    ylabel="Samples Collected",
                     yticklabels_format_percent=True,
+                    ylimit_top=1.05,
                 )
             ],
-            size=(8, 3),
+            size=(7, 3),
             share_y=False,
             tight_layout=True,
         )

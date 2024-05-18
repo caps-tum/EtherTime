@@ -138,7 +138,7 @@ class AxisContainer:
             self.decorate_axis_time_formatter(self.axis.yaxis,
                                               units_premultiplied=self.yticklabels_format_time_units_premultiplied)
         if self.yticklabels_format_percent:
-            self.axis.set_ylim(0, 1)
+            self.axis.set_ylim(0 if self.ylimit_bottom is None else self.ylimit_bottom, 1 if self.ylimit_top is None else self.ylimit_top)
             self.axis.yaxis.set_major_formatter(PercentFormatter(xmax=1))
         if self.yticklabels_format_engineering:
             self.decorate_axis_engineering_formatter(self.axis.yaxis, self.yticklabels_format_engineering_unit)
