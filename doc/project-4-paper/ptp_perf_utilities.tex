@@ -134,6 +134,7 @@
 }
 \newcommand{\cmpKey}[2]{\ptpKey{cmp/#1/#2}}
 \newcommand{\cmpRatioVendorClusterVsBaseline}[1]{\ptpKey{#1/\cluster/\vendor/q50}/\ptpKey{base/\cluster/\vendor/q50}}
+\newcommand{\cmpRatioVendorClusterVsBaselineQNineFive}[1]{\ptpKey{#1/\cluster/\vendor/q95}/\ptpKey{base/\cluster/\vendor/q95}}
 
 \newcommand{\assertError}[1]{\textbf{\textcolor{red}{ASSERTION ERROR: #1}}\errmessage{ASSERTION ERROR: #1}}
 % Raise an error if #2 != #3, with optional message #1.
