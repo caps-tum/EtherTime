@@ -71,6 +71,8 @@ class CustomFormatsAdmin(ActionsModelAdmin):
         def custom_float_display(obj):
             format_function = field.__class__.format_function
             value = getattr(obj, field.name)
+            if value is None:
+                return "-"
             return format_function(value)
 
         custom_float_display.short_description = field.verbose_name
