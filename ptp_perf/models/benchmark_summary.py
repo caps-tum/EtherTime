@@ -1,3 +1,4 @@
+import dataclasses
 from typing import Dict
 
 import pandas as pd
@@ -44,7 +45,8 @@ class BenchmarkSummary(models.Model):
     converged_percentage = PercentageFloatField(null=True)
     converged_samples = models.IntegerField(null=True)
 
-    missing_samples_percent = PercentageFloatField(null=True)
+    missing_samples_primary_percent = PercentageFloatField(null=True)
+    missing_samples_all_percent = PercentageFloatField(null=True)
 
 
     # Fault statistics
@@ -133,42 +135,47 @@ class BenchmarkSummary(models.Model):
 
         # Fault tolerance
         # Per-Endpoint summaries: Primary
-        endpoints_primary = data_query.get_endpoint_query().all().values()
-        endpoint_frame = pd.DataFrame(endpoints_primary)
+        endpoints_primary = pd.DataFrame(data_query.get_endpoint_query().all().values())
+        endpoints_all_slaves = pd.DataFrame(
+            dataclasses.replace(data_query, endpoint_type=None).get_endpoint_query().filter(
+                endpoint_type__in=[EndpointType.PRIMARY_SLAVE, EndpointType.SECONDARY_SLAVE, EndpointType.TERTIARY_SLAVE],
+            ).all().values()
+        )
 
         # Convergence
         try:
-            instance.convergence_duration = endpoint_frame[frame_column(PTPEndpoint.convergence_duration)].mean()
-            instance.convergence_max_offset = endpoint_frame[frame_column(PTPEndpoint.convergence_max_offset)].mean()
-            instance.convergence_rate = endpoint_frame[frame_column(PTPEndpoint.convergence_rate)].mean()
+            instance.convergence_duration = endpoints_primary[frame_column(PTPEndpoint.convergence_duration)].mean()
+            instance.convergence_max_offset = endpoints_primary[frame_column(PTPEndpoint.convergence_max_offset)].mean()
+            instance.convergence_rate = endpoints_primary[frame_column(PTPEndpoint.convergence_rate)].mean()
 
-            instance.converged_percentage = endpoint_frame[frame_column(PTPEndpoint.converged_percentage)].mean()
-            instance.converged_samples = endpoint_frame[frame_column(PTPEndpoint.converged_samples)].mean()
+            instance.converged_percentage = endpoints_primary[frame_column(PTPEndpoint.converged_percentage)].mean()
+            instance.converged_samples = endpoints_primary[frame_column(PTPEndpoint.converged_samples)].mean()
         except KeyError:
             pass
 
         # Missing samples
         try:
-            instance.missing_samples_percent = endpoint_frame[frame_column(PTPEndpoint.missing_samples_percent)].mean()
+            instance.missing_samples_primary_percent = endpoints_primary[frame_column(PTPEndpoint.missing_samples_percent)].mean()
+            instance.missing_samples_all_percent = endpoints_all_slaves[frame_column(PTPEndpoint.missing_samples_percent)].mean()
         except KeyError:
             pass
 
         try:
-            instance.fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
-            instance.fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
-            instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+            instance.fault_clock_diff_post_max_max = endpoints_primary['fault_clock_diff_post_max'].max()
+            instance.fault_clock_diff_post_max_min = endpoints_primary['fault_clock_diff_post_max'].min()
+            instance.fault_ratio_clock_diff_post_max_pre_median_mean = endpoints_primary['fault_ratio_clock_diff_post_max_pre_median'].mean()
         except KeyError:
             pass
 
         # Per-Endpoint summaries: Secondary
         data_query.endpoint_type = EndpointType.SECONDARY_SLAVE
         endpoints_secondary = data_query.get_endpoint_query().all().values()
-        endpoint_frame = pd.DataFrame(endpoints_secondary)
+        endpoints_primary = pd.DataFrame(endpoints_secondary)
 
         try:
-            instance.secondary_fault_clock_diff_post_max_max = endpoint_frame['fault_clock_diff_post_max'].max()
-            instance.secondary_fault_clock_diff_post_max_min = endpoint_frame['fault_clock_diff_post_max'].min()
-            instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoint_frame['fault_ratio_clock_diff_post_max_pre_median'].mean()
+            instance.secondary_fault_clock_diff_post_max_max = endpoints_primary['fault_clock_diff_post_max'].max()
+            instance.secondary_fault_clock_diff_post_max_min = endpoints_primary['fault_clock_diff_post_max'].min()
+            instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoints_primary['fault_ratio_clock_diff_post_max_pre_median'].mean()
         except KeyError:
             pass
 

@@ -335,7 +335,8 @@ def get_profile_admin_link(benchmark_id, vendor_id, cluster_id):
 class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     list_display = ('id', 'benchmark_id', 'vendor_id', 'cluster_id', 'count', 'clock_diff_median',
                     'vs_baseline', 'clock_diff_p95', 'p95_vs_baseline',
-                    'missing_samples_percent', 'converged_percentage', 'convergence_duration', 'convergence_max_offset', 'convergence_rate')
+                    'missing_samples_all_percent',
+                    'converged_percentage', 'convergence_duration', 'convergence_max_offset', 'convergence_rate')
     list_filter = ('benchmark_id', 'vendor_id', 'cluster_id')
     actions_row = ('summary_create_timeseries', 'endpoints', 'profiles')
 
