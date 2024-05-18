@@ -7,7 +7,6 @@ from django.test import TestCase
 from ptp_perf import config
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer, DataAxisContainer
-from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
 from ptp_perf.models import PTPEndpoint
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.registry.benchmark_db import BenchmarkDB
@@ -158,7 +157,7 @@ class ResourceConsumptionChartTest(TestCase):
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
                             estimator='mean',
-                            errorbar=('pi', 90),
+                            # errorbar=('pi', 90),
                         )
                     ],
                     title="95-th Percentile",
