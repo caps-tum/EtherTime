@@ -135,7 +135,8 @@ class BenchmarkSummary(models.Model):
 
         # Fault tolerance
         # Per-Endpoint summaries: Primary
-        endpoints_primary = pd.DataFrame(data_query.get_endpoint_query().all().values())
+        endpoints_primary_queryset = data_query.get_endpoint_query().all().values()
+        endpoints_primary = pd.DataFrame(endpoints_primary_queryset)
         endpoints_all_slaves = pd.DataFrame(
             dataclasses.replace(data_query, endpoint_type=None).get_endpoint_query().filter(
                 endpoint_type__in=[EndpointType.PRIMARY_SLAVE, EndpointType.SECONDARY_SLAVE, EndpointType.TERTIARY_SLAVE],
@@ -169,20 +170,20 @@ class BenchmarkSummary(models.Model):
 
         # Per-Endpoint summaries: Secondary
         data_query.endpoint_type = EndpointType.SECONDARY_SLAVE
-        endpoints_secondary = data_query.get_endpoint_query().all().values()
-        endpoints_primary = pd.DataFrame(endpoints_secondary)
+        endpoints_secondary = pd.DataFrame(data_query.get_endpoint_query().all().values())
 
         try:
-            instance.secondary_fault_clock_diff_post_max_max = endpoints_primary['fault_clock_diff_post_max'].max()
-            instance.secondary_fault_clock_diff_post_max_min = endpoints_primary['fault_clock_diff_post_max'].min()
-            instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoints_primary['fault_ratio_clock_diff_post_max_pre_median'].mean()
+            instance.secondary_fault_clock_diff_post_max_max = endpoints_secondary['fault_clock_diff_post_max'].max()
+            instance.secondary_fault_clock_diff_post_max_min = endpoints_secondary['fault_clock_diff_post_max'].min()
+            instance.secondary_fault_ratio_clock_diff_post_max_pre_median_mean = endpoints_secondary['fault_ratio_clock_diff_post_max_pre_median'].mean()
         except KeyError:
             pass
 
         # Resource consumption data
+        # Looks like it comes just from the primary slave
         for field in instance.__dict__.keys():
             if field.startswith('proc_') or field.startswith('sys_'):
-                instance.__dict__[field] = sum(endpoint_dict[field] for endpoint_dict in endpoints_primary if endpoint_dict[field] is not None) / len(endpoints_primary)
+                instance.__dict__[field] = sum(endpoint_dict[field] for endpoint_dict in endpoints_primary_queryset if endpoint_dict[field] is not None) / len(endpoints_primary_queryset)
 
         instance.save()
 
