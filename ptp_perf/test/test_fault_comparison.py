@@ -75,16 +75,19 @@ class FaultComparisonCharts(TestCase):
                         style_order=VendorDB.ANALYZED_VENDOR_IDS,
                     )],
                     title=f'{cluster}',
-                    xlabel='Resynchronization Time',
+                    # xlabel='Resynchronization Time',
                     xticks=units.convert_all_units(units.NANOSECONDS_IN_SECOND, [0 * 60, 2 * 60, timeout_value * 60]),
-                    xticklabels=["0 m", "2 m", "Timeout"],
+                    xticklabels=["0 m", "2 m", "T/O"],
                     ylabel='Maximum Offset',
                     yticklabels_format_time=True,
                 )
-                self.configure_fault_ylog_axis(axis_container)
+                self.configure_fault_ylog_axis(axis_container, include_nanoseconds=False)
                 axis_containers.append(axis_container)
             # axis_containers[-1].legend = True
-            figure = FigureContainer(axis_containers, title=benchmark.name, tight_layout=True, size=(4, 2))
+            figure = FigureContainer(
+                axis_containers, title=benchmark.name, tight_layout=True,
+                size=(4, 2) if benchmark != BenchmarkDB.HARDWARE_FAULT_SWITCH else (6, 2),
+            )
             figure.plot()
             figure.save_default_locations("fault_scatter", benchmark)
 
@@ -234,10 +237,12 @@ class FaultComparisonCharts(TestCase):
              fault_start.total_seconds() + 120]
         ), ["-2m", "0m", "2m"]
 
-    def configure_fault_ylog_axis(self, axis_container: AxisContainer) -> None:
+    def configure_fault_ylog_axis(self, axis_container: AxisContainer, include_nanoseconds: bool = True) -> None:
         yticks = [
             1 * units.NANOSECONDS_TO_SECONDS, 10 * units.NANOSECONDS_TO_SECONDS,
             100 * units.NANOSECONDS_TO_SECONDS,
+        ] if include_nanoseconds else []
+        yticks += [
             1 * units.MICROSECONDS_TO_SECONDS, 10 * units.MICROSECONDS_TO_SECONDS,
             100 * units.MICROSECONDS_TO_SECONDS,
             1 * units.MILLISECONDS_TO_SECONDS, 10 * units.MILLISECONDS_TO_SECONDS,
@@ -246,6 +251,8 @@ class FaultComparisonCharts(TestCase):
         ]
         yticklabels = [
             "1 ns", "", "",
+        ] if include_nanoseconds else []
+        yticklabels += [
             "1 μs", "", "",
             "1 ms", "", "",
             "1 s", "1 m", "1 h",

@@ -387,9 +387,12 @@ The simplest possible fault is a PTP client crashing, because the only state tha
 
 \cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/fault/post_max/max}}
 
-From the results (Figure~\ref{fig:software_fault} left), we can determine that the maximum observed offset after a 1-minute software fault among \fNum{\bSoftwareFaultNumProfiles}\todo{import more trials} trials is \fTime{\cmpMax} for \fVendor{\cmpMaxArg}, which is around \fRatio{\cmpMax/\ptpKey{base/rpi-4/\cmpMaxArg/q50}} worse than the median baseline performance. While this drift is definitely noticeable, it is fortunately not even close to the theoretical worst-case window of uncertainty of \fTimeMS{\windowOfUncertaintyOneMinute}, representing just \fPercentage[2]{\cmpMax/\windowOfUncertaintyOneMinute} of the maximum software induced drift. We also observe that it is possible to get lucky: in some trials there is very little observed offset despite a full minute of downtime (just \fTime{\cmpMin} with \fVendor{\cmpMinArg}). In any case, all PTP implementations can quickly reconverge on the clock signal within a few seconds of restarting. Due to a quirk in how the PTP protocol works (slaves request synchronization signal leases from the master with a predetermined expiry), the master node will keep sending synchronization messages to the dead peer, which combined with the second lease that is issued when the PTP slave is restarted can help the peer synchronize quicker due to the higher influx of synchronization messages (this is sometimes referred to as an abandoned sync~\cite{sptp}).
+From the results (Figure~\ref{fig:software_fault} top), we can determine that the maximum observed offset after a 1-minute software fault among \fNum{\bSoftwareFaultNumProfiles}\todo{import more trials} trials is \fTime{\cmpMax} for \fVendor{\cmpMaxArg}, which is around \fRatio{\cmpMax/\ptpKey{base/rpi-4/\cmpMaxArg/q50}} worse than the median baseline performance. While this drift is definitely noticeable, it is fortunately not even close to the theoretical worst-case window of uncertainty of \fTimeMS{\windowOfUncertaintyOneMinute}, representing just \fPercentage[1]{\cmpMax/\windowOfUncertaintyOneMinute} of the maximum software induced drift. We also observe that it is possible to get lucky: in some trials there is very little observed offset despite a full minute of downtime (just \fTime{\cmpMin} with \fVendor{\cmpMinArg}). In any case, all PTP implementations can quickly reconverge on the clock signal within a few seconds of restarting. Due to a quirk in how the PTP protocol works (slaves request synchronization signal leases from the master with a predetermined expiry), the master node will keep sending synchronization messages to the dead peer, which combined with the second lease that is issued when the PTP slave is restarted can help the peer synchronize even quicker due to the higher influx of synchronization messages (this is sometimes referred to as an abandoned sync~\cite{sptp}).
 
-In high reliability deployments, replication is frequently applied to increase dependability. However, in order for replication to be useful, we need to ensure that a failure can be contained to the node of origin. In terms of PTP, this means that the fault on one slave should not affect the quality of synchronization of the other slave. To verify that this is the case, we attached a second control node to the same master (Figure~\ref{fig:software_fault} right\todo{improve graphic}), which shows us that there is no meaningful degradation of the performance of other nodes.
+\cmpSearchVendor{\ptpKey{fault/software/slave/rpi-4/\vendor/fault/secondary/post_max/max}}
+
+In high reliability deployments, it is important to ensure that faults stay contained and cannot propagate. In terms of PTP, this means that slave-side faults should not affect the synchronization quality of other slaves. To verify that this is the case, we attached a second control node to the same master (Figure~\ref{fig:software_fault} bottom\todo{improve graphic}), which shows us that there is no meaningful degradation of the performance of other nodes (maximum value after fault \fTime[0]{\cmpMax} for \fVendor{\cmpMaxArg} is smaller than the baseline).
+\assertRange{\cmpMax}{0.000010}{0.000035}
 
 One important caveat is to be noted for PTPd: when multiple software faults start occurring (not necessarily in close proximity to each other), problems can start propagating. On our test systems, we observe that upon exactly the third software fault, PTPd will cause the network interface to fail. In fact, no amount of manually bringing the network down and back up or reloading the network interface driver can solve this problem, up until the system is restarted by hand. This is especially critical as it implies that not only will the timing system fail, but it will simultaneously bring down any applications that need to communicate over the interface as well. Ironically, in this case, rather than support the deployment high-reliability distributed systems, PTPd will actually harm said reliability. We thus advise caution when deploying PTPd or any of its derivatives that may contain the same bug.
 
@@ -407,13 +410,14 @@ One important caveat is to be noted for PTPd: when multiple software faults star
     \centering
     \includegraphics[width=\linewidth]{res/generated/fault/hardware/slave_cluster_comparison.pdf}
     \legend
-    \caption{A hardware fault on the slave of the Raspberry-Pi 4 cluster (left) and the Raspberry-Pi 5 cluster (right). Both slaves need to fully resynchronize after rebooting, but the Raspberry-Pi 5 has an advantage due to its hardware clock.}
+    \caption{A hardware fault on the slave of the Raspberry-Pi 4 cluster (left) and the Raspberry-Pi 5 cluster (right). Both slaves need to fully resynchronize after rebooting, but the Raspberry-Pi 5 has an advantage due to its hardware clock. Unfortunately, Xilinx and TK-1 boards are excluded as they cannot reboot after a power failure without a physical button press.}
     \label{fig:hardware_fault_slave}
 \end{figure}
 
 \begin{figure}
     \includegraphics[width=0.49\linewidth]{res/generated/fault/hardware/master/fault_scatter.pdf}
     \includegraphics[width=0.49\linewidth]{res/generated/fault/hardware/slave/fault_scatter.pdf}
+    \includegraphics[width=0.49\linewidth]{res/generated/fault/hardware/master_failover/fault_scatter.pdf}
     \caption{WIP: Fault offset and time to resynchronize}
     \label{fig:fault_offsets}
 \end{figure}
@@ -449,6 +453,11 @@ We observe that the failover master can very rapidly take over the master role i
 
 \subsection{Network Fault}
 
+\begin{figure}
+    \includegraphics[width=\linewidth]{res/generated/fault/hardware/switch/fault_scatter.pdf}
+    \caption{Network faults.}
+\end{figure}
+
 Another possible root cause for a fault is the network. While a network outage is generally bad news for reliable distributed systems that need to communicate, a total network outage is ironically easier for PTP to handle than a functioning network with high levels of congestion or a contained failure within any of the nodes. Since no state is lost, the servos are kept in holdover and PTP just has to detect when the network is available again to reconverge on the common network time. The effects of this scenario are not particularly surprising, so we do not show it separately\todo{include perhaps 1 number}.
 
 
@@ -460,7 +469,7 @@ Another possible root cause for a fault is the network. While a network outage i
 \centering
 \includegraphics[width=\linewidth]{res/generated/resource_consumption/summary_trend.pdf}
 \legend
-\caption{Resource consumption statistics across vendors and systems. In general, PTP systems use few onboard resources but generate more network traffic, while the evaluated NTP and SPTP implementations reduce network utilization at the cost of additional ROM and other on-board resources.}
+\caption{Resource consumption statistics across vendors and systems. In general, PTP systems use few onboard resources but generate more network traffic, while the evaluated NTP and SPTP implementations reduce network utilization at the cost of additional ROM and other on-board resources. Note that SPTP only scales to 10 nodes as it cannot run on the final 2 TK-1 boards.}
 \label{fig:resource_consumption}
 \end{figure*}
 
