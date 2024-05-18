@@ -91,44 +91,56 @@ Specifically, we offer the following main contributions.
 \textbf{(1)}~We develop \toolName{}, an open-source tool\footnote{\toolName{} will be made publicly available upon acceptance.}, for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations.
 
 \textbf{(2)}~We evaluate %the performance and resilience of
-four implementations of prevalent time synchronization protocols for Ethernet, % \todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
+four implementations of prevalent Ethernet time synchronization protocols, % \todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
 including the Precision Time Protocol (PTP)~\cite{ptp-spec} and Network Time Protocol (NTP)~\cite{ntpv4-spec},
 across four distinct hardware testbeds
-based on two generations of Raspberry-Pis~\cite{??, ??},
-Xilinx AVNet~\cite{??}, and NVIDIA Jetson TK-1~\cite{??} (Overview: Tables~\ref{tbl:vendors}~\&~\ref{tbl:hardware_testbeds}).
+based on two generations of Raspberry-Pis,
+Xilinx AVNet, and NVIDIA Jetson TK-1 boards (see \cref{tab:vendors,tbl:hardware_testbeds} for an overview).
 
 \textbf{(3)}~For each configuration,
 we present the baseline performance, % (without faults and contention),
-experiments showing if the synchronization is resilient against adverse
-conditions and faults,
-possibilities of mitigating the risk of synchronization failure,
-and assessment of deployability/resource consumption on embedded platforms.
+performance under resource contention and with fault injection,
+and resource consumption and scalability results.
+%as well as fault tolerance, 
+%experiments showing if the synchronization is resilient against adverse
+%conditions and faults,
+%possibilities of mitigating the risk of synchronization failure,
+%and assessment of deployability/resource consumption on embedded platforms.
 
-\textbf{(4)}~We discuss the lessons learned, best practices, and recommendations
-for configuring time-synchronization deployments for high reliability and availability.
+\textbf{(4)}~We discuss the lessons learned and recommend best practices
+for configuring precision time synchronization in highly reliable and
+available COTS embedded systems.
 
 %\todo{Link to Table 1}
 %\todo{Create Table 2: Hardware Testbeds}
 
-To the best of our knowledge, \toolName{} is the first data collection and
+To the best of our knowledge,
+\toolName{} is the first data collection and
 analysis tool %available open-source\todo{anonymize}
-that supports the empirical evaluation of multiple Ethernet-based time
-synchronization protocols and implementations across several embedded hardware
-testbeds with an explicit focus on dependability and fault-tolerance.
+for empirical evaluation of multiple Ethernet-based time
+synchronization protocols and implementations across several embedded
+platforms with an explicit focus on dependability and fault tolerance.
 
-\todo{Should results really go into the intro rather than the abstract or conclusion?}Overall, we find that Chrony is the most well-rounded system, with competitive
-synchronization accuracy, resilience and resource efficiency, while both
-LinuxPTP and SPTP offer synchronization accuracy but exhibit stability problems
-or require more resources to run. PTPd, which despite its age is still being
-deployed, shows shortcomings in synchronization accuracy due to the lack of
-support for modern hardware features. The most capable hardware platform
-evaluated is the Raspberry-Pi 5, both due to hardware timestamping support and
-importantly because of the real-time clock, which helps with fault-tolerance.
-However, critical challenges remain for maintaining accurate clock synchronization,
-including resource contention (specifically network and memory, CPU is less of an
-issue) and faults on the master node when the master node lacks a real-time
-clock. These need to be addressed before
-high-precision network time can truly be relied upon.
+Overall, we find that precision time synchronization today is far from being
+a reliable primitive,
+especially when it comes to developing distributed real-time applications on
+commodity processors and networks.
+Many critical challenges need to be addressed,
+which our study identifies in detail.
+
+%\todo{Should results really go into the intro rather than the abstract or conclusion?}Overall, we find that Chrony is the most well-rounded system, with competitive
+%synchronization accuracy, resilience and resource efficiency, while both
+%LinuxPTP and SPTP offer synchronization accuracy but exhibit stability problems
+%or require more resources to run. PTPd, which despite its age is still being
+%deployed, shows shortcomings in synchronization accuracy due to the lack of
+%support for modern hardware features. The most capable hardware platform
+%evaluated is the Raspberry-Pi 5, both due to hardware timestamping support and
+%importantly because of the real-time clock, which helps with fault-tolerance.
+%However, critical challenges remain for maintaining accurate clock synchronization,
+%including resource contention (specifically network and memory, CPU is less of an
+%issue) and faults on the master node when the master node lacks a real-time
+%clock. These need to be addressed before
+%high-precision network time can truly be relied upon.
 
 %\begin{itemize}
 %    \item \toolName{}, an open-source tool for fair and comparable cross-vendor evaluation of multiple time synchronization protocols and implementations,
@@ -144,7 +156,7 @@ high-precision network time can truly be relied upon.
 %The rest of this paper is structured into the following sections: Section~\ref{sec:background} covers time synchronization and PTP background, as well as related work, while Section~\ref{sec:failure_scenarios} looks at potential failure scenarios. Results are presented in Sections~\ref{sec:baseline} Baseline, \ref{sec:resource_contention} Resource Contention, \ref{sec:fault_tolerance} Fault Tolerance and \ref{sec:resource_consumption} Resource Consumption. Finally, we present some lessons learned and best practices in Section~\ref{sec:learnings_conclusion}.
 
 %The remainder of the paper is structured as follows.
-\textbf{Paper organization.}
+%\textbf{Paper organization.}
 We start by summarizing the protocols surveyed and evaluated in this study (\cref{sec:protocols})
 and the embedded platforms used for evaluation, including an overview of our testbed and our profiling tool \toolName{} (\cref{sec:testbed}).
 We then provide a brief overview of PTP and identify common invariants and failure scenarios (\cref{sec:ptp-overview}).
