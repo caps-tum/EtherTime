@@ -27,9 +27,9 @@ All platforms run Debian 12 and Ubuntu 22.04.
 
 %We use three Raspberry Pi 4 and three Raspberry Pi 5 boards.
 Unlike the Raspberry-Pi 4,
-Raspberry Pi 5 has support for hardware
+the Raspberry Pi 5 has support for hardware
 timestamping (see \cref{sec:ptp-overview} for details) on the network interface
-and an integrated real-time clock (RTC) that can be powered by an
+and an integrated real-time clock (RTC) powered by an
 external battery~\cite{raspberry-pi-datasheets}.
 
 %Furthermore,
@@ -40,13 +40,13 @@ These boards were adapted to run Debian with the standard Xilinx Kernels for
 access to the same software packages.
 The base kernel was 5.15, which we patched with R8152/R8153 drivers for
 secondary Ethernet adapter support.
-However, we observed that under Kernel 5.15 hardware
-timestamping only worked on the transmission path for this board but not on the
+However, we observed that for this board under Kernel 5.15 hardware
+timestamping only worked on the transmission path, but not on the
 receiving path, which degraded synchronization accuracy and prevented SPTP from
 running at all, so we replaced it with a Xilinx 6.6.10 kernel.
 
 Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7,
-painstakingly updated to Ubuntu 22.04 LTS for software compability but still
+painstakingly updated to Ubuntu 22.04 LTS for software compatibility but still
 running the comparatively ancient NVIDIA-customized 3.10.40 kernel.
 
 Our selection of hardware is representative
