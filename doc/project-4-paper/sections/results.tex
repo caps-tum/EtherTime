@@ -1,8 +1,7 @@
-
 \section{Baseline Results}
 \label{sec:baseline}
 
-\subsection{Baseline: The 1-to-1 benchmark}
+%\subsection{Baseline: The 1-to-1 benchmark}
 
 \newcommand{\configIntervalVsBaselineRatioQuantile}{q50}
 \newcommand{\configIntervalVsBaselineRatio}[1]{\ptpKey{config/interval/#1/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}/\ptpKey{base/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}}
@@ -15,7 +14,29 @@
     \assertRange{\configIntervalVsBaselineRatio{\i}}{1.2}{10}
 }
 
-We start by establishing a baseline for each tested system and vendor which we can later use as a comparison for different environment configurations. For each vendor, the default PTP/NTP profile is used as we expect this to be among the most widely deployed. We collect data in 20 minute runs (corresponding to just above 1000 samples per run), while retaining the default setting of one synchronization and one measurement of the path delay per second, as our results suggest that a higher frequency does not significantly improve clock synchronization (we observe the best synchronization quality results for LinuxPTP on the Raspberry-Pi 4 at 2 samples/second or slower) while it does negatively impact the stability of the measurement (for the highest rate setting -7, corresponding to \fpeval{1/(2^(-7))} samples/s, we observe a \fRatio{\configIntervalVsBaselineRatio{-7}} worse median accuracy and \renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}} at the 95\textsuperscript{th} percentile).
+We start by establishing a baseline for each % tested system and
+vendor, which we use later as a comparison for different environment
+configurations.
+We use the default PTP/NTP profile wherever applicable.
+per run).
+We collect data in 20-minute runs (which corresponds to just above 1000 samples per run).
+
+We retain the default setting where the master node sends synchronization
+signals to every other node once per second,
+and hence the path delay is updated with a sampling frequency of 1\,Hz.
+A higher frequency does not significantly improve clock synchronization,
+e.g.,~LinuxPTP on the Raspberry-Pi 4 reported the best synchronization quality
+at a sampling rate of 2\,Hz or lower.
+On the other hand, a higher frequency negatively impacts the stability of the
+measurements, e.g.,~for the highest sampling rate setting (-7),
+which corresponds to a sampling frequency of $1/2^{-7}$ or \fpeval{1/(2^(-7))}\,Hz,
+the median and 95\textsuperscript{th} percentile clock offsets were 
+\fRatio{\configIntervalVsBaselineRatio{-7}} and
+\renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}}
+worse, respectively.
+%we observed a \fRatio{\configIntervalVsBaselineRatio{-7}} worse median accuracy and
+%\renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}}
+%at the 95\textsuperscript{th} percentile.
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/base/rpi08-convergence_2.pdf}
