@@ -230,14 +230,14 @@ with the master's clock.
 \end{figure*}
 
 The life cycle of each PTP client (a PTP master or a slave)
-spans multiple stages.
+spans six stages, S1-S6.
 %and is split into two main phases,
 %\textit{network domain logic} and \textit{clock synchronization}.
 \cref{fig:ptp-lifecycle} describes these stages in detail.
 A PTP client may return to an earlier stage at any point of time due to
 unexpected conditions, such as loss of connectivity.
 %potentially changing the operating conditions.
-While the \textit{stable} stage is usually of most interest for evaluation,
+While S6, the \textit{stable} stage, is usually of most interest for evaluation,
 it is also important to determine what causes clocks to become unstable,
 especially across vendors.
 Importantly, comparisons are meaningful only when PTP is in comparable states,
