@@ -119,7 +119,10 @@ class FaultComparisonCharts(TestCase):
                             data=frame,
                             marker='None',
                             x_coord_aggregate=timedelta(seconds=10),
-                            x_coord_aggregate_exclude_column='exclude_column' if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE else None,
+                            # x_coord_aggregate_exclude_column='exclude_column' if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE else None,
+                            # estimator='max',
+                            # errorbar=None,
+                            error_kws={'alpha': 0.05, }
                         ).configure_for_timeseries_input().split_data(self.fault_split)
                     )
                     if log_scale:
@@ -177,7 +180,7 @@ class FaultComparisonCharts(TestCase):
                             ylabel='Faulty Peer\nClock Offset',
                             yticks_interval=None,
                             ylimit_bottom=0,
-                            ylimit_top=120 * units.MICROSECONDS_TO_SECONDS,
+                            ylimit_top=250 * units.MICROSECONDS_TO_SECONDS,
                             grid=False,
                         ).add_elements(
                             *ComparisonLineElement(
