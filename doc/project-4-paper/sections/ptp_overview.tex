@@ -1,11 +1,100 @@
 %\subsection{PTP -- Background and Architecture}
-\section{PTP Overview}
+\section{Time Synchronization Overview}
 \label{sec:ptp-overview}
-%PTP operates across a network and has
-There are two types of endpoints in PTP: master and slave nodes.
+When using a clock, many of the assumptions are implicit,
+as they seem natural in the real world and a surprising number of software
+systems rely on them without being specifically aware of it.
+We discuss four such invariants, I1-I4, which are listed in
+\cref{tab:invariants} in decreasing order of importance.
+%which need to be perpetually fulfilled by any timing system.
+\begin{table}
+    \centering
+    \caption{Properties of Timekeeping Systems}
+    %Invariants (I1-I4) and Challenges (C1 and C2)}
+    \begin{tabular}{l}
+    \toprule
+    \textbf{Invariants (I1-I4) and Prerequisites (P1 and P2)} \\
+    \midrule
+    I1: Time flows forward \\
+    I2: Time passes continuously, it does not jump \\
+    I3: Time passes at a constant rate \\
+    I4: Coherence between ordered readings of different clocks  \\
+    P1: Clock difference can be measured  \\
+    P2: Clock difference can be corrected  \\
+    \bottomrule
+    \end{tabular}
+    \label{tab:invariants}
+\end{table}
+
+Violating I1 and I2 can lead to missed deadlines (in cyclic events),
+data inconsistencies (through tasks being executed multiple times),
+data loss (accidental overwriting of previously collected data/backups based on timestamps),
+load spikes (too many scheduled tasks arriving simultaneously or scheduled tasks being skipped entirely),
+among other cascading failures.
+Violating I3 on the other hand does not often compromise usefulness,
+as modern day systems are often too complex to schedule anything at a precise
+point in time; real-time and cyber-physical systems, however, may be affected.
+
+The primary purpose of distributed time synchronization algorithms is to 
+ensure I4,
+e.g.,~reading of one clock that comes before another should
+always yield a timestamp smaller than or equal to the latter to allow coherent
+comparisons.
+Maintaining I4 sometimes merits violating I3, I2, or even I1.
+
+However, for successful time synchronization, two prerequisites should hold,
+P1 and P2, which are also listed in \cref{tab:invariants}.
+P1 is especially difficult across packet-switched networks with best-effort
+quality of service due to the inherent packet-delay variation present.
+Even if P1 holds, modifying current time has repercussions (as discussed above),
+so most time synchronization programs have rules limiting under what conditions
+each invariant I1-I3 may be violated.
+
+%However, time synchronization algorithms must first address two principle
+%challenges, % to guarantee invariant I4.
+%C1 and C2, which are also listed in \cref{tab:invariants}.
+%C1 is especially difficult across packet-switched networks with best-effort
+%quality of service due to the inherent packet-delay variation present.
+%Even if C1 is tackled, modifying current time has repercussions
+%(as discussed above),
+%so most time synchronization programs have rules limiting under what conditions
+%each invariant I1-I3 may be violated.
+
+%The importance of maintaining clock invariants can be easy to underestimate. While small errors seem negligible for most timekeeping use cases, multiple production outages have been linked to timekeeping failures.
+%%One common cause is the existence of the leap-second, which,
+%%, an extra second that occurs once every few years to keep the calendar in sync with the earth's rotation.
+%The leap-second, despite its small magnitude, has been known to cause problems with navigation/collision avoidance systems, dead/live-locks occurring in the Linux kernel, and multi-hour outages in financial transaction processing systems~\cite{leap-seconds-recap}.
+%Significant engineering work has gone into mitigations, e.g. employing a leap-smear~\cite{leap-second-google, leap-second-technical-aspects} to avoid a time jump (rationale: condition I3 is less important than I1/I2), but these have in turn caused other outages,
+%%, but imperfections in the mitigation systems have in turn caused synchronization failures leading to accidental time jumps of 10 years magnitude~\cite{leap-seconds-recap}, large enough to break even ``simple'' systems that we take for granted such as SSL.
+%%The leap-second is such a significant reliability problem that recently calls are being made to abolish it altogether rather than trying to deal with its consequences~\cite{leap-second-facebook-abolish}, a resolution which has since found its way into the definition of UTC~\cite{leap-second-resolution}.
+%%Thus, the leap-second was
+%eventually leading to complete abolishment of leap-seconds via an amendment to UTC~\cite{leap-second-resolution,leap-second-facebook-abolish}.
+%When even well-vetted software such as the Linux kernel has resilience issues with one-second breaks in timing invariants, one can expect the average user application to be much less robust still, and no amount of replication can mitigate this.
+
+Throughout this study, we will determine what can be expected of time
+synchronization protocols,
+under what conditions do the invariants and prerequisites inevitably break down,
+and what this means for the ability of applications to reliably leverage
+Ethernet-based time synchronization.
+We first provide a brief overview of the
+PTP~\cite{ptp-spec} time synchronization protocol,
+which is also the primary focus of this study.
+
+%\textbf{PTP overview.}
+%%In the following,
+%We provide a brief overview of one of the well known time
+%synchronization protocol, PTP~\cite{ptp-spec},
+%which is also the primary focus of this study.
+%%which typically tries
+%%to minimize disruptions by breaking the lowest priority invariant possible to
+%%keep clocks in sync, exploiting the fact that I3 is more of a soft requirement.
+%%PTP operates across a network and has
+
+\textbf{PTP overview.}
+There are two types of endpoints, master and slave nodes.
 The goal is to synchronize the local clocks on slaves nodes with the master's
 clock.
-Obtaining a good clock signal on the master is out of scope for PTP,
+Obtaining a good clock signal on the master is out of scope, % for PTP,
 as it is assumed that the master already has a high-quality external clock source,
 e.g., a GPS signal, an atomic clock, or another PTP domain.
 
@@ -126,7 +215,7 @@ with the master's clock.
     clock offset are derived, but no local clock modifications are made.
     \textbf{S4.} \text{Clock step} attempts to directly overwrite the slave's
     local clock. This may break applications
-    (e.g., violation of invariants I2 and potentially I1 in \cref{sec:}).
+    (e.g., violation of invariants I2 and potentially I1).
     Hence, many profiles restrict this to once during initial synchronization.
     \textbf{S5.} The \textit{clock slew} stage gradually reduces the clock offset.
     The rate of change is limited, e.g., to 500 parts per million or 0.05\% in

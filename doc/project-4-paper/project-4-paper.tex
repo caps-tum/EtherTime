@@ -22,6 +22,8 @@
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[capitalize]{cleveref}
+\crefname{section}{§}{§§}
+\crefformat{section}{§#2#1#3}
 \usepackage[%
   bibstyle=ieee,
   citestyle=numeric,
@@ -45,6 +47,8 @@
 
 \input{ptp_perf_utilities.tex}
 
+% REMOVE BEFORE SUBMISSION
+\newcommand{\change}[1]{\textcolor{red}{#1}}
 
 % Page numbers: part 1
 \pagestyle{plain}
@@ -99,21 +103,22 @@
 
 \begin{abstract}
 %\todo{Page limit: 11 pages excl. references}
-Timekeeping systems are pervasive in modern computing systems.
+Precision time synchronization is pervasive in modern computing systems.
 Several specifications and implementations abound,
 such as different variants of Precision Time Protocol (PTP) and Network Time Protocol (NTP).
-To what degree can we truly rely on these implementations
+To what degree can we truly rely on these
 when they are deployed on distributed embedded systems with commodity processors and networks,
 and when failures affect correctness?
 
 To answer this question, we carry out a measurement-based performance
-evaluation of four
-time synchronization protocols (PTPd, LinuxPTP, SPTP, and Chrony) across
-four embedded hardware testbeds
-(based on two generations of Raspberry-Pis, Xilinx AVNet, and NVIDIA Jetson boards).
-
+evaluation of four time synchronization protocols
+(PTPd, LinuxPTP, SPTP, and Chrony)
+on an Ethernet-based distributed embedded system testbed,
+consisting of two generations of Raspberry Pi, Xilinx AVNet, and NVIDIA Jetson boards.
+%
 We build a novel benchmarking tool, \toolName{}, to assess their strengths and
 weaknesses in a variety of configurations.
+
 Our results show that critical challenges---including resource contention (specifically
 network and memory, CPU is less of an issue) and faults on the master node when
 the master node lacks a hardware clock---still need to be addressed before
@@ -140,7 +145,6 @@ Time Synchronization, Fault Tolerance
 \input{sections/protocols.tex}
 \input{sections/testbed.tex}
 \input{sections/ptp_overview.tex}
-\input{sections/fault_tolerance.tex}
 \input{sections/results.tex}
 \input{sections/discussion.tex}
 \input{sections/related.tex}

@@ -74,14 +74,13 @@ are often %will be %often
 characterized by dependability/redundancy requirements,
 the need to conserve all types of resources to reduce costs,
 relative isolation from the internet, %regarding connectivity.
-and increasing reliance on COTS processors.
+and increasing reliance on COTS hardware.
 This sets them apart from typical timekeeping scenarios where an external source
 (wall-clock time) is used as ground truth
 and from traditional architectures with custom time synchronization hardware~\cite{wensley1978sift,hopkins1978ftmp}.
-There is also a lack of literature collecting empirical findings
+\change{There is also a lack of literature collecting empirical findings
 across implementations and protocols, with an early study~\cite{ntp-vs-ptp} from 2006
-%focusing on technologies that were available at the time
-and more recent studies~\cite{time-enough} not incorporating fault tolerance as a central aspect.
+and more recent studies~\cite{time-enough} not incorporating fault tolerance as a central aspect.}
 
 We thus extensively study how well-known time synchronization protocols perform
 on commodity embedded processors and networks and what causes them to break.
@@ -94,7 +93,7 @@ Specifically, we offer the following main contributions.
 four implementations of prevalent Ethernet time synchronization protocols, % \todo{@Arpan Ethernet is always packet-switched, this might be confusing.},
 including the Precision Time Protocol (PTP)~\cite{ptp-spec} and Network Time Protocol (NTP)~\cite{ntpv4-spec},
 across four distinct hardware testbeds
-based on two generations of Raspberry-Pis,
+based on two generations of Raspberry Pis,
 Xilinx AVNet, and NVIDIA Jetson TK-1 boards (see \cref{tab:vendors,tbl:hardware_testbeds} for an overview).
 
 \textbf{(3)}~For each configuration,
@@ -160,10 +159,13 @@ which our study identifies in detail.
 We start by summarizing the protocols surveyed and evaluated in this study (\cref{sec:protocols})
 and the embedded platforms used for evaluation, including an overview of our testbed and our profiling tool \toolName{} (\cref{sec:testbed}).
 We then provide a brief overview of PTP and identify common invariants and failure scenarios (\cref{sec:ptp-overview}).
-We split the measurement study into to four parts: baseline, resource
-contention, fault tolerance, and resource consumption experiments
-(\cref{sec:baseline} to \cref{sec:resource_consumption}).
-Finally, we discuss the key takeaways and lessons learnt from this
-measurement study
-(\cref{sec:learnings_conclusion}),
-and related work and conclusion (\cref{sec:related,sec:conclusion}).
+We split the measurement study into to four parts:
+baseline, % (\cref{sec:baseline},
+resource contention, % (\cref{sec:resource_contention}),
+fault tolerance, % (\cref{sec:fault_tolerance}),
+and resource consumption experiments (\cref{sec:baseline} to \cref{sec:resource_consumption}, respectively).
+Finally, we provide the key takeaways and lessons learnt,
+%from this measurement study, % (\cref{sec:learnings_conclusion}),
+related work, % (\cref{sec:related}),
+and conclusion
+(\cref{sec:learnings_conclusion} to \cref{sec:conclusion}, respectively).

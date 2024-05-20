@@ -18,8 +18,8 @@ and Precision Time Protocol (PTP)~\cite{ptp-spec} for local area networks %(LANs
 Both protocols have standardized specifications and multiple implementations
 available at the time of writing.
 
-Since we are interested in evaluating time synchronization for distributed
-embedded systems,
+Since we are interested in evaluating time synchronization for
+distributed embedded systems,
 we focus on PTP and derivatives,
 which are designed for controlled environments
 %(such as fault-tolerant industrial control networks)
@@ -27,13 +27,13 @@ and have widespread adoption across multiple domains,
 %general computing and
 such as industrial control networks, robotics, and telecommunications.
 PTP also serves as a foundation for technologies such as
-IEEE Time Sensitive Networking~\cite{??}.
+IEEE Time Sensitive Networking~\cite{stanton2018distributing}.
 
 
 We surveyed available PTP implementations and found that while there are plenty of commercialized options,
 the number of viable freely available implementations is rather limited.
 \cref{tab:vendors} summarizes the results. % of our survey.
-\todo{What do you mean by viable?}
+%\todo{What do you mean by viable?}
 We excluded four vendors from our evaluation:
 \textbf{(i)}~OpenPTP~\cite{openptp} is currently unmaintained; its last activity was more than ten years ago, and it has since been commercialized.
 \textbf{(ii)}~Timebeat~\cite{timebeat} relies on heavy-weight infrastructure
@@ -64,7 +64,7 @@ developed at Meta due to difficulties they encountered with deploying PTP.
 It claims to perform on par with PTP in terms of time synchronization,
 %a comparable level of time-synchronization performance
 while consumes less resources and offering higher resilience.
-\textbf{(d)}~Finally, we include Chrony~\cite{??}, the state-of-the-art NTP implementation.
+\textbf{(d)}~Finally, we include Chrony~\cite{dinar2020ntp}, the state-of-the-art NTP implementation.
 %as a reference.
 It is by far the most feature-complete implementation of time synchronization
 among the ones we evaluated.
@@ -81,14 +81,14 @@ it serves as a baseline for other PTP implementations.
     \toprule
         & \textbf{Vendor (Version)} & \textbf{Remarks} \\
     \midrule
-        \checkmark & PTPd (2.3.1)     & Established implementation with derivatives\\
-        \checkmark & LinuxPTP (3.1.1) & Advanced capabilities but specific to Linux\\
-        \checkmark & SPTP (b27bdba)   & Meta's custom time synchronization protocol\\
-        \checkmark & Chrony (4.3)     & State-of-the-art NTP server/client\\
         --         & OpenPTP (r2)     & Unmaintained for more than 10 years \\
         --         & Timebeat (2.0.7) & Unsuitable for embedded systems \\
         --         & PPSI (6.1)       & Critical bug found \\
         --         & White Rabbit (-) & Requires specialized hardware \\
+        \checkmark & PTPd (2.3.1)     & Established implementation with derivatives\\
+        \checkmark & LinuxPTP (3.1.1) & Advanced capabilities but specific to Linux\\
+        \checkmark & SPTP (b27bdba)   & Meta's custom time synchronization protocol\\
+        \checkmark & Chrony (4.3)     & State-of-the-art NTP server/client\\
     \bottomrule
     \end{tabular}
     \label{tab:vendors}

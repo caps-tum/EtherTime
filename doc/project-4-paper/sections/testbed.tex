@@ -19,16 +19,21 @@
 
 
 We employ a hardware testbed with four different types of embedded platforms
-based on two generations of Raspberry-Pis, Xilinx AVNet, and NVIDIA Jetson boards.
+based on two generations of Raspberry-Pis~\cite{raspberry-pi-4,raspberry-pi-5},
+Xilinx AVNet~\cite{avnet-zug},
+and NVIDIA Jetson TK-1 boards~\cite{nvidia-jetson-tk1}.
 These are summarized in \cref{tbl:hardware_testbeds}.
 All platforms run Debian 12 and Ubuntu 22.04.
-%
-The Raspberry-Pi 5~\cite{??} has support for hardware
-timestamping (see \cref{sec:ptp-overview} for details) on the network interface,
-and it has an integrated real-time clock
-(RTC) that can be powered by an external battery, both of which the
-Raspberry-Pi 4 lacks~\cite{raspberry-pi-datasheets}.
-Furthermore, we utilize a
+
+%We use three Raspberry Pi 4 and three Raspberry Pi 5 boards.
+Unlike the Raspberry-Pi 4,
+Raspberry Pi 5 has support for hardware
+timestamping (see \cref{sec:ptp-overview} for details) on the network interface
+and an integrated real-time clock (RTC) that can be powered by an
+external battery~\cite{raspberry-pi-datasheets}.
+
+%Furthermore,
+We utilize a
 cluster of four Xilinx ZUBoard 1CGs, which feature a combination of ARM Cortex
 A53 and ARM Cortex R5F cores.
 These boards were adapted to run Debian with the standard Xilinx Kernels for
@@ -39,6 +44,7 @@ However, we observed that under Kernel 5.15 hardware
 timestamping only worked on the transmission path for this board but not on the
 receiving path, which degraded synchronization accuracy and prevented SPTP from
 running at all, so we replaced it with a Xilinx 6.6.10 kernel.
+
 Finally, we have NVIDIA Jetson TK-1 boards on 32-bit ARMv7,
 painstakingly updated to Ubuntu 22.04 LTS for software compability but still
 running the comparatively ancient NVIDIA-customized 3.10.40 kernel.
@@ -49,9 +55,9 @@ They include both 32- and 64-bit platforms,
 both with and without real-time clocks and hardware timestamping,
 across a range of network interface manufacturers.
 
-All embedded platforms are connected to our distributed testbed \toolName{},
-as shown in \cref{fig:testbed}.
-\todo{\toolName{} description}
+\change{All embedded platforms are connected to our distributed testbed \toolName{},
+as shown in \cref{fig:testbed}.}
+%\todo{\toolName{} description}
 %and the testbed is illustrated in \cref{fig:testbed}.
 %All clusters are controlled by programmable power delivery units so that we can simulate
 %hardware failures in each component individually.
@@ -122,6 +128,11 @@ as shown in \cref{fig:testbed}.
         \node[right=1.5cm of router, label=right:Orchestrator] (rpi-serv) {\faServer\,\faDatabase};
         \draw[] (rpi-serv) -- (router);
     \end{tikzpicture}
-    \caption{The entire evaluation setup, consisting of 3$\times$ Raspberry-Pi {\sffamily 4}, 3$\times$ Raspberry-Pi {\sffamily 5}, 4$\times$ {\sffamily X}ilinx 1BoardCG, 2$\times$ {\sffamily N}vidia Jetson TK-1. Clock synchronization operates on an isolated network, while logs are exported over a control network simultaneously used for orchestration. Power faults are controlled by smart Power Delivery Units (PDUs).}
+    \caption{The entire evaluation setup, consisting of 3$\times$ Raspberry Pi
+    {\sffamily 4}, 3$\times$ Raspberry Pi {\sffamily 5}, 4$\times$ {\sffamily
+    X}ilinx 1BoardCG, 2$\times$ {\sffamily N}vidia Jetson TK-1.
+    Clock synchronization operates on an isolated network, while logs are
+    exported over a control network simultaneously used for orchestration.
+    Power faults are controlled by smart Power Delivery Units (PDUs).}
     \label{fig:testbed}
 \end{figure}
