@@ -101,6 +101,8 @@ class PTPEndpoint(models.Model):
     fault_ratio_clock_diff_post_max_pre_median = models.FloatField(null=True)
     fault_clock_diff_return_to_normal_time = models.DurationField(null=True)
 
+    fault_clock_diff_mid_max = models.FloatField(null=True)
+
     # Resource consumption data
     resource_profile_length: timedelta = models.DurationField(null=True)
 
@@ -340,6 +342,10 @@ class PTPEndpoint(models.Model):
                     self.fault_clock_diff_return_to_normal_time = post_fault_under_2x_median.index[0] - fault_end.timestamp
                 else:
                     self.fault_clock_diff_return_to_normal_time = None
+
+            mid_fault_series = abs_clock_diff[(abs_clock_diff.index > fault_start.timestamp) & (abs_clock_diff.index < fault_end.timestamp)]
+            if not mid_fault_series.empty:
+                self.fault_clock_diff_mid_max = mid_fault_series.max()
 
         except (NoDataError, Sample.DoesNotExist):
             if self.benchmark.fault_location is not None:

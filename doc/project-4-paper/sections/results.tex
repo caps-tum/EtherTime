@@ -457,23 +457,31 @@ As observed previously, the issue is somewhat mitigated by using an external clo
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/fault/hardware/master_failover_cluster_comparison.pdf}
-    \caption{Fault Tolerance with a Failover Master}
+    \caption{Fault tolerance with a failover master. While the failover master works almost seamlessly (except for PTPd), problems arise when the original master eventually reboots and starts announcing the wrong time identically to the previous scenario without a failover.}
     \label{fig:failover}
 \end{figure}
 
 To increase service availability it is common to install a failover for any single point of failure in a distributed system so that the backup system can take over when the primary system fails. This is not only applicable for data-centers, but also applies to our minimal three node embedded setup, as a failover master will allow the two remaining nodes to remain synchronized with each other when the primary master fails. Fortunately, PTP was designed with this explicitly in mind so that the failover master does not necessarily require its own clock source, the failover node can automatically assume a slave state while the master is healthy (thus acquiring a clock signal consistent with the master's) and subsequently promote itself to a master when the original master is no longer healthy. Note that this setup is not supported in Meta's SPTP, as masters and slaves run different binaries and thus cannot switch roles dynamically (an external clock source would be necessary for two synchronized masters, we thus exclude SPTP from this evaluation).
 
-We observe that the failover master can very rapidly take over the master role in the event of a failure, causing virtually no disruption in the timing service (Figure~\ref{fig:failover}\todo{data import failed}). However, the presence of a failover master cannot mitigate the problem of the master eventually restarting and disseminating a different time, which will be picked up by the failover master and the slaves, who will proceed to again get stuck in an indefinite clock slew. Due to the way the best master clock algorithm works (the same master clock will always be selected unless a configuration is changed thus shifting the prioritization), the failover master cannot re-teach the current network time to the master that has just restarted because it does not take priority over the actual master unless the master is demoted through configuration (e.g. using data from an external clock source).
+\cmpSearchVendor{\ptpKey{fault/hardware/master_failover/rpi-4/\vendor/fault/post_max/max}}
+\cmpSave{master_failover/rpi-4}
+\cmpSearchVendor{\ptpKey{fault/hardware/master_failover/rpi-5/\vendor/fault/post_max/max}}
+\cmpSave{master_failover/rpi-5}
+We observe that the failover master can very rapidly take over the master role in the event of a failure for LinuxPTP and Chrony, causing virtually no disruption in the timing service\todo{Import numbers} (Figure~\ref{fig:failover}). PTPd is not able to use the failover successfully (error: No active masters present, resetting port). However, even for LinuxPTP and Chrony the presence of a failover master cannot mitigate the problem of the master eventually restarting and disseminating the wrong time, which will be picked up by the failover master and the slaves, causing clock spikes and stepping of familiar magnitudes: \cmpLoad{master_failover/rpi-4}\fTimeMin{\cmpMax} on Raspberry-Pi 4 and \cmpLoad{master_failover/rpi-5}\fTimeMS{\cmpMax} on Raspberry-Pi 5. Due to the way the best master clock algorithm works (the same master clock will always be selected deterministically - unless the configuration is changed thus shifting the prioritization), the failover master cannot re-teach the current network time to the master that has just restarted because it does not take priority.
+To mitigate this, three options are available: Either the master is permanently disabled upon a fault, it is reconfigured to a lower priority and thus becomes a slave, or it is ensured via an external clock source that a power fault does not cause a change in time.
 
 \subsection{Network Fault}
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/fault/hardware/switch/fault_scatter.pdf}
-    \caption{Network faults.}
+    \caption{Network faults are the easy failure mode for timing systems, as most rely on connectionless socket types and no state is lost. PTPd also does not nearly require as much reconvergence time on Xilinx and Jetson Boards when compared to the Raspberry Pi.}
+    \label{fig:network_fault}
 \end{figure}
 
-Another possible root cause for a fault is the network. While a network outage is generally bad news for reliable distributed systems that need to communicate, a total network outage is ironically easier for PTP to handle than a functioning network with high levels of congestion or a contained failure within any of the nodes. Since no state is lost, the servos are kept in holdover and PTP just has to detect when the network is available again to reconverge on the common network time. The effects of this scenario are not particularly surprising, so we do not show it separately\todo{include perhaps 1 number}.
+\cmpSearchVendorCluster{\ptpKey{fault/hardware/switch/\cluster/\vendor/fault/post_max/max}}
+Another possible root cause for a fault is the network. While a network outage is generally bad news for reliable distributed systems that need to communicate, a total network outage is ironically easier for PTP to handle than a functioning network with high levels of congestion or a contained failure within any of the nodes. Since no state is lost, the servos are kept in holdover and PTP just has to detect when the network is available again to reconverge on the common network time (Figure~\ref{fig:network_fault}). Interestingly, PTPd, which has shown itself prone to indefinite clock-slew on Raspberry-Pi 4 and 5, does not suffer the same problem on Xilinx and Jetson TK-1. Generally, the post fault clock offsets are significantly better (worst: \fVendorCluster{\cmpMaxArg} with average \fTime[-1]{\cmpMax}) than any single node failing.
 
+Overall, we observe that faults can break PTP systems in many perhaps unexpected ways, and that there is no bound on the magnitude of deviation that can occur. To get any degree of resilience out of a PTP network, careful configuration and testing is required. Vendors leave this mostly to the users by relying on profiles that the user needs to select/specialize to their requirements. Before distributed algorithms can effectively rely on network time sources on embedded systems, we need better predictability and ideally more consistent behavior across both boards and vendors.
 
 \section{Resource Consumption}
 \label{sec:resource_consumption}

@@ -205,6 +205,7 @@ class VendorComparisonCharts(TestCase):
                 entries.append(f"{prefix}/pd/q{int(quantile * 100)}/.initial={value},")
             entries.append(f"{prefix}/fault/post_max/max/.initial={item.fault_clock_diff_post_max_max},")
             entries.append(f"{prefix}/fault/post_max/min/.initial={item.fault_clock_diff_post_max_min},")
+            entries.append(f"{prefix}/fault/mid_max/max/.initial={item.fault_clock_diff_mid_max_max},")
             entries.append(f"{prefix}/fault/ratio/avg/.initial={item.fault_ratio_clock_diff_post_max_pre_median_mean},")
             entries.append(f"{prefix}/fault/secondary/post_max/max/.initial={item.secondary_fault_clock_diff_post_max_max},")
             entries.append(f"{prefix}/fault/secondary/post_max/min/.initial={item.secondary_fault_clock_diff_post_max_min},")

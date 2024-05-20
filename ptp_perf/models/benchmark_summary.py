@@ -50,6 +50,9 @@ class BenchmarkSummary(models.Model):
 
 
     # Fault statistics
+    fault_clock_diff_mid_max_max = TimeFormatFloatField(null=True)
+
+
     fault_clock_diff_post_max_max = TimeFormatFloatField(null=True)
     fault_clock_diff_post_max_min = TimeFormatFloatField(null=True)
     fault_ratio_clock_diff_post_max_pre_median_mean = models.FloatField(null=True)
@@ -158,6 +161,11 @@ class BenchmarkSummary(models.Model):
         try:
             instance.missing_samples_primary_percent = endpoints_primary[frame_column(PTPEndpoint.missing_samples_percent)].mean()
             instance.missing_samples_all_percent = endpoints_all_slaves[frame_column(PTPEndpoint.missing_samples_percent)].mean()
+        except KeyError:
+            pass
+
+        try:
+            instance.fault_clock_diff_post_max_max = endpoints_primary[frame_column(PTPEndpoint.fault_clock_diff_mid_max)].max()
         except KeyError:
             pass
 

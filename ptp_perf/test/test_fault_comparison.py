@@ -110,6 +110,10 @@ class FaultComparisonCharts(TestCase):
                     min_fault_end = min(fault.end for fault in faults)
 
                     xticks, xlabels = self.xticks_and_labels_from_fault(max_fault_start)
+                    if benchmark == BenchmarkDB.HARDWARE_FAULT_MASTER_FAILOVER:
+                        xticks = [-60, 30, 120]
+                        xticks = units.convert_all_units(units.NANOSECONDS_IN_SECOND, (value + max_fault_start.total_seconds() for value in xticks))
+                        xlabels = ["Master", "Failover", "Master"]
                     axis_container = TimeseriesAxisContainer(
                         title=cluster.name,
                         xticks=xticks,
