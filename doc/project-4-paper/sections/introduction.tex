@@ -34,8 +34,7 @@ a common notion of time enables effective profiling and optimization of distribu
 %which allows maximizing hardware utilization~\cite{hpc-understanding-bottlenecks, hpc-solving-io-bottleneck, hpc-diagnosing-io-bottlenecks}\todo{Source that refers to clock synchronization for HPC profiling}.
 For example, Google and Facebook use precision time synchronization to ensure transaction ordering across a distributed system without an application having to explicitly synchronize~\cite{corbett2013spanner,li2020sundial,ouellete2023precision}.
 These techniques also transfer to edge computing, as they allow applications to achieve more with less hardware~\cite{chen2021achieving, wang2019frame}.
-Even large scale deployments like the internet cannot function without coordinated timing,
-e.g., SSL/TLS cryptographic certificate validation, renewal of leases (DHCP) and caches (DNS, HTTP), and various state machines built into TCP and firewalls all rely on global clocks~\cite{??}.
+Even large scale deployments cannot function without coordinated timing, with the internet (SSL/TLS cryptographic certificate validation~\cite{ssl-client-warnings}), broadcast media (audio/video synchronization~\cite{time-synchronization-for-multimedia}), science (telescopes, large hadron colliders and radar~\cite{white-rabbit-astrophysics,white-rabbit-at-cern, time-synchronization-radar}) and industry (automotive and factory floor~\cite{time-synchronization-automotive,time-synchronization-factory-floor}) all relying on it.
 
 %The primary motivation for this study is fault-tolerant real-time systems.
 %, for which timing is often absolutely critical.
@@ -100,7 +99,7 @@ Xilinx AVNet, and NVIDIA Jetson TK-1 boards (see \cref{tab:vendors,tbl:hardware_
 we present the baseline performance, % (without faults and contention),
 performance under resource contention and with fault injection,
 and resource consumption and scalability results.
-%as well as fault tolerance, 
+%as well as fault tolerance,
 %experiments showing if the synchronization is resilient against adverse
 %conditions and faults,
 %possibilities of mitigating the risk of synchronization failure,
