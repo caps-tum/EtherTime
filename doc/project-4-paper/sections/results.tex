@@ -1,4 +1,4 @@
-\section{Baseline Results}
+\section{Baseline Evaluation}
 \label{sec:baseline}
 
 %\subsection{Baseline: The 1-to-1 benchmark}
@@ -58,7 +58,7 @@ Likewise, Chrony has related equivalent default settings.
     \label{fig:baseline_sample}
 \end{figure}
 
-\textbf{Measuring accurate clock offsets.}
+\textbf{Separating \textit{converging} and \textit{converged} stages.}
 \cref{fig:baseline_sample} shows a sample run of the baseline for the
 PTPd vendor.
 For all our experiments, we collect data in 20-minute runs
@@ -103,27 +103,28 @@ From Figure \ref{fig:baseline_sample} we also observe that the clock offset is m
 and \fRatio[-1]{\cmpMin} (\fVendor{\cmpMinArg}) to \fRatio[-1]{\cmpMax} (\fVendor{\cmpMaxArg}) smaller on the Raspberry-Pi 5 cluster, where hardware support is available.
 %\todo{Arpan wants something to look at but so far we only provide text.}
 
-We report the \emph{absolute} clock difference in all our evaluation, which
-represents the best estimate of the actual clock offset.
-It exhibits high skew due to the fact that the value cannot be negative, and
-the signal can experience bursts of noise which makes determining the true
-clock offset more difficult.
+%\change{We report the \emph{absolute} clock difference in all our evaluation, which
+%represents the best estimate of the actual clock offset.
+%It exhibits high skew due to the fact that the value cannot be negative, and
+%the signal can experience bursts of noise which makes determining the true
+%clock offset more difficult.}
 
 %Note that we show the \emph{absolute} clock difference, this represents the best estimate of the actual clock offset. It exhibits high skew due to the fact that the value cannot be negative, and the signal can experience bursts of noise which makes determining the true clock offset more difficult. While the actual offset estimate is useful, \PNineFive{} is more useful as a heuristic for the bound because packet delay variation as a source of noise generally dominates the actual clock drift -- using a high quantile can be thought of as a safety margin, but there is a tradeoff as last few percent are mostly noise leading to very high margins and lengthy testing required when using e.g. the maximum.
-
-\subsection{Vendors \& Systems}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{res/generated/base/vendor_comparison.pdf}
     \legend
-    \caption{Median baseline performance for all vendors, across our two hardware testbeds (left) and magnified for only the Raspberry-Pi 5 cluster (right). Error bands represent \PFive{} and \PNineFive{}, respectively.}
+    \caption{Median baseline performance for all vendors, across all four
+    embedded platforms (left) and a magnified view for Raspberry-Pi 5,
+    Xilinx, and TK-1 plarforms (right).
+    Error bars denote \PFive{} and \PNineFive{} values, respectively.}
     \label{fig:baseline}
 \end{figure}
 
 \begin{table}
 %\centering
-\caption{Baseline Clock Offsets by Vendor and System}
+\caption{Vendor- and Platform-Specific Baseline Clock Offsets}
 
     \begin{tikzpicture}[start chain=rows going below, on grid, node distance=0.35cm and 1.35cm, text width=1.8cm, text depth=0cm, align=right]
 %        \node[on chain=rows] {};
@@ -197,29 +198,90 @@ clock offset more difficult.
 %    \cmpKey{base/tk-1}{max}/\cmpKey{base/tk-1}{min},
 %)}}
 
-A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even after we patched it for 32-bit compatibility, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset between \fRelative{\cmpKey{base/minmax_difference_percentage}{min}} worse than the best performing vendor on \fCluster{\cmpKey{base/minmax_difference_percentage}{minarg}} and \fRelative[-1]{\cmpKey{base/minmax_difference_percentage}{max}} worse on \fCluster{\cmpKey{base/minmax_difference_percentage}{maxarg}}.
-\fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on the Raspberry-Pi systems, with the clock offset estimates at \fRelativeInverted{\cmpKey{base/rpi-4}{min}/\cmpKey{base/rpi-4}{mean}} and \fRelativeInverted{\cmpKey{base/rpi-5}{min}/\cmpKey{base/rpi-5}{mean}} lower than the mean performance, respectively. On the Xilinx system \fVendor{\cmpKey{base/petalinux}{minarg}} is ahead while \fVendor{\cmpKey{base/tk-1}{minarg}} leads on TK-1 systems, but save for PTPd the differences tend to be less pronounced.
-\todo{Perhaps some more numbers for Xilinx and TK-1.}
+\textbf{Vendor- and platform-specific baselines.}
+\cref{fig:baseline} shows the clock synchronization performance of four vendors
+on all four platforms, with the precise values provided in \cref{tbl:baseline}.
+SPTP could not run on TK-1 boards even after we patched them for 32-bit
+compatibility, since the Tegra 3.10 kernel is missing support for certain
+socket options required by SPTP.
 
+Among all vendors,
+\fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on
+all platforms, as clearly seen from \cref{fig:baseline} (left).
+In the best case,
+\fVendor{\cmpKey{base/rpi-4}{maxarg}}'s median clock offset is \fRelative{\cmpKey{base/minmax_difference_percentage}{min}}
+worse than the best performing vendor
+on \fCluster{\cmpKey{base/minmax_difference_percentage}{minarg}} boards
+(although all baselines are performing poorly on these boards, relative to other boards).
+In the worst case, \fVendor{\cmpKey{base/rpi-4}{maxarg}}'s median clock offset is
+\fRelative[-1]{\cmpKey{base/minmax_difference_percentage}{max}} worse
+than the best performing vendor on \fCluster{\cmpKey{base/minmax_difference_percentage}{maxarg}} boards
+(\cref{fig:baseline} shows that \fVendor{\cmpKey{base/rpi-4}{maxarg}} is a clear outlier).
+%
+%A logical first step is comparing each vendor's baseline across the systems. Figure~\ref{fig:baseline} shows the four vendors on all four clusters, with the precise values available in Table~\ref{tbl:baseline}. Unfortunately, we had to exclude SPTP on the TK-1 cluster as it was not able to run even after we patched it for 32-bit compatibility, since the 3.10 kernel is missing support for some socket options required by SPTP. We observe that \fVendor{\cmpKey{base/rpi-4}{maxarg}} has the worst synchronization offset on all systems, with a median clock offset between \fRelative{\cmpKey{base/minmax_difference_percentage}{min}} worse than the best performing vendor on \fCluster{\cmpKey{base/minmax_difference_percentage}{minarg}} and \fRelative[-1]{\cmpKey{base/minmax_difference_percentage}{max}} worse on \fCluster{\cmpKey{base/minmax_difference_percentage}{maxarg}}.
+%
+%Save for PTPd,
+Incidentally, while the differences among other vendors are less pronounced,
+\fVendor{\cmpKey{base/rpi-4}{minarg}},
+\fVendor{\cmpKey{base/petalinux}{minarg}}, and
+\fVendor{\cmpKey{base/tk-1}{minarg}}
+lead the charts on the Raspberry Pi boards, Xilinx boards, and TK-1 boards,
+respectively.
+%\fVendor{\cmpKey{base/rpi-4}{minarg}}, on the other hand, has the best performance on the Raspberry Pi boards, with the clock offset estimates at \fRelativeInverted{\cmpKey{base/rpi-4}{min}/\cmpKey{base/rpi-4}{mean}} and \fRelativeInverted{\cmpKey{base/rpi-5}{min}/\cmpKey{base/rpi-5}{mean}} lower than the mean performance, respectively. On the Xilinx system \fVendor{\cmpKey{base/petalinux}{minarg}} is ahead while \fVendor{\cmpKey{base/tk-1}{minarg}} leads on TK-1 systems, but save for PTPd the differences tend to be less pronounced.
+%\todo{Perhaps some more numbers for Xilinx and TK-1.}
+%
 \assert{\cmpKey{base/rpi-4}{minarg}}{chrony}%
-That Chrony as a regular NTP client can match or sometimes outperform all the tested PTP clients might come as a surprise, with PTP being engineered specifically for precision, but Chrony is very much state-of-the-art and can take advantage of the same hardware acceleration that our PTP clients can while providing a lot more features\todo{this claim might need to be backed up}.
+That Chrony, an NTP client, can match or sometimes outperform all PTP clients
+is a surprise, as PTP is engineered specifically for precision.
+However, Chrony is very much state-of-the-art and can
+take advantage of hardware acceleration similar to our PTP clients,
+\change{while providing many more features~\cite{??}.}
+%\todo{this claim might need to be backed up}.
 
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
 
-The most noticeable effect on the synchronization quality is the choice of hardware, which is expected since the Raspberry-Pi 5 and Xilinx boards offer hardware timestamping while the Raspberry-Pi 4 and TK-1 do not. The newer hardware's performance advantage ranges from \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}\todo{This only consider R-Pi-4 vs R-Pi 5}. Curiously, although PTPd does not support hardware timestamping and thus cannot use hardware capabilities, it still offers around \fPercentage{\ptpKey{cmp/base/rpi-5/min}/\ptpKey{base/rpi-5/ptpd/q50}} of the performance of the top contender \fVendor{\ptpKey{cmp/base/rpi-5/minarg}}. While the difference is significant, it is not orders of magnitude better than the software-only implementation, indicating that hardware timestamps alone are not a cure-all solution to clock-synchronization and cannot eliminate timing variations entirely.
+The most noticeable effect on the synchronization quality is the choice of
+hardware.
+Both Raspberry-Pi 5 and Xilinx boards offer hardware timestamping
+(while the Raspberry-Pi 4 and TK-1 do not),
+hence their performance advantage ranges from \fRatio{\cmpMin} for
+\fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}\todo{This
+only consider R-Pi-4 vs R-Pi 5}.
+Interestingly, PTPd is able to take advantage of the newer hardware
+even though it does not support hardware timestamping,
+indicating that hardware timestamps alone are not a cure-all solution to
+clock synchronization and cannot eliminate timing variations~entirely.
+%The most noticeable effect on the synchronization quality is the choice of hardware, which is expected since the Raspberry-Pi 5 and Xilinx boards offer hardware timestamping while the Raspberry-Pi 4 and TK-1 do not. The newer hardware's performance advantage ranges from \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}\todo{This only consider R-Pi-4 vs R-Pi 5}. Curiously, although PTPd does not support hardware timestamping and thus cannot use hardware capabilities, it still offers around \fPercentage{\ptpKey{cmp/base/rpi-5/min}/\ptpKey{base/rpi-5/ptpd/q50}} of the performance of the top contender \fVendor{\ptpKey{cmp/base/rpi-5/minarg}}. While the difference is significant, it is not orders of magnitude better than the software-only implementation, indicating that hardware timestamps alone are not a cure-all solution to clock-synchronization and cannot eliminate timing variations entirely.
 
 %\todo{
 %Advantages: \foreach \vendor in {ptpd,linuxptp,sptp,chrony}{\fRatio{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}} }
 %}
 
-\cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
-Another aspect to notice is the difference between the median clock offset and \PNineFive{}. Without hardware support, this difference can be rather large and has a high spread (between \fRatio{\cmpMin} for the most stable vendor \fVendor{\cmpMinArg} and \fRatio{\cmpMax} for the least stable vendor \fVendor{\cmpMaxArg}),
-whereas the magnitude is smaller when hardware support is offered on the Raspberry-Pi %
+Hardware support also helps reduce the variance.
+For example, without hardware support,
+the difference between the median and \PNineFive{} values ranges from
+\fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}.
+This is also evidently clear from the relatively tall error bars in
+\cref{fig:baseline} (left) for Raspberry Pi 4 and Jetson \mbox{TK-1}.
+Raspberry Pi 5, with hardware support, brings down the difference to
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
-(\fRatio[1]{\cmpMin} \fVendor{\cmpMinArg} -- \fRatio[1]{\cmpMax} \fVendor{\cmpMaxArg}).
-This means that not only is the average performance improved, but the magnitude of outliers is reduced, which is especially important when considering the dependability aspect. For applications that need to rely on timing sources, this shows that hardware acceleration can make a significant impact, but of course this comes with the price tag associated with a more capable network interface.
+\fRatio[1]{\cmpMax} for \fVendor{\cmpMaxArg} and \fRatio[1]{\cmpMin} for \fVendor{\cmpMinArg}.
+This means that not only is the average performance improved, but the magnitude
+of outliers is reduced, which is especially important when considering the
+dependability aspect.
+Hardware acceleration hence can make a significant impact
+for applications that must rely on timing sources for safety
+(of course these benefits come with a higher price tag).
+%associated with a more capable network interface.
 
-\subsection{Reproducibility}
+%\cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
+%Another aspect to notice is the difference between the median clock offset and \PNineFive{}. Without hardware support, this difference can be rather large and has a high spread (between \fRatio{\cmpMin} for the most stable vendor \fVendor{\cmpMinArg} and \fRatio{\cmpMax} for the least stable vendor \fVendor{\cmpMaxArg}),
+%whereas the magnitude is smaller when hardware support is offered on the Raspberry-Pi %
+%\cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
+%(\fRatio[1]{\cmpMin} \fVendor{\cmpMinArg} -- \fRatio[1]{\cmpMax} \fVendor{\cmpMaxArg}).
+%This means that not only is the average performance improved, but the magnitude of outliers is reduced, which is especially important when considering the dependability aspect. For applications that need to rely on timing sources, this shows that hardware acceleration can make a significant impact, but of course this comes with the price tag associated with a more capable network interface.
+
+%\subsection{Reproducibility}
 
 % Ordering: Requires ptpKeyPrefix to be intact
 \begin{figure}
@@ -257,6 +319,7 @@ This means that not only is the average performance improved, but the magnitude 
 \newcommand{\baselineTotalMinutesRuntime}{\numBaselineMeasurements*4*2*20}
 \newcommand{\numSamplesPerRunApprox}{\fpeval{round(20*60)}}
 
+\textbf{Reproducibility.}
 A key challenge with conducting quality performance studies aggregating data to increase information density while avoiding hiding important trends and outliers. While comparing clock-synchronization quantiles between vendors is certainly useful, in reality this does not tell the entire story because each baseline consists of a number of independent measurements, which in turn consists of around \numSamplesPerRunApprox{} samples, all of which are affected by multiple sources of noise. As it turns out (Figure~\ref{fig:baseline_reproducibility}), not only is there a significant amount of noise during each run\todo{Find a good metric to use here, perhaps std-dev + chebyshev law to deduce some intervals}, but there are also discrepancies between measurement runs. This leads to completely different results for identical measurement runs despite decent measurement lengths and number of samples.
 \cmpSearchVendor{\ptpKey{\vendor/max}/\ptpKey{\vendor/min}}
 
