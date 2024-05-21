@@ -1,5 +1,9 @@
 ![EtherTime](doc/project/res/logo_nobg.svg)
 # EtherTime: Precision Time Synchronization Evaluation Tools
+![Static Badge](https://img.shields.io/badge/Database%20-%20operational%20-%20green)
+![Static Badge](https://img.shields.io/badge/Profiles%20collected%20-%201890%20-%20blue)
+![Static Badge](https://img.shields.io/badge/Log%20Records%20-%2013M%20-%20blue)
+
 ### Overview
 
 EtherTime is an open-source benchmarking tool developed to evaluate the performance of various time synchronization protocols on Ethernet-based distributed systems. This tool is designed to assess the strengths and weaknesses of the supported implementations in different configurations, focusing on dependability and fault tolerance.
