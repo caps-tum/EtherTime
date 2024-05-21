@@ -201,7 +201,7 @@ and \fRatio[-1]{\cmpMin} (\fVendor{\cmpMinArg}) to \fRatio[-1]{\cmpMax} (\fVendo
 \textbf{Vendor- and platform-specific baselines.}
 \cref{fig:baseline} shows the clock synchronization performance of four vendors
 on all four platforms, with the precise values provided in \cref{tbl:baseline}.
-SPTP could not run on TK-1 boards even after we patched them for 32-bit
+SPTP could not run on TK-1 boards even after we patched it for 32-bit
 compatibility, since the Tegra 3.10 kernel is missing support for certain
 socket options required by SPTP.
 
@@ -263,7 +263,7 @@ Hardware support also helps reduce the variance.
 For example, without hardware support,
 the difference between the median and \PNineFive{} values ranges from
 \fRatio{\cmpMin} for \fVendor{\cmpMinArg} to \fRatio{\cmpMax} for \fVendor{\cmpMaxArg}.
-This is also evidently clear from the relatively tall error bars in
+This is also evident from the relatively tall error bars in
 \cref{fig:baseline} (left) for Raspberry Pi 4 and Jetson \mbox{TK-1}.
 Raspberry Pi 5, with hardware support, brings down the difference to
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
