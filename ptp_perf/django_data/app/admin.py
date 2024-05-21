@@ -315,8 +315,11 @@ def get_endpoint_admin_link(benchmark_id, vendor_id, cluster_id, profile_id: int
         'profile__cluster_id': cluster_id,
         'profile__vendor_id': vendor_id,
     }
-    if endpoint_type is not None:
+    if endpoint_type == EndpointType.SPECIAL_SLAVE_ANY:
+        filters['endpoint_type__contains'] = 'SLAVE'
+    elif endpoint_type is not None:
         filters['endpoint_type__exact'] = endpoint_type.value
+
     if profile_id is not None:
         filters['profile_id'] = profile_id
 
@@ -356,7 +359,7 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
         summary = BenchmarkSummary.objects.get(pk=pk)
         return redirect(
             get_endpoint_admin_link(summary.benchmark_id, summary.vendor_id, summary.cluster_id,
-                                    endpoint_type=EndpointType.PRIMARY_SLAVE)
+                                    endpoint_type=EndpointType.SPECIAL_SLAVE_ANY)
         )
     endpoints.short_description = 'Endpoints'
     endpoints.url_path = 'endpoints'

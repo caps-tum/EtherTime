@@ -9,3 +9,6 @@ class EndpointType(models.TextChoices):
     TERTIARY_SLAVE = 'TERTIARY_SLAVE'
     ORCHESTRATOR = 'ORCHESTRATOR'
     SWITCH = "SWITCH"
+
+    # Special value that should match any slave, it should not be directly assigned to endpoints
+    SPECIAL_SLAVE_ANY = "SLAVE_ANY"
