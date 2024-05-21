@@ -88,7 +88,7 @@ class VendorComparisonCharts(TestCase):
                     )],
                     title="Baseline Performance by Vendor and Cluster",
                     xticks=[1.5, 6, 10.5, 15],
-                    xticklabels=["R-Pi 4", "R-Pi 5", "Petalinux", "TK-1"],
+                    xticklabels=["R-Pi 4", "R-Pi 5", "Xilinx", "TK-1"],
                     ylimit_top=50 * units.us,
                 ),
                 TimeAxisContainer(

@@ -238,6 +238,8 @@ take advantage of hardware acceleration similar to our PTP clients,
 \change{while providing many more features~\cite{??}.}
 %\todo{this claim might need to be backed up}.
 
+\cmpSearchVendorNoSPTP{\ptpKey{base/tk-1/\vendor/q50}/\ptpKey{base/petalinux/\vendor/q50}}
+\cmpSave{baseline/advantage_2}
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q50}/\ptpKey{base/rpi-5/\vendor/q50}}
 
 The most noticeable effect on the synchronization quality is the choice of
@@ -269,7 +271,7 @@ Raspberry Pi 5, with hardware support, brings down the difference to
 This means that not only is the average performance improved, but the magnitude
 of outliers is reduced, which is especially important when considering the
 dependability aspect.
-Hardware acceleration hence can make a significant impact
+Hardware acceleration can hence make a significant impact
 for applications that must rely on timing sources for safety
 (of course these benefits come with a higher price tag).
 %associated with a more capable network interface.
@@ -295,7 +297,11 @@ for applications that must rely on timing sources for safety
 \end{figure}
 
 
+\cmpSearchVendorCluster{(\ptpKey{base/\cluster/\vendor/q100}-\ptpKey{base/\cluster/\vendor/q5})/\ptpKey{base/\cluster/\vendor/q50}}
+
 {
+
+% Static data :/
 \pgfkeys{
     /reproducibility/rpi-4/.cd,
     ptpd/min/.initial={0.000005329},
@@ -314,7 +320,6 @@ for applications that must rely on timing sources for safety
 \renewcommand{\ptpKeyPrefix}{/reproducibility/rpi-4}
 
 
-
 \newcommand{\numBaselineMeasurements}{10}
 \newcommand{\baselineTotalMinutesRuntime}{\numBaselineMeasurements*4*2*20}
 \newcommand{\numSamplesPerRunApprox}{\fpeval{round(20*60)}}
@@ -322,7 +327,6 @@ for applications that must rely on timing sources for safety
 \textbf{Reproducibility.}
 A key challenge with conducting quality performance studies aggregating data to increase information density while avoiding hiding important trends and outliers. While comparing clock-synchronization quantiles between vendors is certainly useful, in reality this does not tell the entire story because each baseline consists of a number of independent measurements, which in turn consists of around \numSamplesPerRunApprox{} samples, all of which are affected by multiple sources of noise. As it turns out (Figure~\ref{fig:baseline_reproducibility}), not only is there a significant amount of noise during each run\todo{Find a good metric to use here, perhaps std-dev + chebyshev law to deduce some intervals}, but there are also discrepancies between measurement runs. This leads to completely different results for identical measurement runs despite decent measurement lengths and number of samples.
 \cmpSearchVendor{\ptpKey{\vendor/max}/\ptpKey{\vendor/min}}
-
 \assert{\cmpMaxArg}{ptpd}
 We observe that in absolute terms, PTPd is the main source of variance for both median/\PNineFive{} observed clock offsets and path delays across independent measurements. A simple restart of the PTPd client can suddenly cause the median latency to jump from \fTimeKey{ptpd/min} up to \fTimeKey{ptpd/max}, which corresponds to an increase of \fRelative[-1]{\ptpKey{ptpd/max}/\ptpKey{ptpd/min}} not only momentarily, but throughout an entire run of 20 minutes.
 %This already comes uncomfortably close to our safety factor of \safetyMargin, and we have not even started stressing the system yet.
@@ -520,9 +524,10 @@ Apart from resource contention, faults are another key threat to the functioning
 
 \begin{figure}
     \centering
+    {\sffamily\footnotesize\hspace{1.5cm} Software Fault Behavior}
     \includegraphics[width=\linewidth]{res/generated/fault/software/slave_rpi-4_peer_comparison.pdf}
     \legend
-    \caption{Faults induced by a software crash on Raspberry-Pi 4, with a faulty client (top) and a second client as a control (bottom). Just after the fault, an increased offset can be observed as PTP tries to resynchronize the clock. Since these offsets occur randomly, we superimpose \fNum{\bSoftwareFaultNumProfiles} trials for each vendor so that the worst case can be seen.}
+    \caption{Faults induced by a software crash (from minute 0 to minute 1) on Raspberry-Pi 4, with a faulty client (top) and a second client as a control (bottom). Just after the fault, an increased offset can be observed as PTP tries to resynchronize the clock. Since these offsets occur randomly, we superimpose \fNum{\bSoftwareFaultNumProfiles} trials for each vendor so that the worst case can be seen.}
     \label{fig:software_fault}
 \end{figure}
 
@@ -536,7 +541,7 @@ From the results (Figure~\ref{fig:software_fault} top), we can determine that th
 
 \cmpSearch{\vendor}{ptpd,linuxptp}{\ptpKey{fault/software/slave/rpi-4/\vendor/fault/secondary/post_max/max}}
 
-In high-reliability deployments, it is important to ensure that faults stay contained and cannot propagate. In terms of PTP, this means that slave-side faults should not affect the synchronization quality of other slaves. To verify that this is the case, we attached a second control node to the same master (Figure~\ref{fig:software_fault} bottom\todo{Add graphic title}), which shows us some mixed behavior: There is no meaningful degradation of the performance of the secondary slave for PTPd and LinuxPTP (maximum value after fault \fTime[0]{\cmpMax} for \fVendor{\cmpMaxArg} is smaller than the baseline), but SPTP and Chrony show difficult to explain behavior: among all trials, we observe temporary disconnects between 7\,min--2\,min before the fault and from 1\,min after the fault to the end of the profile at 4\,min for SPTP (showing error: failed to get timestamp of last packet: no TX timestamp found after 10 tries (500 ms)). This is especially notable because Chrony shows exactly the same outages at the same times (error: can't synchronise: no selectable sources), consistently reproducible to second accuracy (the visual difference results because SPTP converges slowly and thus most of the trajectory is out of view).
+In high-reliability deployments, it is important to ensure that faults stay contained and cannot propagate. In terms of PTP, this means that slave-side faults should not affect the synchronization quality of other slaves. To verify that this is the case, we attached a second control node to the same master (Figure~\ref{fig:software_fault} bottom), which shows us some mixed behavior: There is no meaningful degradation of the performance of the secondary slave for PTPd and LinuxPTP (maximum value after fault \fTime[0]{\cmpMax} for \fVendor{\cmpMaxArg} is smaller than the baseline), but SPTP and Chrony show difficult to explain behavior: among all trials, we observe temporary disconnects between 7\,min--2\,min before the fault and from 1\,min after the fault to the end of the profile at 4\,min for SPTP (showing error: failed to get timestamp of last packet: no TX timestamp found after 10 tries (500 ms)). This is especially notable because Chrony shows exactly the same outages at the same times (error: can't synchronise: no selectable sources), consistently reproducible to second accuracy (the visual difference results because SPTP converges slowly and thus most of the trajectory is out of view).
 \assertRange{\cmpMax}{0.000010}{0.000060}
 
 One important caveat is to be noted for PTPd: when multiple software faults start occurring (not necessarily in close proximity to each other), problems can start propagating. On our test systems, we observe that upon exactly the third software fault, PTPd will cause the network interface to fail. In fact, no amount of manually bringing the network down and back up or reloading the network interface driver can solve this problem, up until the system is restarted by hand. This is especially critical as it implies that not only will the timing system fail, but it will simultaneously bring down any applications that need to communicate over the interface as well. Ironically, in this case, rather than support the deployment of high-reliability distributed systems, PTPd will actually harm said reliability. We thus advise caution when deploying PTPd or any of its derivatives that may contain the same bug.
@@ -637,7 +642,7 @@ Overall, we observe that faults can break PTP systems in many perhaps unexpected
 \legend
 \end{center}
 
-{\footnotesize {\bfseries Note:} The top end of the error band is the worst node's median/\PNineFive{}, the bottom end the best node's median/\PNineFive{}, respectively.}
+\parbox{\linewidth}{\footnotesize {\bfseries Note:} Differing from previous visualizations, this shows the mean of each node's median/\PNineFive{} clock offset, with the top end of the error band as the worst node's median/\PNineFive{} and the bottom end the best node's median/\PNineFive{}, respectively.}
 \caption{Synchronization quality for increasing numbers of nodes, with clock difference median (left) and \PNineFive{} (center). As the number of nodes increases, some slaves start to occasionally lose the synchronization signal (right).}
 \label{fig:resource_consumption_quality}
 \end{figure}

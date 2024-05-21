@@ -135,7 +135,7 @@ class ResourceConsumptionChartTest(TestCase):
                                 for endpoint in resource_consumption_slaves
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
-                            # estimator='mean',
+                            estimator='mean',
                         )
                     ],
                     title="Median",
@@ -156,7 +156,7 @@ class ResourceConsumptionChartTest(TestCase):
                                 for endpoint in resource_consumption_slaves
                             ], columns=['x', 'hue', 'y']),
                             column_x='x', column_y='y', column_hue='hue',
-                            # estimator='mean',
+                            estimator='mean',
                             # errorbar=('pi', 90),
                         )
                     ],
