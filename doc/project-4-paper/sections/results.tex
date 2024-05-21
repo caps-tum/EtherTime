@@ -268,12 +268,11 @@ This is also evidently clear from the relatively tall error bars in
 Raspberry Pi 5, with hardware support, brings down the difference to
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/q95}/\ptpKey{base/rpi-5/\vendor/q50}}%
 \fRatio[1]{\cmpMax} for \fVendor{\cmpMaxArg} and \fRatio[1]{\cmpMin} for \fVendor{\cmpMinArg}.
-This means that not only is the average performance improved, but the magnitude
-of outliers is reduced, which is especially important when considering the
-dependability aspect.
-Hardware acceleration can hence make a significant impact
-for applications that must rely on timing sources for safety
-(of course these benefits come with a higher price tag).
+Hardware support can thus have a significant impact
+on applications that must rely on time synchronization for safety;
+not only does it improve the average synchronization performance,
+but it also reduces the magnitude of outliers.
+%(of course these benefits come with a higher price tag).
 %associated with a more capable network interface.
 
 %\cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/q95}/\ptpKey{base/rpi-4/\vendor/q50}}%
