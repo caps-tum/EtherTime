@@ -55,8 +55,8 @@ They include both 32- and 64-bit platforms,
 both with and without real-time clocks and hardware timestamping,
 across a range of network interface manufacturers.
 
-\change{All embedded platforms are connected to our distributed testbed \toolName{},
-as shown in \cref{fig:testbed}.}
+\change{All embedded platforms are connected to our distributed testbed running \toolName{},
+as shown in \cref{fig:testbed}.} \toolName{} is implemented in Python and consists of three central components: The orchestrator bootstraps the experimental environment, manages the smart PDUs, resets workers upon simulated failures and hosts the database used for streaming logs from the boards. The worker component runs on each board and manages the PTP client and configuration, timestamps logs using a system-independent clock for storage in the database, and collects system resource metrics. Finally, the data processing pipeline on the orchestrator runs offline and converts logs to timeseries, aggregates them into profiles and summaries, and prepares it for tabular and graphical display in the \toolName{} web interface, where the dataset can be interactively queried via graphical Django filters and query expressions. The architecture of \toolName{} allows us to perform fair and comparable experiments across our existing vendors and boards, is easily extensible to new vendors or boards, and enables us to effectively process and analyze over 12 million log records collected in our data set.
 %\todo{\toolName{} description}
 %and the testbed is illustrated in \cref{fig:testbed}.
 %All clusters are controlled by programmable power delivery units so that we can simulate
@@ -99,8 +99,8 @@ as shown in \cref{fig:testbed}.}
         \node[] (switch2) at (5.5, 1) {\faNetworkWired{}};
         \draw (switch1) -- (switch2) node [midway, below] {Isolated PTP Network};
 
-        \node[below left=0.5cm and 0.75cm of rpi-4-6] (psu-1) {\raisebox{1ex}{\tiny\faWifi}\faBolt};
-        \node[below right=0.5cm and 0.75cm of tk1-2] (psu-2) {\faBolt\raisebox{1ex}{\tiny\faWifi}};
+        \node[below left=0.5cm and 0.65cm of rpi-4-6] (psu-1) {\raisebox{1ex}{\tiny\faWifi}\faBolt};
+        \node[below right=0.5cm and 0.65cm of tk1-2] (psu-2) {\faBolt\raisebox{1ex}{\tiny\faWifi}};
 
         \node[below right=0.75 and 0.75cm of psu-1] (psu-1-label) {Smart PDU};
         \draw[dashed] (psu-1-label) -- (psu-1);
