@@ -1,6 +1,6 @@
 
 # Spend some Time on Time / It is Time to Talk about Time
-_Vincent Bode, Arpan Gujarati_
+_< Vincent Bode, Arpan Gujarati >_
 
 ### Motivation
 
