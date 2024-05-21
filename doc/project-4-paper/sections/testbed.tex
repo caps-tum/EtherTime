@@ -55,12 +55,29 @@ They include both 32- and 64-bit platforms,
 both with and without real-time clocks and hardware timestamping,
 across a range of network interface manufacturers.
 
-\change{All embedded platforms are connected to our distributed testbed running \toolName{},
-as shown in \cref{fig:testbed}.} \toolName{} is implemented in Python and consists of three central components: The orchestrator bootstraps the experimental environment, manages the smart PDUs, resets workers upon simulated failures and hosts the database used for streaming logs from the boards. The worker component runs on each board and manages the PTP client and configuration, timestamps logs using a system-independent clock for storage in the database, and collects system resource metrics. Finally, the data processing pipeline on the orchestrator runs offline and converts logs to timeseries, aggregates them into profiles and summaries, and prepares it for tabular and graphical display in the \toolName{} web interface, where the dataset can be interactively queried via graphical Django filters and query expressions. The architecture of \toolName{} allows us to perform fair and comparable experiments across our existing vendors and boards, is easily extensible to new vendors or boards, and enables us to effectively process and analyze over 12 million log records collected in our data set.
-%\todo{\toolName{} description}
-%and the testbed is illustrated in \cref{fig:testbed}.
-%All clusters are controlled by programmable power delivery units so that we can simulate
-%hardware failures in each component individually.
+All embedded platforms are connected to our distributed testbed \toolName{},
+as shown in \cref{fig:testbed}.
+\toolName{} is implemented in Python and consists of three central components:
+a central \textit{orchestrator}, distributed \textit{workers}, and a
+central \textit{data processing} engine.
+The orchestrator bootstraps the
+experimental environment, manages the smart power delivery units (PDUs),
+resets workers upon simulated failures,
+and hosts the database used for streaming logs from the boards.
+Each worker manages the PTP client and configuration on each board,
+timestamps logs using a system-independent clock for storage in the database,
+and collects system resource metrics.
+Note that clock synchronization operates on an isolated network, while logs are
+exported over a control network simultaneously used for orchestration.
+Finally, the data processing engine runs offline and converts logs to timeseries,
+aggregates them into profiles and summaries, and prepares it for tabular and
+graphical display in the \toolName{} web interface, where the dataset can be
+interactively queried via graphical Django filters and query expressions.
+\toolName{}'s architecture enables fair and comparable experiments across our
+existing vendors and boards, and is easily extensible to new vendors or boards.
+We have already effectively collected, processed, and analyzed over 12 million
+log records in our data set.
+
 
 %To conduct our evaluation we employ a total of four hardware testbeds (\cref{tbl:hardware_testbeds,fig:testbed}) running Debian 12 and Ubuntu 22.04.
 %%These include a cluster consisting of three Raspberry Pi 4 attached to an isolated wired Ethernet network via a single Gigabit Ethernet switch and a second cluster consisting of three Raspberry Pi 5 in the same hardware layout.
@@ -130,9 +147,9 @@ as shown in \cref{fig:testbed}.} \toolName{} is implemented in Python and consis
     \end{tikzpicture}
     \caption{The entire evaluation setup, consisting of 3$\times$ Raspberry Pi
     {\sffamily 4}, 3$\times$ Raspberry Pi {\sffamily 5}, 4$\times$ {\sffamily
-    X}ilinx 1BoardCG, 2$\times$ {\sffamily N}vidia Jetson TK-1.
-    Clock synchronization operates on an isolated network, while logs are
-    exported over a control network simultaneously used for orchestration.
-    Power faults are controlled by smart Power Delivery Units (PDUs).}
+    X}ilinx 1BoardCG, 2$\times$ {\sffamily N}vidia Jetson TK-1.}
+    %Clock synchronization operates on an isolated network, while logs are
+    %exported over a control network simultaneously used for orchestration.}
+    %Power faults are controlled by smart Power Delivery Units (PDUs).}
     \label{fig:testbed}
 \end{figure}
