@@ -1,14 +1,19 @@
 ![EtherTime](doc/project/res/logo_nobg.svg)
 # EtherTime: Precision Time Synchronization Evaluation Tools
+![Static Badge](https://img.shields.io/badge/Database%20-%20operational%20-%20green)
+![Static Badge](https://img.shields.io/badge/Profiles%20collected%20-%201890%20-%20blue)
+![Static Badge](https://img.shields.io/badge/Log%20Records%20-%2013M%20-%20blue)
+
 ### Overview
 
 EtherTime is an open-source benchmarking tool developed to evaluate the performance of various time synchronization protocols on Ethernet-based distributed systems. This tool is designed to assess the strengths and weaknesses of the supported implementations in different configurations, focusing on dependability and fault tolerance.
 
 ### Key Features
 
-- **Cross-Vendor Evaluation**: Supports fair and comparable evaluation of four implementations of time synchronization protocols.
-- **Distributed Testbed**: Operates on a testbed consisting of diverse hardware, including Raspberry Pi, Xilinx AVNet, and NVIDIA Jetson boards.
-- **Automatic Resource Contention and Fault Injection**: Evaluates performance under resource contention (Network, CPU, Cache, etc.) and with fault injection to simulate real-world conditions.
+- **Cross-Vendor Evaluation**: ⌚⏰⏱⏲ Supports fair and comparable evaluation of four implementations of time synchronization protocols.
+- **Distributed Testbeds**: 🖥💻 Orchestrates diverse testbeds fully automatically via SSH and Python, proven to work with Raspberry Pi, Xilinx AVNet, and NVIDIA Jetson embedded boards.
+- **Automatic Resource Contention and Fault Injection**:📶⚡ Evaluates performance under resource contention (Network, CPU, Cache, etc.) and with fault injection to simulate real-world conditions.
+- **Interactive Visualization**: 📈📊 Leveraging Bokeh as an in-browser renderer, EtherTime can display interactive timeseries of your profiles, which you can explore to your hearts content. 
 
 ### Time Synchronization Protocols
 
@@ -40,15 +45,16 @@ EtherTime performs evaluations across several sets of benchmarks:
 
 To start using EtherTime, follow these steps:
 
-1. **Clone the Repository**:
-    ```bash
-    git clone https://github.com/[redacted]/ethertime.git
-    cd ethertime
-    ```
-   
-2. **Install Dependencies:**
+**Clone the Repository**:
+ 
+```bash
+ git clone https://github.com/[redacted]/ethertime.git
+ cd ethertime
+ ```
+
+**Install Dependencies:**
   
-EtherTime depends on Python3.11 or greater. Additionally, the vendor packages need to be installed for each vendor that will be evaluated. For resource contention tests, Stress-NG and iPerf are required.
+EtherTime depends on Python3.11 or greater and requires a Django compatible database (see below for setting up EtherTime with PostgreSQL). Additionally, PTP/NTP vendor packages need to be installed for each vendor that will be evaluated. For resource contention tests, Stress-NG and iPerf are required. For automatic power failure emulation, Tuya smart power strips are required.
 
 ```bash
 sudo apt update
@@ -77,21 +83,21 @@ Finally, Python libraries need to be installed.
 pip3 install -r requirements.txt
 ```
 
-**Configuring the Database (PostgreSQL)**
+### Configuring the Database (PostgreSQL)
 
 EtherTime relies on Django as its database abstraction layer and to serve graphics and data tables. To start profiling, a database that is accessible from all nodes in the testbed is required. We use PostgreSQL but any other supported database should also be compatible.
 
 **Note**: only one database is required for the entire cluster.
 
 To set up PostgreSQL for use with EtherTime, follow these steps:
-1. Install PostgreSQL
+
+#### Install PostgreSQL
 
 First, install PostgreSQL on your system.
 
 On Ubuntu:
 
 ```bash
-
 sudo apt update
 sudo apt install postgresql postgresql-contrib
 ```
@@ -106,7 +112,7 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
-2. Configure PostgreSQL
+#### Configure PostgreSQL
 
 Start the PostgreSQL service and ensure it runs at startup.
 
@@ -117,7 +123,7 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
-3. Create a PostgreSQL Database and User
+#### Create a PostgreSQL Database and User
 
 Log in to the PostgreSQL shell as the postgres user:
 
@@ -132,6 +138,7 @@ Create a new database and user for EtherTime:
 CREATE DATABASE ethertimedb;
 CREATE USER ethertimeuser WITH PASSWORD 'ethertimepassword';
 ```
+**Note:** Username, database name and password can be named freely and should be chosen apprioriately.
 
 Set the correct privileges:
 
@@ -142,9 +149,9 @@ ALTER ROLE ethertimeuser SET timezone TO 'UTC';
 GRANT ALL PRIVILEGES ON DATABASE ethertimedb TO ethertimeuser;
 ```
 
-5. Configure EtherTime Django Settings
+#### Configure EtherTime Django Settings
 
-Edit your EtherTime project's settings.py file to configure the database settings.
+Edit your EtherTime project's settings.py file to configure the database settings. Make sure to use your own host, database names, users and passwords.
 
 ```python
 
@@ -159,16 +166,17 @@ DATABASES = {
     }
 }
 ```
-6. Apply Migrations
 
-Apply the initial migrations to set up the database schema.
+#### Apply Migrations
+
+To set up the database for use with EtherTime, we need to import the provided database schema.
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-7. Verify the Setup
+#### Verify the Setup
 
 Run the Django development server to verify that everything is configured correctly.
 
@@ -176,11 +184,15 @@ Run the Django development server to verify that everything is configured correc
 python manage.py runserver
 ```
 
-Visit http://127.0.0.1:8000/ in your web browser. If everything is set up correctly, EtherTime should now be running using the PostgreSQL database.
+Visit http://127.0.0.1:8000/ in your web browser. If everything is set up correctly, EtherTime should now be running using your PostgreSQL database, and your system will soon be ready to start benchmarking.
 
 **Additional Configuration**
 
-For production deployment, you might want to perform additional configurations such as setting up a firewall, configuring SSL, and optimizing the PostgreSQL settings. Refer to the official Django documentation and PostgreSQL documentation for more detailed information.
+For production deployments, you might want to perform additional configuration such as setting up a firewall, configuring SSL, and optimizing the PostgreSQL settings. Refer to the official Django documentation and PostgreSQL documentation for more detailed information.
+
+### Configuring EtherTime
+
+To allow EtherTime to use your testbed, the network layout and nodes used need to be specified.
 
 **Configure the Testbed:**
 
