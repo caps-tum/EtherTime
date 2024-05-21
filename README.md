@@ -10,9 +10,10 @@ EtherTime is an open-source benchmarking tool developed to evaluate the performa
 
 ### Key Features
 
-- **Cross-Vendor Evaluation**: Supports fair and comparable evaluation of four implementations of time synchronization protocols.
-- **Distributed Testbed**: Operates on a testbed consisting of diverse hardware, including Raspberry Pi, Xilinx AVNet, and NVIDIA Jetson boards.
-- **Automatic Resource Contention and Fault Injection**: Evaluates performance under resource contention (Network, CPU, Cache, etc.) and with fault injection to simulate real-world conditions.
+- **Cross-Vendor Evaluation**: ⌚⏰⏱⏲ Supports fair and comparable evaluation of four implementations of time synchronization protocols.
+- **Distributed Testbeds**: 🖥💻 Orchestrates diverse testbeds fully automatically via SSH and Python, proven to work with Raspberry Pi, Xilinx AVNet, and NVIDIA Jetson embedded boards.
+- **Automatic Resource Contention and Fault Injection**:📶⚡ Evaluates performance under resource contention (Network, CPU, Cache, etc.) and with fault injection to simulate real-world conditions.
+- **Interactive Visualization**: 📈📊 Leveraging Bokeh as an in-browser renderer, EtherTime can display interactive timeseries of your profiles, which you can explore to your hearts content. 
 
 ### Time Synchronization Protocols
 
