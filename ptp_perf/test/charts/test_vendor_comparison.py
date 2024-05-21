@@ -50,7 +50,8 @@ class VendorComparisonCharts(TestCase):
                         xlabel='Network Load',
                         xticklabels_format_percent=True,
                     )
-                ]
+                ],
+                tight_layout=True,
             )
             chart.plot()
             chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"unprioritized_trend_{cluster.id}.png"))

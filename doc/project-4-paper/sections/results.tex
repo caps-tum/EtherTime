@@ -31,7 +31,7 @@ at a sampling rate of 2\,Hz or lower.
 On the other hand, higher frequencies negatively impact the stability of the
 measurements, e.g.,~for the highest sampling rate setting (-7),
 which corresponds to a sampling frequency of $1/2^{-7}$ or \fpeval{1/(2^(-7))}\,Hz,
-the median and 95\textsuperscript{th} percentile clock offsets were 
+the median and 95\textsuperscript{th} percentile clock offsets were
 \fRatio{\configIntervalVsBaselineRatio{-7}} and
 \renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}}
 worse, respectively.
@@ -51,7 +51,7 @@ Likewise, Chrony has related equivalent default settings.
     \textit{converging} state to the \textit{synchronized} or the
     \textit{converged} state (denoted using a dashed line).
     We remove all data from the converging stage before computing aggregate
-    statistics.}  
+    statistics.}
     %Because PTP uses
     %path delay compensation, the final clock synchronization accuracy is much
     %better than the one-way path delay.}
@@ -87,11 +87,11 @@ and thus the clock offset is close to stable.
 
 Separating the convergence phase from the stable phase also tells us how long
 nodes should wait after connecting to the master,
-before actually using their clocks.
+before serving time to applications.
 PTPd is by far the slowest among all vendors at establishing synchronization
 (on all boards).
 For instance, just a 28\,ms offset after the clock step causes around 13 minutes
-of clock slew with PTPd, whereas other vendors can tolerate larger offsets
+of clock slew with PTPd, whereas other vendors can compensate larger offsets
 in under 1 minute.
 
 % Note: This section contains a lot of data extracted by hand.

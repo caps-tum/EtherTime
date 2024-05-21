@@ -163,6 +163,7 @@ with the master's clock.
 %\subsection{PTP Lifecycle}
 
 \begin{figure*}
+    \centering
     \newcommand{\intervalAnnotation}[4]{
         \draw[Bar-Bar] ([yshift=#3, xshift=-0.1cm]#1.south west) -- ([yshift=#3, xshift=0.1cm]#2.south east) node[midway, below] {#4};
     }
@@ -179,11 +180,12 @@ with the master's clock.
             every on chain/.style={join=by -Stealth}
         },
         text depth=0cm,
+        node distance=0.75cm,
         ]
         \node[stage] (discovery) {Discovery};
         \draw[-Stealth] (discovery.west) -| ++(-0.2, 0.5) -| ($(discovery.north west) + (0.2, 0)$);
 
-        \node[stage] (bmca) {Best Master Clock Algorithm};
+        \node[node distance=1cm, stage] (bmca) {Best Master Clock Algorithm};
         \draw[{Straight Barb[reversed]}-{Straight Barb[]}, dotted] (discovery) -- (bmca) node[midway, align=center] {\footnotesize{} Peer\\\footnotesize{} Data};
         \node[stage, connected] (calibrate) {Calibration};
         \node[stage, connected] (step) {Clock Step};
