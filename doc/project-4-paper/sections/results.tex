@@ -1,8 +1,7 @@
-
 \section{Baseline Results}
 \label{sec:baseline}
 
-\subsection{Baseline: The 1-to-1 benchmark}
+%\subsection{Baseline: The 1-to-1 benchmark}
 
 \newcommand{\configIntervalVsBaselineRatioQuantile}{q50}
 \newcommand{\configIntervalVsBaselineRatio}[1]{\ptpKey{config/interval/#1/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}/\ptpKey{base/rpi-4/linuxptp/\configIntervalVsBaselineRatioQuantile}}
@@ -15,28 +14,102 @@
     \assertRange{\configIntervalVsBaselineRatio{\i}}{1.2}{10}
 }
 
-We start by establishing a baseline for each tested system and vendor which we can later use as a comparison for different environment configurations. For each vendor, the default PTP/NTP profile is used as we expect this to be among the most widely deployed. We collect data in 20 minute runs (corresponding to just above 1000 samples per run), while retaining the default setting of one synchronization and one measurement of the path delay per second, as our results suggest that a higher frequency does not significantly improve clock synchronization (we observe the best synchronization quality results for LinuxPTP on the Raspberry-Pi 4 at 2 samples/second or slower) while it does negatively impact the stability of the measurement (for the highest rate setting -7, corresponding to \fpeval{1/(2^(-7))} samples/s, we observe a \fRatio{\configIntervalVsBaselineRatio{-7}} worse median accuracy and \renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}} at the 95\textsuperscript{th} percentile \PNineFive{}).
+We start by establishing a baseline for each % tested system and
+vendor, which we use later as a comparison for different configurations.
+
+Wherever applicable, we use the default PTP/NTP profiles.
+Specifically, we retain all three default frequency settings for PTP:
+synchronization signals from master to slaves at 1\,Hz,
+path delay estimation signals from slave to master and back at 1\,Hz,
+and discovery broadcasts from the master at 0.5\,Hz.
+%We retain the default setting where the master node sends synchronization
+%signals to every other node once per second,
+%and hence the path delay is updated with a sampling frequency of 1\,Hz.
+Higher frequencies do not significantly improve clock synchronization,
+e.g.,~LinuxPTP on the Raspberry-Pi 4 reported the best synchronization quality
+at a sampling rate of 2\,Hz or lower.
+On the other hand, higher frequencies negatively impact the stability of the
+measurements, e.g.,~for the highest sampling rate setting (-7),
+which corresponds to a sampling frequency of $1/2^{-7}$ or \fpeval{1/(2^(-7))}\,Hz,
+the median and 95\textsuperscript{th} percentile clock offsets were 
+\fRatio{\configIntervalVsBaselineRatio{-7}} and
+\renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}}
+worse, respectively.
+%we observed a \fRatio{\configIntervalVsBaselineRatio{-7}} worse median accuracy and
+%\renewcommand{\configIntervalVsBaselineRatioQuantile}{q95}\fRatio{\configIntervalVsBaselineRatio{-7}}
+%at the 95\textsuperscript{th} percentile.
+Likewise, Chrony has related equivalent default settings.
+
 
 \begin{figure}
     \includegraphics[width=\linewidth]{res/generated/base/rpi08-convergence_2.pdf}
-    \caption{A sample run of PTPd in its default configuration (left: scattered raw signal and denoised moving average, right: kernel density estimates). Clock synchronization can follow different convergence trajectories, which needs to be accounted for when calculating statistics. Because PTP uses path delay compensation, the final clock synchronization accuracy is much better than the one-way path delay.}
+    \caption{A sample run of PTPd in its default configuration (left: scattered
+    raw signal and denoised moving average, right: kernel density estimates).
+    %Clock synchronization can follow different convergence trajectories, which
+    %needs to be accounted for when calculating statistics.
+    We use heuristics to predict when PTP transitions from the
+    \textit{converging} state to the \textit{synchronized} or the
+    \textit{converged} state (denoted using a dashed line).
+    We remove all data from the converging stage before computing aggregate
+    statistics.}  
+    %Because PTP uses
+    %path delay compensation, the final clock synchronization accuracy is much
+    %better than the one-way path delay.}
     \label{fig:baseline_sample}
 \end{figure}
 
-Figure \ref{fig:baseline_sample} shows a sample run of the baseline for the PTPd vendor. In order to collect meaningful statistics, we apply some preprocessing to the collected profiles. The most important step is to remove the convergence phase (Figure \ref{fig:baseline_sample} left) from the profile to avoid it skewing the summary statistics, so that only the stable state is metricized. However, the clock travels on a different trajectory during each trial, and each convergence trajectory may take different amounts of time, have different final magnitudes, and include discontinuities, rebounds, and clock steps. To eliminate this unwanted data, we apply a heuristic to the raw clock offset: if the estimated offset repeatedly fluctuates between positive and negative, signifying that the local clock is ahead or behind the master, respectively, this implies that there is no clear pattern to the measured offsets that PTP can compensate for, and thus the clock offset is close to stable at its minimum value.
+\textbf{Measuring accurate clock offsets.}
+\cref{fig:baseline_sample} shows a sample run of the baseline for the
+PTPd vendor.
+For all our experiments, we collect data in 20-minute runs
+(i.e.,~just above 1000 samples per run).
+Since we are interested in aggregating clock offset statistics during the
+\textit{stable} stage,
+we remove measurements corresponding to the convergence stages
+(\textit{clock step} and \textit{clock slew}),
+which may skew the results otherwise.
+However, the clock travels on a different trajectory during each trial,
+and each convergence trajectory may take different amounts of time, have
+different final magnitudes, and include discontinuities, rebounds, and
+clock steps.
+Therefore, to effectively eliminate this unwanted data,
+we apply a heuristic to the raw clock offset.
+If the estimated offset repeatedly fluctuates between positive and negative,
+signifying that the local clock is ahead or behind the master, respectively,
+there is no clear pattern to the measured offsets that PTP can compensate for,
+and thus the clock offset is close to stable.
+%\change{at its minimum value.}
+
+%Figure \ref{fig:baseline_sample} shows a sample run of the baseline for the PTPd vendor. In order to collect meaningful statistics, we apply some preprocessing to the collected profiles. The most important step is to remove the convergence phase (Figure \ref{fig:baseline_sample} left) from the profile to avoid it skewing the summary statistics, so that only the stable state is metricized. However, the clock travels on a different trajectory during each trial, and each convergence trajectory may take different amounts of time, have different final magnitudes, and include discontinuities, rebounds, and clock steps. To eliminate this unwanted data, we apply a heuristic to the raw clock offset: if the estimated offset repeatedly fluctuates between positive and negative, signifying that the local clock is ahead or behind the master, respectively, this implies that there is no clear pattern to the measured offsets that PTP can compensate for, and thus the clock offset is close to stable at its minimum value.
 %Intuitively, this is somewhat equivalent to the average signed clock offset being zero, but note that the two are distinct for certain corner cases, as there are ways to produce an average zero clock offset that still exhibit a signal trend (which we want to avoid) and there can be large magnitude measurement outliers that cause a non-zero average clock offset while showing no trend.
 %Empirically, we find that using the frequency of sign switches in the clock offset produces much more accurate predictions of whether a clock is synchronized than relying on average (signed) offset.
 %\todo{@Arpan I commented out some data-processing discussion as you were marking it as confusing.}
 
+Separating the convergence phase from the stable phase also tells us how long
+nodes should wait after connecting to the master,
+before actually using their clocks.
+PTPd is by far the slowest among all vendors at establishing synchronization
+(on all boards).
+For instance, just a 28\,ms offset after the clock step causes around 13 minutes
+of clock slew with PTPd, whereas other vendors can tolerate larger offsets
+in under 1 minute.
+
 % Note: This section contains a lot of data extracted by hand.
-Separating the convergence phase from the stable phase is not only useful for calculating statistics, it also tells us how long we should wait after connecting to the master before we actually use the clock. Starting from an offset of 1 minute between the master and slave nodes before the clock step, we find that PTPd is by far the slowest vendor at establishing synchronization on all boards, on average taking 6 minutes to achieve stability on the Raspberry-Pi 5 but sometimes requiring 10 minutes or more, depending on how imprecise the initial clock step was. Just a 28\,ms offset after the clock step will cause around 13 minutes of clock slew with PTPd, whereas the other vendors can tolerate larger offsets in under 1 minute. LinuxPTP, SPTP and Chrony all convergence on average in under 1 minute across all boards (under non-degraded circumstances when the cluster is idling), with the longest baseline observation requiring 02:40 for LinuxPTP on TK1.
+%Separating the convergence phase from the stable phase is not only useful for calculating statistics, it also tells us how long we should wait after connecting to the master before we actually use the clock. Starting from an offset of 1 minute between the master and slave nodes before the clock step, we find that PTPd is by far the slowest vendor at establishing synchronization on all boards, on average taking 6 minutes to achieve stability on the Raspberry-Pi 5 but sometimes requiring 10 minutes or more, depending on how imprecise the initial clock step was. Just a 28\,ms offset after the clock step will cause around 13 minutes of clock slew with PTPd, whereas the other vendors can tolerate larger offsets in under 1 minute. LinuxPTP, SPTP and Chrony all convergence on average in under 1 minute across all boards (under non-degraded circumstances when the cluster is idling), with the longest baseline observation requiring 02:40 for LinuxPTP on TK1.
 
 \cmpSearchVendor{\ptpKey{base/rpi-4/\vendor/pd/q50}/\ptpKey{base/rpi-4/\vendor/q50}}
 From Figure \ref{fig:baseline_sample} we also observe that the clock offset is much lower than the corresponding path delay, due to the path delay compensation used by PTP clients. Across the tested vendors, we observe that the median absolute clock offset is between \fRatio{\cmpMin} (\fVendor{\cmpMinArg}) and \fRatio{\cmpMax} (\fVendor{\cmpMaxArg}) smaller than the magnitude of the path delay on the Raspberry-Pi 4 cluster,%
 \cmpSearchVendor{\ptpKey{base/rpi-5/\vendor/pd/q50}/\ptpKey{base/rpi-5/\vendor/q50}}%
-and \fRatio[-1]{\cmpMin} (\fVendor{\cmpMinArg}) to \fRatio[-1]{\cmpMax} (\fVendor{\cmpMaxArg}) smaller on the Raspberry-Pi 5 cluster, where hardware support is available.\todo{Arpan wants something to look at but so far we only provide text.}
+and \fRatio[-1]{\cmpMin} (\fVendor{\cmpMinArg}) to \fRatio[-1]{\cmpMax} (\fVendor{\cmpMaxArg}) smaller on the Raspberry-Pi 5 cluster, where hardware support is available.
+%\todo{Arpan wants something to look at but so far we only provide text.}
 
-Note that we show the \emph{absolute} clock difference, this represents the best estimate of the actual clock offset. It exhibits high skew due to the fact that the value cannot be negative, and the signal can experience bursts of noise which makes determining the true clock offset more difficult. While the actual offset estimate is useful, \PNineFive{} is more useful as a heuristic for the bound because packet delay variation as a source of noise generally dominates the actual clock drift -- using a high quantile can be thought of as a safety margin, but there is a tradeoff as last few percent are mostly noise leading to very high margins and lengthy testing required when using e.g. the maximum.
+We report the \emph{absolute} clock difference in all our evaluation, which
+represents the best estimate of the actual clock offset.
+It exhibits high skew due to the fact that the value cannot be negative, and
+the signal can experience bursts of noise which makes determining the true
+clock offset more difficult.
+
+%Note that we show the \emph{absolute} clock difference, this represents the best estimate of the actual clock offset. It exhibits high skew due to the fact that the value cannot be negative, and the signal can experience bursts of noise which makes determining the true clock offset more difficult. While the actual offset estimate is useful, \PNineFive{} is more useful as a heuristic for the bound because packet delay variation as a source of noise generally dominates the actual clock drift -- using a high quantile can be thought of as a safety margin, but there is a tradeoff as last few percent are mostly noise leading to very high margins and lengthy testing required when using e.g. the maximum.
 
 \subsection{Vendors \& Systems}
 
