@@ -44,6 +44,7 @@ class VendorComparisonCharts(TestCase):
                                 column_x='X',
                                 column_y='Value',
                                 column_hue='Vendor',
+                                # estimator='mean',
                             )
                         ],
                         title="Unisolated Network Load",
