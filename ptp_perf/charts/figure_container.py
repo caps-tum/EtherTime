@@ -179,15 +179,21 @@ class AxisContainer:
     @staticmethod
     def decorate_axis_time_formatter(axis, major: bool = True, offset: timedelta = timedelta(seconds=0),
                                      units_premultiplied: bool = True):
-        formatter = matplotlib.ticker.FuncFormatter(
-            lambda value, _: units.format_time_offset(
-                value - offset.total_seconds() if units_premultiplied else (value * units.NANOSECONDS_TO_SECONDS) - offset.total_seconds()
-            )
-        )
+        formatter = AxisContainer.get_time_formatter(offset, units_premultiplied)
         if major:
             axis.set_major_formatter(formatter)
         else:
             axis.set_minor_formatter(formatter)
+
+    @staticmethod
+    def get_time_formatter(offset: timedelta = timedelta(seconds=0), units_premultiplied: bool = True):
+        return matplotlib.ticker.FuncFormatter(
+            lambda value, _: units.format_time_offset(
+                value - offset.total_seconds()
+                if units_premultiplied else
+                (value * units.NANOSECONDS_TO_SECONDS) - offset.total_seconds()
+            )
+        )
 
     @staticmethod
     def decorate_axis_engineering_formatter(axis, unit: str = '', major: bool = True):

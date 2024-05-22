@@ -4,6 +4,7 @@ import seaborn
 from django.test import TestCase
 from matplotlib import pyplot as plt
 
+from ptp_perf import config
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer
 from ptp_perf.charts.timeseries_element import ScatterElement
 from ptp_perf.config import CLUSTER_RPI_SERV, CLUSTER_PI
@@ -23,11 +24,18 @@ class PathDelayChart(TestCase):
             PTPEndpoint.objects.filter(
                 # Use data from all clusters
                 # profile__cluster_id=CLUSTER_PI.id
+                profile__cluster_id__in=config.ANALYZED_CLUSTER_IDS,
+                profile__vendor_id__in=VendorDB.ANALYZED_VENDOR_IDS,
+                profile__is_processed=True,
+                profile__is_corrupted=False,
             ).select_related("profile").all()
         )
+        print(data)
         data[frame_column(PTPEndpoint.clock_diff_median) + '_log'] = np.log10(data[frame_column(PTPEndpoint.clock_diff_median)])
 
         print(data)
+        hue_norm = matplotlib.colors.LogNorm(vmin=1e-7, vmax=10e-3)
+        color_map = 'coolwarm'
         figure = FigureContainer(
             axes_containers=[
                 AxisContainer(
@@ -40,8 +48,9 @@ class PathDelayChart(TestCase):
                             column_style=foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id),
                             style_order=VendorDB.ANALYZED_VENDOR_IDS,
                             # color_map=seaborn.cubehelix_palette(gamma=1, rot=-.2, as_cmap=True),
-                            color_map=seaborn.color_palette('viridis', as_cmap=True),
-                            hue_norm=matplotlib.colors.LogNorm(vmin=1e-6, vmax=2.5e-3,),
+                            color_map=seaborn.color_palette(color_map, as_cmap=True),
+                            hue_norm=hue_norm,
+                            edgecolor='.4',
                         )
                     ],
                     ylog=True,
@@ -59,14 +68,31 @@ class PathDelayChart(TestCase):
         )
         figure.plot()
 
+        # handles, labels = figure.axes_containers[0].axis.get_legend_handles_labels()
+        # figure.axes_containers[0].axis.legend(
+        #     handles,
+        #     # labels,
+        #     # ["Clock Diff", "1μs", "10μs", "100μs", "1ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
+        #     ["Clock Diff", "1μs", "100μs", "10ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
+        #     loc="center left",
+        #     bbox_to_anchor=(1, 0.5),
+        # )
+
+        # Color bar
+        sm = plt.cm.ScalarMappable(cmap=color_map, norm=hue_norm)
+        # sm.set_array([])  # Only needed for matplotlib < 3.1
+        figure.figure.colorbar(sm, ax=figure.axes_containers[0].axis, label='Clock Diff', format=AxisContainer.get_time_formatter())
+
+        # Add a custom legend for the style variable
         handles, labels = figure.axes_containers[0].axis.get_legend_handles_labels()
-        figure.axes_containers[0].axis.legend(
-            handles,
-            # labels,
-            # ["Clock Diff", "1μs", "10μs", "100μs", "1ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
-            ["Clock Diff", "1μs", "100μs", "10ms", "Vendor", "PTPd", "LinuxPTP", "SPTP", "Chrony"],
-            loc="center left",
-            bbox_to_anchor=(1, 0.5),
+        style_labels = VendorDB.ANALYZED_VENDOR_IDS
+        # Filter out hue handles and labels, only keep style
+        style_handles = [handles[i] for i, label in enumerate(labels) if label in style_labels]
+        plt.legend(
+            title='Vendors',
+            handles=style_handles,
+            labels=[VendorDB.get(vendor_id).name for vendor_id in style_labels],
+            loc='best'
         )
 
         # cbar = plt.colorbar()

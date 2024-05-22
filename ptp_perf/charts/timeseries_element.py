@@ -92,6 +92,8 @@ class ScatterElement(DataElement):
     style_order: List[Any] = None
     color_map_as_palette: bool = False
     """By default, we use discrete colours and make the edges darkers. Use this to set the colormap directly as a palette e.g. for continuous hues."""
+    edgecolor: Any = None
+
 
     def plot(self, axis_container: "AxisContainer"):
         extra_args = {
@@ -100,6 +102,8 @@ class ScatterElement(DataElement):
         if self.color_map_as_palette:
             extra_args['palette'] = {key: value + '55' for key, value in self.color_map.items() if self.color_map is not None}
             extra_args['edge_colors'] = self.data[self.column_hue].map({key: value + 'AA' for key, value in self.color_map.items()})
+        if self.edgecolor is not None:
+            extra_args['edgecolor'] = self.edgecolor
 
         scatter = seaborn.scatterplot(
             ax=axis_container.axis,

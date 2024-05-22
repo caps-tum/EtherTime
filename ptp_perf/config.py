@@ -256,7 +256,7 @@ clusters = {
     ]
 }
 ANALYZED_CLUSTERS = [CLUSTER_PI, CLUSTER_PI5, CLUSTER_PETALINUX, CLUSTER_TK1, CLUSTER_BIG_BAD]
-
+ANALYZED_CLUSTER_IDS = [cluster.id for cluster in ANALYZED_CLUSTERS]
 
 @dataclass
 class Configuration:
