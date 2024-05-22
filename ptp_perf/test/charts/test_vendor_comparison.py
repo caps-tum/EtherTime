@@ -10,8 +10,9 @@ from ptp_perf.charts.chart_container import ChartContainer
 from ptp_perf.charts.comparison_bar_element import ComparisonBarElement, ComparisonLineElement
 from ptp_perf.charts.figure_container import FigureContainer, AxisContainer, TimeseriesAxisContainer, TimeAxisContainer, \
     TimeLogAxisContainer
-from ptp_perf.config import CLUSTER_PI
+from ptp_perf.config import CLUSTER_PI, CLUSTER_PI5
 from ptp_perf.constants import MEASUREMENTS_DIR, PAPER_GENERATED_RESOURCES_DIR
+from ptp_perf.machine import Cluster
 from ptp_perf.models import BenchmarkSummary
 from ptp_perf.profiles.base_profile import ProfileTags
 from ptp_perf.profiles.benchmark import Benchmark
@@ -150,12 +151,15 @@ class VendorComparisonCharts(TestCase):
             ]
             benchmarks.append(BenchmarkDB.BASE)
 
-            self.create_isolation_chart(benchmarks, component=component)
+            self.create_isolation_chart(benchmarks, component=component, cluster=CLUSTER_PI)
+            self.create_isolation_chart(benchmarks, component=component, cluster=CLUSTER_PI5)
 
-    def create_isolation_chart(self, benchmarks, component: ResourceContentionComponent):
-        frame = self.collect_quantile_data(benchmarks, clusters=[CLUSTER_PI])
-        frame["Benchmark"] = frame["Benchmark"].str.replace(f"{component} 100% Load", "")
+    def create_isolation_chart(self, benchmarks, component: ResourceContentionComponent, cluster: Cluster):
+        frame = self.collect_quantile_data(benchmarks, clusters=[cluster])
+        frame["Benchmark"] = frame["Benchmark"].str.replace(f"{component} 100% Load", "").str.strip()
         frame["Benchmark and Vendor"] = frame["Benchmark"] + " " + frame["Vendor"]
+        print(frame)
+        print(f"Benchmark tags: {str_join(frame['Benchmark'].unique())}")
         figure = FigureContainer(
             axes_containers=[
                 TimeLogAxisContainer(
@@ -165,6 +169,7 @@ class VendorComparisonCharts(TestCase):
                             column_x='Vendor',
                             column_y='Value',
                             column_hue='Benchmark',
+                            hue_order=["Unprioritized", 'Prioritized', "Isolated", "Baseline"],
                             color_map=None,
                             # color_map=color_map,
                             # dodge=False,
@@ -173,7 +178,9 @@ class VendorComparisonCharts(TestCase):
                     title=f"Isolation Mechanisms at 100% {component} Load",
                     xticks=[],
                 )
-            ]
+            ],
+            # Aligns nicer without this.
+            # tight_layout=True,
         )
         figure.plot()
         axis = figure.axes_containers[0].axis
@@ -187,8 +194,7 @@ class VendorComparisonCharts(TestCase):
                 bar.get_x() + bar.get_width() / 2., axis.get_ylim()[0], labels[i],
                 ha='center', va='bottom', weight='bold',
             )
-        figure.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"{component.id}_isolation_comparison.png"))
-        figure.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"{component.id}_isolation_comparison.pdf"))
+        figure.save_default_locations(f"isolation_comparison_{cluster.id}", f"load/{component.id}")
 
     def test_create_keys(self):
         data = BenchmarkSummary.objects.all()
