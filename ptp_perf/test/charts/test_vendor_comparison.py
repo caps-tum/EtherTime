@@ -156,10 +156,6 @@ class VendorComparisonCharts(TestCase):
         frame = self.collect_quantile_data(benchmarks, clusters=[CLUSTER_PI])
         frame["Benchmark"] = frame["Benchmark"].str.replace(f"{component} 100% Load", "")
         frame["Benchmark and Vendor"] = frame["Benchmark"] + " " + frame["Vendor"]
-        color_map = {
-            f'{benchmark} {vendor_name}': ChartContainer.VENDOR_COLORS[vendor_name]
-            for vendor_name, benchmark in itertools.product(frame["Vendor"].unique(), frame["Benchmark"].unique())
-        }
         figure = FigureContainer(
             axes_containers=[
                 TimeLogAxisContainer(
@@ -175,6 +171,7 @@ class VendorComparisonCharts(TestCase):
                         )
                     ],
                     title=f"Isolation Mechanisms at 100% {component} Load",
+                    xticks=[],
                 )
             ]
         )
