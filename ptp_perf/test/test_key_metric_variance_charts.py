@@ -90,6 +90,7 @@ class KeyMetricVarianceCharts(TestCase):
                     ],
                     xticks=[],
                     title='Baseline Variance across Trials',
+                    ylabel='Median Clock Offset',
                 )
             ],
             size=(6, 2.5),

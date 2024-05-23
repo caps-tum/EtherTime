@@ -7,6 +7,7 @@ from ptp_perf.machine import Cluster
 from ptp_perf.models import PTPProfile
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.vendor.registry import VendorDB
 from ptp_perf.vendor.vendor import Vendor
 
 
@@ -14,6 +15,7 @@ from ptp_perf.vendor.vendor import Vendor
 class ProfileQuery:
     benchmark: Optional[Benchmark] = None
     vendor: Optional[Vendor] = None
+    vendor_analyzed_only: bool = True
     cluster: Optional[Cluster] = None
     is_processed: bool = True
     filter_corrupted: bool = True
@@ -33,6 +35,9 @@ class ProfileQuery:
 
         if self.vendor:
             query = query.filter(vendor_id=self.vendor.id)
+
+        if self.vendor_analyzed_only:
+            query = query.filter(vendor_id__in=VendorDB.ANALYZED_VENDOR_IDS)
 
         if self.cluster:
             query = query.filter(cluster_id=self.cluster.id)
