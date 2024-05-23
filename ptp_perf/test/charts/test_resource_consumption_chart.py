@@ -146,7 +146,7 @@ class ResourceConsumptionChartTest(TestCase):
                         )
                     ],
                     title="Median",
-                    xlabel="Nodes", xticks=self.nodes_xticks,
+                    xlabel="Nodes", xlabel_options={'labelpad': -10}, xticks=self.nodes_xticks,
                     ylabel="Clock Difference", ylog=True,
                     yticklabels_format_time=True,
                 ),
@@ -168,7 +168,7 @@ class ResourceConsumptionChartTest(TestCase):
                         )
                     ],
                     title="95-th Percentile",
-                    xlabel="Nodes", xticks=self.nodes_xticks,
+                    xlabel="Nodes", xlabel_options={'labelpad': -10}, xticks=self.nodes_xticks,
                     ylabel="Clock Difference",
                     ylog=True,
                     yticklabels_format_time=True,
@@ -189,13 +189,13 @@ class ResourceConsumptionChartTest(TestCase):
                         )
                     ],
                     title='Signal Presence',
-                    xlabel="Nodes", xticks=self.nodes_xticks,
+                    xlabel="Nodes", xlabel_options={'labelpad': -10}, xticks=self.nodes_xticks,
                     ylabel="Samples Collected",
                     yticklabels_format_percent=True,
                     ylimit_top=1.05,
                 )
             ],
-            size=(7, 3),
+            size=(6, 2.5),
             share_y=False,
             tight_layout=True,
         )
