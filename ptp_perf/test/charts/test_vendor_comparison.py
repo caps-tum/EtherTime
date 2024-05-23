@@ -1,6 +1,7 @@
 import itertools
 from typing import List
 
+import numpy as np
 import pandas as pd
 from django.test import TestCase
 from matplotlib.patches import ConnectionPatch, ConnectionStyle
@@ -138,7 +139,7 @@ class VendorComparisonCharts(TestCase):
         chart.save(MEASUREMENTS_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.png"))
         chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(benchmark.id).joinpath("vendor_comparison.pdf"))
 
-    def test_vendor_resilience(self):
+    def test_isolation_comparison_charts(self):
         # Any isolation, Net/CPU component
         for component, tag, max_load_level in [
             (ResourceContentionComponent.NET, ProfileTags.COMPONENT_NET, 1000),
@@ -175,10 +176,12 @@ class VendorComparisonCharts(TestCase):
                             color_map=None,
                             # color_map=color_map,
                             # dodge=False,
-                        )
+                            # estimator='mean',
+                        ),
                     ],
                     title=f"Isolation Mechanisms at 100% {component} Load",
                     xticks=[],
+                    ylabel='Median Clock Offset',
                 )
             ],
             # Aligns nicer without this.
@@ -188,14 +191,25 @@ class VendorComparisonCharts(TestCase):
         axis = figure.axes_containers[0].axis
         axis.set_ylim(bottom=axis.get_ylim()[0] * 0.85)
         labels = ["U"] * 4 + ["P"] * 4 + ["I"] * 4 + ["B"] * 4 + [""] * 4
+        vendor_data = [
+            (vendor.name,
+            colors.adjust_lightness(ChartContainer.VENDOR_COLORS[vendor.id], 0.8 + 0.25 * shade) )
+            for shade, vendor in itertools.product(range(4), VendorDB.ANALYZED_VENDORS)]
         for i , bar in enumerate(axis.patches):
-            vendor_colors = [ChartContainer.VENDOR_COLORS[vendor.id] for vendor in VendorDB.ANALYZED_VENDORS]
-            vendor_shades = [colors.adjust_lightness(color, 0.8 + 0.25 * shade) for shade, color in itertools.product(range(4), vendor_colors)]
-            bar.set_facecolor(vendor_shades[i % len(vendor_shades)])
+            vendor_name, color = vendor_data[i % len(vendor_data)]
+            bar.set_facecolor(color)
             axis.text(
                 bar.get_x() + bar.get_width() / 2., axis.get_ylim()[0], labels[i],
                 ha='center', va='bottom', weight='bold',
             )
+            y_value = frame[
+                # np.ones(len(frame), dtype=bool)
+                (frame['Vendor'] == vendor_name)
+                & (frame['Benchmark'].str.startswith(labels[i]))
+            ]['Value'].mean()
+            print(labels[i], y_value)
+            if bar.get_width() > 0:
+                axis.plot(bar.get_x() + bar.get_width() / 2, y_value, marker='o', color='0.9', markeredgecolor='0.2')
         figure.save_default_locations(f"isolation_comparison_{cluster.id}", f"load/{component.id}")
 
     def test_create_keys(self):

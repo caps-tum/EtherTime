@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Union, Literal, List, Optional, Tuple, Dict
+from typing import Union, Literal, List, Optional, Tuple, Dict, Any
 
 import numpy as np
 import seaborn
@@ -17,6 +17,11 @@ class ComparisonBarElement(DataElement):
     hue_order_vendors: bool = False
     hue_order: Optional[List[str]] = None
     native_scale: bool = True
+    estimator: str = 'median'
+    errorbar: Tuple = ('pi', 100)
+    fill: bool = True
+    edgecolor: Any = None
+    error_kws: Optional[Dict] = None
 
     def plot(self, axis_container: AxisContainer):
 
@@ -32,12 +37,15 @@ class ComparisonBarElement(DataElement):
             y=self.column_y,
             hue=self.column_hue,
             palette=self.color_map,
-            estimator='median',
-            errorbar=('pi', 100),
+            estimator=self.estimator,
+            errorbar=self.errorbar,
+            err_kws=self.error_kws,
             native_scale=self.native_scale,
             dodge=self.dodge,
             order=self.order,
             hue_order=self.hue_order,
+            fill=self.fill,
+            edgecolor=self.edgecolor,
         )
 
 @dataclass
