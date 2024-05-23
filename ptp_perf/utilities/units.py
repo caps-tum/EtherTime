@@ -60,11 +60,11 @@ def format_relative(value: float, places: int = 1):
 
 def format_engineering(value: float, unit: str = "") -> str:
     if value == 0:
-        return f"{value}{unit}"
+        return f"{value:.0f}{unit}"
     log_value = math.floor(math.log10(abs(value)))
     try:
         suffix, multiplier, places = {
-            0: ('', 1, 1),
+            0: ('', 1, 0),
             1: ('', 1, 0),
             2: ('', 1, 0),
             3: ('K', 1e-3, 0),

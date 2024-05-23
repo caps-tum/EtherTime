@@ -61,6 +61,7 @@ class AxisContainer:
     title_kwargs: Dict = field(default_factory=dict)
 
     xlabel: str = None
+    xlabel_options: Dict = field(default_factory=dict)
     xlog: bool = False
     xticks: Optional[Iterable] = None
     xticklabels: Optional[Iterable] = None
@@ -110,7 +111,7 @@ class AxisContainer:
         # X-axis
         if self.xlog:
             self.axis.set_xscale('log')
-        self.axis.xaxis.set_label_text(self.xlabel)
+        self.axis.set_xlabel(self.xlabel, **self.xlabel_options)
         if self.xticks is not None:
             self.axis.set_xticks(self.xticks)
         if self.xticklabels_format_time:

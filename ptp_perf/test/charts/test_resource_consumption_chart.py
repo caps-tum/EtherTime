@@ -10,6 +10,7 @@ from ptp_perf.charts.figure_container import FigureContainer, AxisContainer, Dat
 from ptp_perf.models import PTPEndpoint
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.registry.benchmark_db import BenchmarkDB
+from ptp_perf.utilities import units
 from ptp_perf.vendor.registry import VendorDB
 
 
@@ -53,7 +54,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    xlabel='Nodes', xlabel_options={'labelpad': -10},
+                    xticks=self.nodes_xticks,
                     ylabel='Resident Set Size',
                     title='RAM Usage',
                 ),
@@ -72,9 +74,11 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    xlabel='Nodes', xlabel_options={'labelpad': -10},
+                    xticks=self.nodes_xticks,
                     ylabel='Activity / Hour',
                     yticklabels_format_engineering=True, yticklabels_format_engineering_unit='s',
+                    yticks_interval=2,
                     title='CPU Time',
                 ),
                 DataAxisContainer(
@@ -88,8 +92,10 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes', xticks=self.nodes_xticks,
+                    xlabel='Nodes', xlabel_options={'labelpad': -10},
+                    xticks=self.nodes_xticks,
                     ylabel='Data / Hour',
+                    yticks_interval=2 * (10 ** 6),
                     title='Data Rate',
                 ),
                 AxisContainer(
@@ -103,7 +109,8 @@ class ResourceConsumptionChartTest(TestCase):
                             column_x='x', column_y='y', column_hue='hue',
                         )
                     ],
-                    xlabel='Nodes',  xticks=self.nodes_xticks,
+                    xlabel='Nodes', xlabel_options={'labelpad': -10},
+                    xticks=self.nodes_xticks,
                     ylabel='Packets / Hour',
                     yticklabels_format_engineering=True,
                     title='Packet Rate',
