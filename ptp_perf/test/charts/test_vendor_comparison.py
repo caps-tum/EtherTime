@@ -92,6 +92,7 @@ class VendorComparisonCharts(TestCase):
                     title="Baseline Performance by Vendor and Cluster",
                     xticks=[1.5, 6, 10.5, 15],
                     xticklabels=["R-Pi 4", "R-Pi 5", "Xilinx", "TK-1"],
+                    ylabel='Median Clock Offset',
                     ylimit_top=50 * units.us,
                 ),
                 TimeAxisContainer(
@@ -102,7 +103,7 @@ class VendorComparisonCharts(TestCase):
                         column_hue='Vendor',
                     )],
                     xticks=[6, 10.5, 15],
-                    xticklabels=["R-Pi 5", "Petalinux", "TK-1"],
+                    xticklabels=["R-Pi 5", "Xilinx", "TK-1"],
                     ylabel='',
                     ylimit_top=5.5 * units.us,
                     yminorticks=True,
