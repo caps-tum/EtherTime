@@ -81,7 +81,7 @@ class PathDelayChart(TestCase):
         # Color bar
         sm = plt.cm.ScalarMappable(cmap=color_map, norm=hue_norm)
         # sm.set_array([])  # Only needed for matplotlib < 3.1
-        figure.figure.colorbar(sm, ax=figure.axes_containers[0].axis, label='Clock Diff', format=AxisContainer.get_time_formatter())
+        figure.figure.colorbar(sm, ax=figure.axes_containers[0].axis, label='Median Clock Offset', format=AxisContainer.get_time_formatter())
 
         # Add a custom legend for the style variable
         handles, labels = figure.axes_containers[0].axis.get_legend_handles_labels()
