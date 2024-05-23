@@ -47,7 +47,7 @@ MACHINE_RPI07 = Machine(
 )
 CLUSTER_PI = Cluster(
     id="rpi-4",
-    name="Raspberry-Pi 4",
+    name="Raspberry Pi 4",
     machines=[
         MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
     ]
@@ -89,7 +89,7 @@ MACHINE_RPI57 = Machine(
 )
 CLUSTER_PI5 = Cluster(
     id="rpi-5",
-    name="Raspberry-Pi 5",
+    name="Raspberry Pi 5",
     machines=[
         MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
     ]

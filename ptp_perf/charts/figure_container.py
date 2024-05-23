@@ -58,6 +58,7 @@ class AxisContainer:
     axis: plt.Axes = None
 
     title: str = None
+    title_kwargs: Dict = field(default_factory=dict)
 
     xlabel: str = None
     xlog: bool = False
@@ -104,7 +105,7 @@ class AxisContainer:
 
     def decorate_axes(self):
         if self.title:
-            self.axis.set_title(self.title)
+            self.axis.set_title(self.title, **self.title_kwargs)
 
         # X-axis
         if self.xlog:
@@ -260,6 +261,7 @@ class FigureContainer:
     figure: plt.Figure = None
     size: Tuple[float, float] = (6, 4)
     title: Optional[str] = None
+    title_kwargs: Optional[Dict] = field(default_factory=dict)
     columns: int = None
     weights: List[int] = None
     w_space: float = None
@@ -282,7 +284,7 @@ class FigureContainer:
             plt.subplots_adjust(wspace=self.w_space)
 
         if self.title:
-            self.figure.suptitle(self.title)
+            self.figure.suptitle(self.title, **self.title_kwargs)
 
         axes = axes.flatten()
 

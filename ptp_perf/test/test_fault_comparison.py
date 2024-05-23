@@ -74,7 +74,7 @@ class FaultComparisonCharts(TestCase):
                         column_style=foreign_frame_column(PTPEndpoint.profile, PTPProfile.vendor_id),
                         style_order=VendorDB.ANALYZED_VENDOR_IDS,
                     )],
-                    title=f'{cluster}',
+                    title=f'{cluster}', title_kwargs={'fontsize': 10},
                     # xlabel='Resynchronization Time',
                     xticks=units.convert_all_units(units.NANOSECONDS_IN_SECOND, [0 * 60, 2 * 60, timeout_value * 60]),
                     xticklabels=["0 m", "2 m", "T/O"],
@@ -85,7 +85,9 @@ class FaultComparisonCharts(TestCase):
                 axis_containers.append(axis_container)
             # axis_containers[-1].legend = True
             figure = FigureContainer(
-                axis_containers, title=benchmark.name, tight_layout=True,
+                axis_containers,
+                title=benchmark.name, title_kwargs={'x':0.58, 'y':0.87},
+                tight_layout=True,
                 size=(4, 2) if benchmark != BenchmarkDB.HARDWARE_FAULT_SWITCH else (6, 2),
             )
             figure.plot()
@@ -131,6 +133,8 @@ class FaultComparisonCharts(TestCase):
                     )
                     if log_scale:
                         self.configure_fault_ylog_axis(axis_container)
+                    else:
+                        axis_container.yticks_interval = None
                     axis_containers.append(axis_container)
 
                     if benchmark == BenchmarkDB.HARDWARE_FAULT_SLAVE and frame is not None:

@@ -49,7 +49,7 @@ class VendorComparisonCharts(TestCase):
                                 estimator='mean',
                             )
                         ],
-                        title="Unisolated Network Load",
+                        title="Synchronization Quality with Unisolated Network Contention",
                         xlabel='Network Load',
                         xticklabels_format_percent=True,
                         ylabel=r"$\mathit{Mean}$ Clock Offset",
@@ -76,7 +76,7 @@ class VendorComparisonCharts(TestCase):
         ]
 
         chart = FigureContainer(
-            size=(8, 4),
+            size=(6, 3),
             weights=[1.5, 1],
             w_space=0,
             share_x=False,
@@ -94,7 +94,7 @@ class VendorComparisonCharts(TestCase):
                     xticks=[1.5, 6, 10.5, 15],
                     xticklabels=["R-Pi 4", "R-Pi 5", "Xilinx", "TK-1"],
                     ylabel='Median Clock Offset',
-                    ylimit_top=50 * units.us,
+                    ylimit_top=45 * units.us,
                 ),
                 TimeAxisContainer(
                     [ComparisonBarElement(
