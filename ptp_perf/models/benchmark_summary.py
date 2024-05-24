@@ -30,6 +30,7 @@ class BenchmarkSummary(models.Model):
     clock_diff_p95 = TimeFormatFloatField(null=True)
     clock_diff_p99 = TimeFormatFloatField(null=True)
     clock_diff_max = TimeFormatFloatField(null=True)
+    clock_diff_mean = TimeFormatFloatField(null=True)
     path_delay_median = TimeFormatFloatField(null=True)
     path_delay_p05 = TimeFormatFloatField(null=True)
     path_delay_p95 = TimeFormatFloatField(null=True)
@@ -129,6 +130,7 @@ class BenchmarkSummary(models.Model):
             clock_diff_p95=clock_quantiles[2],
             clock_diff_p99=clock_quantiles[3],
             clock_diff_max=clock_quantiles[4],
+            clock_diff_mean=clock_data.mean(),
             path_delay_p05=path_delay_quantiles[0],
             path_delay_median=path_delay_quantiles[1],
             path_delay_p95=path_delay_quantiles[2],

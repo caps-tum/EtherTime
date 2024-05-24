@@ -220,6 +220,7 @@ class VendorComparisonCharts(TestCase):
             entries.append(
                 f"{prefix}/count/.initial={item.count},"
             )
+            entries.append(f"{prefix}/mean/.initial={item.clock_diff_mean},")
             for quantile, value in item.clock_quantiles().items():
                 entries.append(f"{prefix}/q{int(quantile * 100)}/.initial={value},")
             for quantile, value in item.path_delay_quantiles().items():
