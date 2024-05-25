@@ -7,15 +7,30 @@ from ptp_perf.machine import Cluster, Machine, PluginSettings
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.util import ImmediateException, str_join
 
+
+# We can define options that we apply to multiple machines in dictionaries to reduce redundancy.
+# We can then apply these options to the machines by unpacking the dictionary into the Machine constructor.
+# This is an example of the DRY principle.
 PTP_SLAVE_SETTINGS = {
+    # The initial clock offset is set to -1 minute for the slaves to ensure that their local clock has a predictable offset from the master at the beginning of the benchmark.
     'initial_clock_offset': timedelta(minutes=-1),
 }
 
+# We can also define more dictionaries to group options according to types of nodes in our cluster.
 RASPBERRY_PI_4_PTP_SETTINGS = {
+    # The Raspberry Pi 4 uses the eth0 interface for PTP, does not use phc2sys, and uses software timestamping.
     'ptp_interface': 'eth0',
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': True,
 }
+
+# We define the actual machines with their roles and settings.
+# Each machine needs to be accessible via SSH using passwordless authentication via the {address} specified and have the tested PTP vendors installed.
+# The local copy of the repository will be stored in the {remote_root} directory using rsync.
+# The RPI06 machine is the master of the cluster, and it has the iperf server enabled for network load benchmarks.
+# We use the 10.0.0.0/24 subnet for the (isolated) PTP network and the 192.168.1.0/24 subnet as the secondary network for auxiliary traffic.
+# The stress-ng tool is used to generate CPU load on the machine for CPU load benchmarks. By default, it uses the specified number of CPUs without restrictions in the unisolated case.
+# It can be restricted to specific cores for the CPU load isolated benchmark, in this case cores 2 and 3. That leaves cores 0 and 1 free for the PTP daemon.
 MACHINE_RPI06 = Machine(
     id="rpi06", address="rpi06", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.6",
@@ -25,6 +40,7 @@ MACHINE_RPI06 = Machine(
         iperf_server=True, iperf_address="10.0.0.6", iperf_secondary_address="192.168.1.106",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
+# The RPI07 machine is the primary slave of the cluster, used for calculating statistics and analyzing the performance of the clock synchronization.
 MACHINE_RPI08 = Machine(
     id="rpi08", address="rpi08", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.8",
@@ -35,6 +51,8 @@ MACHINE_RPI08 = Machine(
         iperf_server=False, iperf_address="10.0.0.8", iperf_secondary_address="192.168.1.108",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
+# The RPI08 machine is the secondary slave of the cluster.
+# It is used as a failover master during the master failover fault benchmark, and as a comparison slave node during other fault benchmarks.
 MACHINE_RPI07 = Machine(
     id="rpi07", address="rpi07", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.7",
@@ -45,6 +63,8 @@ MACHINE_RPI07 = Machine(
         iperf_server=False, iperf_address="10.0.0.7", iperf_secondary_address="192.168.1.107",
         stress_ng_cpus=4, stress_ng_cpu_restrict_cores="2,3")
 )
+# We group the machines into a cluster for easier management and configuration.
+# The cluster is what is passed to the orchestrator to run the benchmark on a specific set of nodes.
 CLUSTER_PI = Cluster(
     id="rpi-4",
     name="Raspberry Pi 4",
@@ -53,11 +73,15 @@ CLUSTER_PI = Cluster(
     ]
 )
 
+# We can define more clusters with different configurations and machines.
+# The Raspberry Pi 5 machines have different PTP settings compared to the Raspberry Pi 4 machines.
 RASPBERRY_PI_5_PTP_SETTINGS = {
     'ptp_interface': 'eth0',
     'ptp_use_phc2sys': False,
     'ptp_software_timestamping': False,
 }
+# We have the same overall layout for all clusters, with a master, a primary slave, a secondary slave
+# and any number of tertiary slaves for additional nodes in the scalability benchmark.
 MACHINE_RPI56 = Machine(
     id="rpi56", address="rpi56", remote_root="/home/rpi/ptp-perf",
     ptp_address="10.0.0.56",
@@ -148,6 +172,8 @@ CLUSTER_PETALINUX = Cluster(
     ]
 )
 
+# We also have a cluster of Jetson TK-1 boards.
+# The {python_executable} field can be used to specify e.g. a virtual environment to use instead of the default system interpreter.
 MACHINE_TK1_1 = Machine(
     id="tk1-1", address="tk1-1", remote_root="/home/ubuntu/ptp-perf",
     ptp_address="10.0.0.71",
@@ -183,7 +209,8 @@ CLUSTER_TK1 = Cluster(
     ]
 )
 
-
+# This is our local orchestrator machine, which is used to run the benchmark and collect the results.
+# It does not require the PTP settings as it is not part of the PTP network.
 MACHINE_RPISERV = Machine(
     id="rpi-serv", address="rpi-serv", remote_root="/home/rpi/ptp-perf",
     ptp_address="0.0.0.0",
@@ -198,6 +225,8 @@ CLUSTER_RPI_SERV = Cluster(
     ]
 )
 
+# These are our network switches, which are used to connect the PTP nodes in the cluster.
+# If they have a machine definition, they can be triggered via smart PDUs to simulate network faults.
 MACHINE_SWITCH = Machine(
     id="switch", endpoint_type=EndpointType.SWITCH,
     address=None, ptp_address=None, ptp_interface=None,
@@ -207,6 +236,8 @@ MACHINE_SWITCH2 = Machine(
     address=None, ptp_address=None, ptp_interface=None,
 )
 
+# We have a special cluster that combines all nodes from all our previous clusters.
+# This is used for the scalability benchmark to test the performance of the PTP network with a large number of nodes.
 def create_big_bad_cluster_machines():
     machines=[
         dataclasses.replace(
