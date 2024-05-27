@@ -40,7 +40,7 @@ async def run_on_machines(command: str, machine_regex: str = '.*', ask_confirmat
 
 if __name__ == '__main__':
     setup_logging()
-    parser = ArgumentParser(description='Run commands on multiple machines.')
+    parser = ArgumentParser(description='Run commands on multiple machines via SSH. Convenience function for managing machines on a cluster.')
     parser.add_argument(
         "--regex", type=str, default='.*',
         help="Filter machines via a regular expression. Matches any part of the machine id or name by default."

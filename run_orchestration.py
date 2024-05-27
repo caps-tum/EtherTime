@@ -13,7 +13,7 @@ from ptp_perf.vendor.registry import VendorDB
 if __name__ == '__main__':
     util.setup_logging()
 
-    parser = ArgumentParser(description="Program to run PTP-Perf benchmarks")
+    parser = ArgumentParser(description="Program to run PTP-Perf benchmarks directly. It is normally invoked through the scheduler, but can also be used directly.")
     parser.add_argument(
         "--benchmark", choices=BenchmarkDB.all_by_id().keys(), required=True,
         help="Specify which benchmark to run, by benchmark id."
