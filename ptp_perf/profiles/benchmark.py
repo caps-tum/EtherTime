@@ -39,6 +39,8 @@ class Benchmark:
     """The unique identifier of the benchmark."""
     name : str
     """The human-readable name of the benchmark."""
+    description: str = ""
+    """An explanation of the benchmark and what it measures."""
     tags: List[str] = field(default_factory=list)
     """A list of tags to categorize the benchmark, any string can be chosen as a tag."""
     version: int = 1
