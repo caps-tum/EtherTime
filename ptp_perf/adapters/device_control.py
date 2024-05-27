@@ -12,9 +12,15 @@ from ptp_perf.util import str_join
 
 
 class DeviceControl(Adapter):
+    """
+    Adapter to control power outlets on a power strip, used to simulate hardware faults.
+    We use Tuya smart PDUs to control power delivery to machines and network switches.
+    """
     log_source = "fault-generator"
 
     # Which machine is plugged where
+    # Each machine is assigned to a power strip and a port on that power strip
+    # Power strips are defined below.
     machine_socket_map: Dict[str, Tuple[int, int]] = {
         'switch': (0, 1),
         'rpi06': (0, 2),
@@ -30,6 +36,8 @@ class DeviceControl(Adapter):
         'petalinux04': (2, 6),
     }
 
+    # Configuration for the power strips
+    # See below for defining your own power strips
     power_strips: List[OutletDevice]
     configuration: Configuration
 
@@ -37,6 +45,10 @@ class DeviceControl(Adapter):
         super().__init__(endpoint)
         self.configuration = configuration
 
+        # Each power strip is defined by its IP address, local key, and version.
+        # Refer to the Tuya API documentation and tinytuya for more information.
+        # Determining the local key is a bit tricky, but by using the Tuya Cloud API.
+        # Lookup online tutorials on how to extract the local key from the Tuya Cloud API.
         self.power_strips = [
             OutletDevice(
                 dev_id="eb06b72cf6479cd3bdcuzi",
@@ -59,6 +71,12 @@ class DeviceControl(Adapter):
         ]
 
     def toggle_machine(self, machine: Machine, state: bool):
+        """
+        Toggle the power state of a machine by sending a control message to the power strip.
+        :param machine: The machine to control.
+        :param state: Whether to turn the machine on or off.
+        :return:
+        """
         try:
             power_strip_id, port = self.machine_socket_map[machine.id]
         except KeyError:
@@ -76,6 +94,12 @@ class DeviceControl(Adapter):
 
 
     async def run(self):
+        """
+        Run the hardware fault generator as a background task.
+        Each fault is scheduled at a fixed interval and lasts for a fixed duration, where the machine is turned off.
+        The location of the fault is determined by the benchmark configuration and the cluster configuration.
+        :return:
+        """
         machines = self.configuration.cluster.machines_by_type(self.endpoint.benchmark.fault_location)
         if len(machines) == 0:
             raise RuntimeError(
