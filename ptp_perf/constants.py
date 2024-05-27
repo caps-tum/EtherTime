@@ -18,6 +18,7 @@ def ensure_directory_exists(path: Path) -> Path:
 PTPPERF_REPOSITORY_ROOT = get_repository_root()
 
 DATA_DIR = ensure_directory_exists(PTPPERF_REPOSITORY_ROOT.joinpath("data"))
+DATASET_DIR = ensure_directory_exists(PTPPERF_REPOSITORY_ROOT.joinpath("dataset"))
 MEASUREMENTS_DIR = ensure_directory_exists(DATA_DIR.joinpath("profiles"))
 CHARTS_DIR = ensure_directory_exists(DATA_DIR.joinpath("charts"))
 CONFIG_DIR = ensure_directory_exists(DATA_DIR.joinpath("config"))

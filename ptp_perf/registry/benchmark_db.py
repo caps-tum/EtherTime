@@ -13,7 +13,8 @@ from ptp_perf.util import str_join
 # Some benchmark recipies
 def benchmark_scalability(num_nodes: int):
     return Benchmark(
-        f"scalability/1_to_{num_nodes - 1}", f"{num_nodes} Nodes", tags=[],
+        f"scalability/1_to_{num_nodes - 1}", f"{num_nodes} Nodes",
+        tags=[ProfileTags.CATEGORY_SCALABILITY],
         num_machines=num_nodes,
         monitor_resource_consumption=True,
         description="The benchmark is used to measure the performance of the cluster with different numbers of nodes. "

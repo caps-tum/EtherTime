@@ -9,10 +9,12 @@ class ProfileType:
 
 class ProfileTags:
     # Load
+    CATEGORY_DEFAULT = "category_default"
     CATEGORY_CONFIGURATION = "category_configuration"
     CATEGORY_FAULT = "category_fault"
     CATEGORY_LOAD = "category_load"
     CATEGORY_RESOURCE_CONSUMPTION = "category_resource_consumption"
+    CATEGORY_SCALABILITY = "category_scalability"
 
     # Component
     COMPONENT_CPU = ResourceContentionComponent.CPU.tag
