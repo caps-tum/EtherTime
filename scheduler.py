@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from ptp_perf.utilities.django_utilities import bootstrap_django_environment
 bootstrap_django_environment()
 
-from ptp_perf.scheduler import run_scheduler, queue_task, queue_benchmarks, info
+from ptp_perf.scheduler import run_scheduler, queue_task, queue_benchmarks, info, available_benchmarks
 from ptp_perf.util import setup_logging, StackTraceGuard
 
 if __name__ == '__main__':
@@ -59,6 +59,9 @@ if __name__ == '__main__':
 
     info_command = subparsers.add_parser("info", help="Retrieve queue status. This will show the current queue status and the number of tasks in the queue, as well as the estimated time to completion.")
     info_command.set_defaults(action=info)
+
+    available_command = subparsers.add_parser("available", help="List available benchmarks and their descriptions.")
+    available_command.set_defaults(action=available_benchmarks)
 
     result = parser.parse_args()
 

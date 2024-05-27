@@ -68,6 +68,10 @@ def queue_task(result):
 
 
 def info(result):
+    """
+    Retrieve queue status. This will show the current queue status and the number of tasks in the queue, as well as the estimated time to completion.
+    Tasks are ordered by priority.
+    """
     alignment_str = "{0: >4} {1: >4}  {2: <80}  {3: >20}  {4: >20}"
 
     now = timezone.now().replace(microsecond=0)
@@ -91,6 +95,11 @@ def info(result):
 
 
 def queue_benchmarks(result):
+    """
+    Queue multiple benchmarks by filtering the benchmark id with regex. Each benchmark which matches the regex will be queued as a separate task.
+    :param result: The command line arguments parsed.
+    :return:
+    """
     regex = result.benchmark_regex
     benchmarks = BenchmarkDB.get_by_regex(regex)
     vendors = result.vendor
@@ -131,6 +140,7 @@ def queue_benchmarks(result):
                 if analyze:
                     command += " --analyze"
 
+                # Check how many profiles are already completed for this benchmark and vendor, calculate how many more are needed.
                 if target_count is not None:
                     number_tasks_to_queue = max(
                         target_count - len(ProfileQuery(benchmark=benchmark, vendor=vendor, cluster=cluster).run()), 0
@@ -151,7 +161,8 @@ def queue_benchmarks(result):
                         )
                     )
 
-    # Sort by task iteration index so that tasks run interleaved.
+    # Sort by task iteration index so that tasks run interleaved, rather than sorted by benchmark, vendor and cluster.
+    # This helps distribute variance induced by uncontrolled environmental factors across all vendors and clusters, thus reducing the impact on the results.
     tasks_with_index.sort(key=lambda pair_index_task: pair_index_task[0])
     tasks = [task for index, task in tasks_with_index]
 
@@ -172,3 +183,8 @@ def queue_benchmarks(result):
         user_prompt_confirmation(f'Do you want to schedule these {len(tasks)} tasks?')
 
     ScheduleTask.objects.bulk_create(tasks)
+
+def available_benchmarks(result):
+    """Prints benchmarks, their ids and descriptions."""
+    for benchmark in BenchmarkDB.all():
+        print(f"{benchmark.summary_text()}\n")

@@ -19,9 +19,7 @@ class DatasetExportTest(TestCase):
 
         for benchmark in benchmarks:
             markdown_output += (
-                "### Benchmark: " + benchmark.name + "\n"
-                f"_{benchmark.num_machines} machines, {benchmark.duration} duration._\n"
-                + benchmark.description
+                benchmark.summary_markdown() + "\n"
             )
 
         constants.DATASET_DIR.joinpath("benchmark_overview.md").write_text(markdown_output)

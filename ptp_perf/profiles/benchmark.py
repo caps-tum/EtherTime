@@ -119,3 +119,17 @@ class Benchmark:
     def sync_interval_seconds(self) -> int:
         """The actual (non-log scale) synchronization interval in seconds."""
         return 2 ** self.ptp_config.log_sync_interval
+
+    def summary_markdown(self):
+        return (
+            "### Benchmark: " + self.name + "\n"
+            f"_id: `{self.id}`, {self.num_machines} machines, {self.duration} duration._\n"
+            + self.description
+        )
+
+    def summary_text(self):
+        return (
+            f"Benchmark: {self.name}\n"
+            f"  id: {self.id}, {self.num_machines} machines, {self.duration} duration.\n"
+            f"{self.description}"
+        )
