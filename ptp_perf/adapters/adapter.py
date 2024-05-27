@@ -6,6 +6,7 @@ from ptp_perf.models import PTPEndpoint
 
 
 class Adapter:
+    """A generic adapter class for running tasks while benchmarking. This class is meant to be subclassed."""
     endpoint: PTPEndpoint
     log_source: str = None
 
@@ -21,6 +22,7 @@ class Adapter:
 
 
 class IntervalActionAdapter(Adapter):
+    """An adapter that runs a task at a fixed interval. This class is meant to be subclassed."""
     interval: timedelta = timedelta(seconds=1)
 
     async def run(self):
