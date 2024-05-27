@@ -272,7 +272,7 @@ class TagAdmin(admin.ModelAdmin):
 class ScheduleTaskAdmin(ActionsModelAdmin):
     list_display = ('id', 'priority', 'name', 'paused', 'estimated_time', 'success', 'start_time', 'completion_time')
     list_filter = ('success', 'paused')
-    actions = ('toggle_pause', 'update_priority')
+    actions = ('toggle_pause', 'update_priority', 'reschedule')
     actions_list = ('toggle_pause', 'update_priority')
     actions_row = ('update_priority_single',)
 
@@ -302,6 +302,22 @@ class ScheduleTaskAdmin(ActionsModelAdmin):
     update_priority_single.short_description = 'Prioritize Task'
     update_priority_single.url_path = 'prioritize'
 
+
+    @admin.action(description="Re-run task")
+    def reschedule(self, request, queryset):
+        with transaction.atomic():
+            task: ScheduleTask
+            for task in queryset.all():
+                copy = ScheduleTask(
+                    priority=task.priority,
+                    name=f"{task.name} (copy)",
+                    command=task.command,
+                    paused=task.paused,
+                    estimated_time=task.estimated_time,
+                    slack_time=task.slack_time,
+                )
+                copy.save()
+        messages.info(request, f"Rescheduled {queryset.count()} tasks.")
 
 
 
