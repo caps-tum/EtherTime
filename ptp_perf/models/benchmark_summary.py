@@ -8,6 +8,7 @@ from ptp_perf.machine import Cluster
 from ptp_perf.models import Sample, PTPEndpoint
 from ptp_perf.models.endpoint import TimeNormalizationStrategy
 from ptp_perf.models.endpoint_type import EndpointType
+from ptp_perf.models.exceptions import NoDataError
 from ptp_perf.models.sample_query import SampleQuery
 from ptp_perf.profiles.benchmark import Benchmark
 from ptp_perf.utilities.django_utilities import DataFormatFloatField, GenericEngineeringFloatField, \
@@ -98,6 +99,12 @@ class BenchmarkSummary(models.Model):
             else:
                 return
 
+        instance = BenchmarkSummary(
+            benchmark_id=benchmark.id,
+            vendor_id=vendor.id,
+            cluster_id=cluster.id,
+        )
+
         data_query = SampleQuery(
             benchmark=benchmark,
             vendor=vendor,
@@ -108,35 +115,38 @@ class BenchmarkSummary(models.Model):
 
         quantiles = [0.05, 0.5, 0.95, 0.99, 1]
 
-        clock_data = data_query.run(Sample.SampleType.CLOCK_DIFF)
-        count = len(clock_data.index.get_level_values("endpoint_id").unique())
-        clock_data = clock_data.droplevel('endpoint_id').abs()
-        clock_quantiles = clock_data.quantile(quantiles).values
+        try:
+            clock_data = data_query.run(Sample.SampleType.CLOCK_DIFF)
+            instance.count = len(clock_data.index.get_level_values("endpoint_id").unique())
 
-        path_delay_data = data_query.run(Sample.SampleType.PATH_DELAY)
-        path_delay_data = path_delay_data.droplevel('endpoint_id')
-        path_delay_quantiles = path_delay_data.quantile(quantiles).values
+            clock_data = clock_data.droplevel('endpoint_id').abs()
+            clock_quantiles = clock_data.quantile(quantiles).values
 
-        print(f'{benchmark} {vendor} {cluster}: '
-              f'Clock quantiles: {clock_quantiles}, path delay quantiles: {path_delay_quantiles}')
+            instance.clock_diff_p05 = clock_quantiles[0],
+            instance.clock_diff_median = clock_quantiles[1],
+            instance.clock_diff_p95 = clock_quantiles[2],
+            instance.clock_diff_p99 = clock_quantiles[3],
+            instance.clock_diff_max = clock_quantiles[4],
+            instance.clock_diff_mean = clock_data.mean(),
 
-        instance = BenchmarkSummary(
-            benchmark_id=benchmark.id,
-            vendor_id=vendor.id,
-            cluster_id=cluster.id,
-            count=count,
-            clock_diff_p05=clock_quantiles[0],
-            clock_diff_median=clock_quantiles[1],
-            clock_diff_p95=clock_quantiles[2],
-            clock_diff_p99=clock_quantiles[3],
-            clock_diff_max=clock_quantiles[4],
-            clock_diff_mean=clock_data.mean(),
-            path_delay_p05=path_delay_quantiles[0],
-            path_delay_median=path_delay_quantiles[1],
-            path_delay_p95=path_delay_quantiles[2],
-            path_delay_p99=path_delay_quantiles[3],
-            path_delay_max=path_delay_quantiles[4],
-        )
+        except NoDataError:
+            instance.count = 0
+
+        try:
+            path_delay_data = data_query.run(Sample.SampleType.PATH_DELAY)
+            path_delay_data = path_delay_data.droplevel('endpoint_id')
+            path_delay_quantiles = path_delay_data.quantile(quantiles).values
+
+            instance.path_delay_p05=path_delay_quantiles[0],
+            instance.path_delay_median=path_delay_quantiles[1],
+            instance.path_delay_p95=path_delay_quantiles[2],
+            instance.path_delay_p99=path_delay_quantiles[3],
+            instance.path_delay_max=path_delay_quantiles[4],
+
+        except NoDataError:
+            pass
+
+        print(f'{benchmark} {vendor} {cluster}: {instance.count} endpoints summarized')
 
         # Fault tolerance
         # Per-Endpoint summaries: Primary
