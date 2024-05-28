@@ -8,6 +8,14 @@
 
 EtherTime is an open-source benchmarking tool developed to evaluate the performance of various time synchronization protocols on Ethernet-based distributed systems. This tool is designed to assess the strengths and weaknesses of the supported implementations in different configurations, focusing on dependability and fault tolerance.
 
+### Access to Public Dataset
+
+![Static Badge](https://img.shields.io/badge/Public%20access-%20Open%20source%20-%20green)
+![Static Badge](https://img.shields.io/badge/License-%20ODC%20Open%20Database%20License%20ODbL%20-%20green)
+
+
+The EtherTime dataset we collected is available in an anonymized version here: **[Dataset repository](https://anonymous.4open.science/r/ethertime-dataset-EBBF/)**. It contains the profiles of the time synchronization protocols we evaluated, as well as the logs and metadata associated with the evaluation. For your convenience, a tabular overview is also provided.
+
 ### Key Features
 
 - **Cross-Vendor Evaluation**: ⌚⏰⏱⏲ Supports fair and comparable evaluation of four implementations of time synchronization protocols.
@@ -40,14 +48,6 @@ EtherTime performs evaluations across several sets of benchmarks:
 - **Resource Contention**: Performance under network, cpu, memory and auxiliary subsystem contention.
 - **Fault Tolerance**: Behavior and reliability in the presence of faults originating from hardware or software.
 - **Scalability/Resource Consumption**: Analysis of scalability and resource usage as the number of slaves handled by the server increase.
-
-## Access to Public Dataset
-
-![Static Badge](https://img.shields.io/badge/Public%20access-%20Open%20source%20-%20green)
-![Static Badge](https://img.shields.io/badge/License-%20ODC%20Open%20Database%20License%20ODbL%20-%20green)
-
-
-The EtherTime dataset we collected is available in an anonymized version here: **[Dataset repository](https://anonymous.4open.science/r/ethertime-dataset-EBBF/)**. It contains the profiles of the time synchronization protocols we evaluated, as well as the logs and metadata associated with the evaluation. For your convenience, a tabular overview is also provided.
 
 ## Getting Started
 
