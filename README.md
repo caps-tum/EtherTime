@@ -1,7 +1,7 @@
 ![EtherTime](doc/project/res/logo_nobg.svg)
 # EtherTime: Precision Time Synchronization Evaluation Tools
 ![Static Badge](https://img.shields.io/badge/Database%20-%20operational%20-%20green)
-![Static Badge](https://img.shields.io/badge/Profiles%20collected%20-%201890%20-%20blue)
+![Static Badge](https://img.shields.io/badge/Profiles%20collected%20-%202000+%20-%20blue)
 ![Static Badge](https://img.shields.io/badge/Log%20Records%20-%2013M%20-%20blue)
 
 ### Overview
@@ -40,6 +40,14 @@ EtherTime performs evaluations across several sets of benchmarks:
 - **Resource Contention**: Performance under network, cpu, memory and auxiliary subsystem contention.
 - **Fault Tolerance**: Behavior and reliability in the presence of faults originating from hardware or software.
 - **Scalability/Resource Consumption**: Analysis of scalability and resource usage as the number of slaves handled by the server increase.
+
+## Access to Public Dataset
+
+![Static Badge](https://img.shields.io/badge/Public%20access-%20Open%20source%20-%20green)
+![Static Badge](https://img.shields.io/badge/License-%20ODC%20Open%20Database%20License%20ODbL%20-%20green)
+
+
+The EtherTime dataset we collected is available in an anonymized version here: **[Dataset repository](https://anonymous.4open.science/r/ethertime-dataset-EBBF/)**. It contains the profiles of the time synchronization protocols we evaluated, as well as the logs and metadata associated with the evaluation. For your convenience, a tabular overview is also provided.
 
 ## Getting Started
 
