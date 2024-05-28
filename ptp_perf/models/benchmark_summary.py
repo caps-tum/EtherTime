@@ -201,9 +201,11 @@ class BenchmarkSummary(models.Model):
 
         # Resource consumption data
         # Looks like it comes just from the primary slave
-        for field in instance.__dict__.keys():
-            if field.startswith('proc_') or field.startswith('sys_'):
-                instance.__dict__[field] = sum(endpoint_dict[field] for endpoint_dict in endpoints_primary_queryset if endpoint_dict[field] is not None) / len(endpoints_primary_queryset)
+        num_primary_endpoints = len(endpoints_primary_queryset)
+        if num_primary_endpoints > 0:
+            for field in instance.__dict__.keys():
+                if field.startswith('proc_') or field.startswith('sys_'):
+                    instance.__dict__[field] = sum(endpoint_dict[field] for endpoint_dict in endpoints_primary_queryset if endpoint_dict[field] is not None) / num_primary_endpoints
 
         instance.save()
 
