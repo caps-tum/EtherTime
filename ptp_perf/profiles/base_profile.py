@@ -11,6 +11,7 @@ class ProfileTags:
     # Categories
     # These tags are used to categorize the type of performance test that is being conducted.
     CATEGORY_DEFAULT = "category_default"
+    CATEGORY_BASELINE = "category_baseline"
     CATEGORY_CONFIGURATION = "category_configuration"
     CATEGORY_FAULT = "category_fault"
     CATEGORY_LOAD = "category_load"

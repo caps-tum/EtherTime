@@ -123,13 +123,13 @@ class Benchmark:
     def summary_markdown(self):
         return (
             "### Benchmark: " + self.name + "\n"
-            f"_id: `{self.id}`, {self.num_machines} machines, {self.duration} duration._\n"
-            + self.description
+            f"_Id: `{self.id}`, {self.num_machines} machines, {self.duration} duration._\n\n"
+            + self.description + "\n"
         )
 
     def summary_text(self):
         return (
             f"Benchmark: {self.name}\n"
-            f"  id: {self.id}, {self.num_machines} machines, {self.duration} duration.\n"
+            f"  Id: {self.id}, {self.num_machines} machines, {self.duration} duration.\n"
             f"{self.description}"
         )

@@ -11,6 +11,7 @@ from typing import Optional, Tuple
 import pandas as pd
 from django.db import models
 from django.db.models import CASCADE
+from django.forms import model_to_dict
 from pandas.core.dtypes.common import is_numeric_dtype
 
 from ptp_perf import config
@@ -26,6 +27,7 @@ from ptp_perf.util import unpack_one_value
 from ptp_perf.utilities import units, psutil_utilities
 from ptp_perf.utilities.django_utilities import TimeFormatFloatField, PercentageFloatField, DataFormatFloatField, \
     GenericEngineeringFloatField, TemperatureFormatFloatField, FrequencyFormatFloatField
+from ptp_perf.utilities.serialization import ModelJSONEncoder
 
 if typing.TYPE_CHECKING:
     from ptp_perf.models.sample import Sample
@@ -47,35 +49,55 @@ class PTPEndpoint(models.Model):
 
     profile: PTPProfile = models.ForeignKey(PTPProfile, on_delete=CASCADE)
     machine_id = models.CharField(max_length=255)
+    """Machine ID is the unique identifier for the machine in the cluster."""
     restart_count = models.IntegerField(default=0)
+    """How often the PTP process was restarted on this machine."""
 
     endpoint_type = models.CharField(choices=EndpointType, max_length=32, default=EndpointType.UNKNOWN)
+    """The type of endpoint this is, e.g. master, slave, switch, orchestrator etc. (see EndpointType)"""
 
     # Summary statistics
     clock_diff_median = TimeFormatFloatField(null=True)
+    """The median of the absolute clock difference between the local and the master clock."""
     clock_diff_p05 = TimeFormatFloatField(null=True)
+    """The 5th percentile of the absolute clock difference between the local and the master clock."""
     clock_diff_p95 = TimeFormatFloatField(null=True)
+    """The 95th percentile of the absolute clock difference between the local and the master clock."""
     path_delay_median = TimeFormatFloatField(null=True)
+    """The median of the path delay estimate across the network between the local client and the master server."""
     path_delay_p05 = TimeFormatFloatField(null=True)
+    """The 5th percentile of the path delay estimate across the network between the local client and the master server."""
     path_delay_p95 = TimeFormatFloatField(null=True)
+    """The 95th percentile of the path delay estimate across the network between the local client and the master server."""
     path_delay_std = TimeFormatFloatField(null=True)
+    """The standard deviation of the path delay estimate across the network between the local client and the master server."""
 
     # Missing values
     missing_samples_count = models.IntegerField(null=True)
+    """How many samples are missing in the time series data, defined by the number of times that the PTP application did not output a synchronization log message within 3x the target sync interval."""
     missing_samples_percent = PercentageFloatField(null=True)
+    """The percentage of missing samples in the time series data, defined by the total samples missing divided by the total time of the benchmark."""
 
     # Convergence statistics
     convergence_timestamp = models.DateTimeField(null=True)
+    """The timestamp at which the clock difference data converged (become stable) on this endpoint."""
     convergence_duration = models.DurationField(null=True)
+    """The duration of the convergence phase from starting the PTP application to the convergence timestamp."""
     convergence_max_offset = TimeFormatFloatField(null=True)
+    """The maximum offset of the clock difference data during the convergence phase."""
     convergence_rate = TimeFormatFloatField(null=True)
+    """The rate at which the clock difference data converged during the convergence phase, in parts per second."""
 
     converged_percentage = PercentageFloatField(null=True)
+    """The percentage of all samples that were posted while the clock was considered stable."""
     converged_samples = models.IntegerField(null=True)
+    """The number of samples posted while the clock was considered stable."""
 
     # Clock step
     clock_step_timestamp = models.DateTimeField(null=True)
+    """The timestamp at which the initial  clock step was detected on this endpoint."""
     clock_step_magnitude = models.FloatField(null=True)
+    """The magnitude of the initial clock step detected on this endpoint, should be roughly equal to the machine's initial offset set in the configuration."""
 
     # Fault Data
     fault_clock_diff_pre_median = TimeFormatFloatField(null=True)
@@ -744,3 +766,13 @@ class PTPEndpoint(models.Model):
 
     class Meta:
         app_label = 'app'
+
+    def export_as_json(self) -> str:
+        """Export this endpoint to a JSON representation"""
+        return json.dumps(self.export_as_dict(), indent=4, cls=ModelJSONEncoder)
+
+    def export_as_dict(self):
+        endpoint_as_dict = model_to_dict(self)
+        endpoint_as_dict["logrecord_set"] = list(self.logrecord_set.values())
+        endpoint_as_dict["sample_set"] = list(self.sample_set.values())
+        return endpoint_as_dict

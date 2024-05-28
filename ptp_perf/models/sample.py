@@ -3,6 +3,13 @@ from django.db import models
 from ptp_perf.models.endpoint import PTPEndpoint
 
 class Sample(models.Model):
+    """
+    A sample of a performance metric taken from a PTP endpoint, parsed into timeseries data.
+    Types of samples include:
+    - CLOCK_DIFF: The difference between the local and remote clock.
+    - PATH_DELAY: The time it takes for a message to travel between the local and remote endpoint.
+    - FAULT: A fault detected by the endpoint.
+    """
     id = models.AutoField(primary_key=True)
     endpoint = models.ForeignKey(PTPEndpoint, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(null=False)

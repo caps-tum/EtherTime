@@ -1,13 +1,17 @@
+import dataclasses
+import json
 import logging
 import typing
 from datetime import timedelta
 
 from django.db import models
+from django.forms import model_to_dict
 
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.models.loglevel import LogLevel
 from ptp_perf.util import str_join
 from ptp_perf.utilities.django_utilities import get_server_datetime
+from ptp_perf.utilities.serialization import ModelJSONEncoder
 
 if typing.TYPE_CHECKING:
     from ptp_perf.machine import Cluster
@@ -96,3 +100,13 @@ class PTPProfile(models.Model):
 
     class Meta:
         app_label = 'app'
+
+    def export_as_json(self):
+        """Export the profile to a JSON string."""
+        profile_as_dict = model_to_dict(self)
+        profile_as_dict["benchmark"] = dataclasses.asdict(self.benchmark)
+        profile_as_dict["vendor"] = dataclasses.asdict(self.vendor)
+        profile_as_dict["cluster"] = dataclasses.asdict(self.cluster)
+        profile_as_dict["endpoints"] = [endpoint.export_as_dict() for endpoint in self.ptpendpoint_set.all()]
+
+        return json.dumps(profile_as_dict, cls=ModelJSONEncoder, indent=4)

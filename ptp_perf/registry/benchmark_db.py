@@ -17,8 +17,8 @@ def benchmark_scalability(num_nodes: int):
         tags=[ProfileTags.CATEGORY_SCALABILITY],
         num_machines=num_nodes,
         monitor_resource_consumption=True,
-        description="The benchmark is used to measure the performance of the cluster with different numbers of nodes. "
-                    "Each benchmark includes one master and the remaining nodes are slaves. "
+        description=f"The benchmark is used to measure the performance of the cluster {num_nodes} nodes. "
+                    f"The first node in the cluster is the master, the second node the primary slave. Further nodes are assigned as secondary/tertiary slaves where applicable."
                     "A set of scalability benchmarks can show the scalability trend. "
                     "System resource consumption is monitored during the benchmark. "
     )
@@ -27,25 +27,25 @@ def benchmark_scalability(num_nodes: int):
 class BenchmarkDB(BaseRegistry[Benchmark]):
 
     BASE = Benchmark(
-        "base", "Baseline", tags=[],
+        "base", "Baseline", tags=[ProfileTags.CATEGORY_BASELINE],
         description="The base benchmark to compare other benchmarks against. "
                     "It is the default benchmark for all new clusters. "
                     "It is used to measure the performance of the cluster without any additional load or faults. "
     )
     TEST = Benchmark(
-        "test/test", "Test", tags=[], duration=timedelta(minutes=1),
+        "test/test", "Test", tags=[ProfileTags.CATEGORY_DEFAULT], duration=timedelta(minutes=1),
         description="A test benchmark to quickly verify the cluster is working correctly. "
                     "It is identical to the base benchmark but runs for a shorter duration."
     )
 
     DEMO = Benchmark(
-        "test/demo", "Demo", tags=[], duration=timedelta(minutes=5),
+        "test/demo", "Demo", tags=[ProfileTags.CATEGORY_DEFAULT], duration=timedelta(minutes=5),
         description="A demo benchmark to quickly assess the capabilities of the cluster. "
                     "It is identical to the base benchmark but runs for a shorter duration."
     )
 
     NO_SWITCH = Benchmark(
-        "configuration/no_switch", "No Switch", tags=[],
+        "configuration/no_switch", "No Switch", tags=[ProfileTags.CATEGORY_CONFIGURATION],
         description="A benchmark to measure the performance of the cluster without a network switch. "
                     "The configuration is identical to the baseline, "
                     "the user is expected to rewire the cluster appropriately before running this benchmark. "
