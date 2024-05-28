@@ -106,7 +106,7 @@ class PTPProfile(models.Model):
         profile_as_dict = model_to_dict(self)
         profile_as_dict["benchmark"] = dataclasses.asdict(self.benchmark)
         profile_as_dict["vendor"] = dataclasses.asdict(self.vendor)
-        profile_as_dict["cluster"] = dataclasses.asdict(self.cluster)
+        profile_as_dict["cluster"] = dataclasses.asdict(self.cluster) if self.cluster is not None else None
         profile_as_dict["endpoints"] = [endpoint.export_as_dict() for endpoint in self.ptpendpoint_set.all()]
 
         return json.dumps(profile_as_dict, cls=ModelJSONEncoder, indent=4)

@@ -93,3 +93,14 @@ class CustomFormatsAdmin(ActionsModelAdmin):
             except FieldDoesNotExist:
                 custom_list_display.append(field_name)
         return custom_list_display
+
+
+def format_custom_field(instance, field_name: str) -> str:
+    field = instance._meta.get_field(field_name)
+    value = getattr(instance, field_name)
+    if value is None:
+        return "-"
+    if isinstance(field, FormattedFloatField):
+        function = field.__class__.format_function
+        return function(value)
+    return str(value)
