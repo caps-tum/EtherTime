@@ -128,6 +128,8 @@ class Cluster:
     """The human-readable name of the cluster."""
     machines: List[Machine]
     """A list of machines that are part of the cluster."""
+    fault_hardware_supported: bool = False
+    """Whether the nodes in this cluster can be controlled via smart PDUs."""
 
     async def synchronize_repositories(self):
         """Synchronize the local PTP-Perf repository to all machines in the cluster via rsync."""
@@ -177,6 +179,17 @@ class Cluster:
             return unpack_one_value([machine for machine in self.machines if machine.endpoint_type == EndpointType.SECONDARY_SLAVE])
         except ValueError:
             return None
+
+    def supported_benchmarks(self) -> List[str]:
+        """Return the list of supported benchmarks for this cluster.
+        Benchmarks which require too many nodes are excluded.
+        If the cluster does not support hardware faults, those are excluded too."""
+        from ptp_perf.registry.benchmark_db import BenchmarkDB
+        return [
+            benchmark for benchmark in BenchmarkDB.all()
+            if benchmark.num_machines <= len(self.machines)
+               and (not benchmark.fault_hardware or self.fault_hardware_supported)
+        ]
 
     def __str__(self):
         return self.name

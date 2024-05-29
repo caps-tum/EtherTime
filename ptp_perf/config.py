@@ -70,7 +70,8 @@ CLUSTER_PI = Cluster(
     name="Raspberry Pi 4",
     machines=[
         MACHINE_RPI06, MACHINE_RPI08, MACHINE_RPI07
-    ]
+    ],
+    fault_hardware_supported=True,
 )
 
 # We can define more clusters with different configurations and machines.
@@ -116,7 +117,8 @@ CLUSTER_PI5 = Cluster(
     name="Raspberry Pi 5",
     machines=[
         MACHINE_RPI56, MACHINE_RPI58, MACHINE_RPI57
-    ]
+    ],
+    fault_hardware_supported=True,
 )
 
 # New boards
@@ -169,7 +171,8 @@ CLUSTER_PETALINUX = Cluster(
     name="Xilinx",
     machines=[
         MACHINE_PETALINUX01, MACHINE_PETALINUX02, MACHINE_PETALINUX03, MACHINE_PETALINUX04,
-    ]
+    ],
+    fault_hardware_supported=False,
 )
 
 # We also have a cluster of Jetson TK-1 boards.
@@ -206,7 +209,8 @@ CLUSTER_TK1 = Cluster(
     name="Jetson TK-1",
     machines=[
         MACHINE_TK1_1, MACHINE_TK1_2
-    ]
+    ],
+    fault_hardware_supported=False,
 )
 
 # This is our local orchestrator machine, which is used to run the benchmark and collect the results.

@@ -79,9 +79,9 @@ def convert_profile(profile: PTPProfile):
 
 
 def summarize(force: bool = False):
-    for benchmark in BenchmarkDB.all():
-        for vendor in VendorDB.ANALYZED_VENDORS:
-            for cluster in config.ANALYZED_CLUSTERS:
+    for vendor in VendorDB.ANALYZED_VENDORS:
+        for cluster in config.ANALYZED_CLUSTERS:
+            for benchmark in cluster.supported_benchmarks():
                 try:
                     BenchmarkSummary.create(
                         benchmark, vendor, cluster, force_update=force,
