@@ -122,12 +122,12 @@ class BenchmarkSummary(models.Model):
             clock_data = clock_data.droplevel('endpoint_id').abs()
             clock_quantiles = clock_data.quantile(quantiles).values
 
-            instance.clock_diff_p05 = clock_quantiles[0],
-            instance.clock_diff_median = clock_quantiles[1],
-            instance.clock_diff_p95 = clock_quantiles[2],
-            instance.clock_diff_p99 = clock_quantiles[3],
-            instance.clock_diff_max = clock_quantiles[4],
-            instance.clock_diff_mean = clock_data.mean(),
+            instance.clock_diff_p05 = clock_quantiles[0]
+            instance.clock_diff_median = clock_quantiles[1]
+            instance.clock_diff_p95 = clock_quantiles[2]
+            instance.clock_diff_p99 = clock_quantiles[3]
+            instance.clock_diff_max = clock_quantiles[4]
+            instance.clock_diff_mean = clock_data.mean()
 
         except NoDataError:
             instance.count = 0
@@ -137,11 +137,11 @@ class BenchmarkSummary(models.Model):
             path_delay_data = path_delay_data.droplevel('endpoint_id')
             path_delay_quantiles = path_delay_data.quantile(quantiles).values
 
-            instance.path_delay_p05=path_delay_quantiles[0],
-            instance.path_delay_median=path_delay_quantiles[1],
-            instance.path_delay_p95=path_delay_quantiles[2],
-            instance.path_delay_p99=path_delay_quantiles[3],
-            instance.path_delay_max=path_delay_quantiles[4],
+            instance.path_delay_p05=path_delay_quantiles[0]
+            instance.path_delay_median=path_delay_quantiles[1]
+            instance.path_delay_p95=path_delay_quantiles[2]
+            instance.path_delay_p99=path_delay_quantiles[3]
+            instance.path_delay_max=path_delay_quantiles[4]
 
         except NoDataError:
             pass
