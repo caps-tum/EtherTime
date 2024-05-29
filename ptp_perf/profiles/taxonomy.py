@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar, Self
 
 
-@dataclass
+@dataclass(frozen=True)
 class NamedItem:
     id: str
     name: str
@@ -15,11 +15,14 @@ class NamedItem:
     def __eq__(self, __value):
         return isinstance(__value, NamedItem) and self.id == __value.id
 
+    def __hash__(self):
+        return hash(self.id)
+
     def __str__(self):
         return self.name
 
 
-@dataclass
+@dataclass(frozen=True)
 class ResourceContentionType(NamedItem):
     tag_basename: str = "isolation"
     UNPRIORITIZED: ClassVar["Self"]
@@ -31,7 +34,7 @@ ResourceContentionType.PRIORITIZED = ResourceContentionType("prioritized", "Prio
 ResourceContentionType.ISOLATED = ResourceContentionType("isolated", "Isolated")
 
 
-@dataclass
+@dataclass(frozen=True)
 class ResourceContentionComponent(NamedItem):
     tag_basename: str = "component"
     CPU: ClassVar["Self"]
