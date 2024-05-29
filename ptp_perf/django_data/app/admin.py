@@ -362,11 +362,15 @@ class BenchmarkSummaryAdmin(CustomFormatsAdmin):
     def vs_baseline(self, summary: BenchmarkSummary):
         baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
                                                 benchmark_id=BenchmarkDB.BASE.id)
+        if baseline.clock_diff_median is None or summary.clock_diff_median is None:
+            return "-"
         return format_relative(summary.clock_diff_median / baseline.clock_diff_median)
 
     def p95_vs_baseline(self, summary: BenchmarkSummary):
         baseline = BenchmarkSummary.objects.get(vendor_id=summary.vendor_id, cluster_id=summary.cluster_id,
                                                 benchmark_id=BenchmarkDB.BASE.id)
+        if baseline.clock_diff_median is None or summary.clock_diff_median is None:
+            return "-"
         return format_relative(summary.clock_diff_p95 / baseline.clock_diff_p95)
 
     p95_vs_baseline.short_description = 'Vs Baseline'
