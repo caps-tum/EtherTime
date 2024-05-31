@@ -22,6 +22,7 @@ class ComparisonBarElement(DataElement):
     fill: bool = True
     edgecolor: Any = None
     error_kws: Optional[Dict] = None
+    color: str = None
 
     def plot(self, axis_container: AxisContainer):
 
@@ -46,6 +47,7 @@ class ComparisonBarElement(DataElement):
             hue_order=self.hue_order,
             fill=self.fill,
             edgecolor=self.edgecolor,
+            color=self.color,
         )
 
 @dataclass

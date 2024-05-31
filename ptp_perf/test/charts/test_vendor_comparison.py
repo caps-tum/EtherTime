@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 from django.test import TestCase
+from matplotlib import pyplot as plt
 from matplotlib.patches import ConnectionPatch, ConnectionStyle
 
 from ptp_perf import config
@@ -60,6 +61,50 @@ class VendorComparisonCharts(TestCase):
             chart.plot()
             chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"unprioritized_trend_{cluster.id}.png"))
             chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath(f"net_unprioritized_trend_{cluster.id}.pdf"))
+
+    def test_load_types_chart(self):
+        for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
+            benchmarks = BenchmarkDB.all_by_tags(
+                ProfileTags.CATEGORY_LOAD,
+                ProfileTags.ISOLATION_UNPRIORITIZED
+            )
+            benchmarks = [benchmark for benchmark in benchmarks if 'load_100' in benchmark.id]
+            benchmarks.append(BenchmarkDB.BASE)
+
+            frame = self.collect_quantile_data(benchmarks, clusters=[cluster])
+            frame['X'] = frame['Benchmark'].str.replace('(Unprioritized|100\% Load)', '', regex=True).str.strip()
+            # frame.sort_values('X', inplace=True)
+            print(frame)
+
+            chart = FigureContainer(
+                axes_containers=[
+                    TimeAxisContainer(
+                        [
+                            ComparisonBarElement(
+                                data=frame,
+                                column_x='X',
+                                column_y='Value',
+                                # column_hue='Vendor',
+                                color_map=None,
+                                estimator='mean',
+                                color='0.5',
+                            )
+                        ],
+                        title=f"Synchronization Quality by Type of Load ({cluster.name})",
+                        xlabel='Load Type (Mean across all Boards)',
+                        ylabel=r"$\mathit{Mean}$ Clock Offset",
+                        yticks_interval=None,
+                        grid=cluster.id == 'rpi-4',
+                    )
+                ],
+                tight_layout=True,
+                # size=(6,5),
+            )
+            chart.plot()
+            plt.xticks(rotation=90)
+            chart.save(MEASUREMENTS_DIR.joinpath("load").joinpath(f"load_types_{cluster.id}.png"))
+            chart.save(PAPER_GENERATED_RESOURCES_DIR.joinpath("load").joinpath(f"load_types_{cluster.id}.pdf"))
+
 
     def test_vendor_chart(self):
         benchmark = BenchmarkDB.BASE
