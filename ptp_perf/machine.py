@@ -1,16 +1,13 @@
-import logging
-import os
-import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from enum import StrEnum
-from pathlib import Path
-from typing import Optional, List, Union
+from typing import Optional, List
 
 from ptp_perf.invoke.invocation import Invocation
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.rpc.rpc_target import RPCTarget
 from ptp_perf.util import async_gather_with_progress, unpack_one_value, unpack_one_value_or_error
+from ptp_perf.vendor.vendor import Vendor
 
 
 @dataclass(kw_only=True)
@@ -118,6 +115,9 @@ class Machine(RPCTarget):
     def __str__(self):
         return self.id
 
+def _get_default_vendors():
+    from ptp_perf.vendor.registry import VendorDB
+    return VendorDB.ANALYZED_VENDORS
 
 @dataclass
 class Cluster:
@@ -130,6 +130,7 @@ class Cluster:
     """A list of machines that are part of the cluster."""
     fault_hardware_supported: bool = False
     """Whether the nodes in this cluster can be controlled via smart PDUs."""
+    supported_vendors: List[Vendor] = field(default_factory=_get_default_vendors)
 
     async def synchronize_repositories(self):
         """Synchronize the local PTP-Perf repository to all machines in the cluster via rsync."""

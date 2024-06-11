@@ -121,7 +121,12 @@ def queue_benchmarks(result):
     tasks_with_index: List[Tuple[int, ScheduleTask]] = []
     for benchmark in benchmarks:
         for cluster in clusters:
+            if benchmark not in cluster.supported_benchmarks():
+                continue
+
             for vendor in vendors:
+                if vendor not in cluster.supported_vendors:
+                    continue
 
                 command = (f"LOG_EXCEPTIONS=1 python3 run_orchestration.py "
                            f"--benchmark '{benchmark.id}' "

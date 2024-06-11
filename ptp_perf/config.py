@@ -6,7 +6,7 @@ from datetime import timedelta
 from ptp_perf.machine import Cluster, Machine, PluginSettings
 from ptp_perf.models.endpoint_type import EndpointType
 from ptp_perf.util import ImmediateException, str_join
-
+from ptp_perf.vendor.registry import VendorDB
 
 # We can define options that we apply to multiple machines in dictionaries to reduce redundancy.
 # We can then apply these options to the machines by unpacking the dictionary into the Machine constructor.
@@ -211,6 +211,7 @@ CLUSTER_TK1 = Cluster(
         MACHINE_TK1_1, MACHINE_TK1_2
     ],
     fault_hardware_supported=False,
+    supported_vendors=[VendorDB.PTPD, VendorDB.LINUXPTP, VendorDB.CHRONY]
 )
 
 # This is our local orchestrator machine, which is used to run the benchmark and collect the results.
