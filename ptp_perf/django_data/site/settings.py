@@ -9,8 +9,11 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import logging
+import os
 from pathlib import Path
+
+from ptp_perf.constants import LOCAL_DIR
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -78,19 +81,30 @@ WSGI_APPLICATION = 'ptp_perf.django_data.site.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # },
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'HOST': '192.168.1.100',
-        'NAME': 'ptpperf',
-        'USER': 'ptpperf',
-        'PASSWORD': 'xOPI2EcpTUAY1srH',
+database_config = os.getenv("ptp_perf_db", "unset")
+if database_config == 'cluster' or database_config == 'unset':
+    if database_config == 'unset':
+        logging.warning("No database environment variable $ptp_perf_db specified. Assuming default cluster database.")
+    # The default cluster database.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': '192.168.1.100',
+            'NAME': 'ptpperf',
+            'USER': 'ptpperf',
+            'PASSWORD': 'xOPI2EcpTUAY1srH',
+        }
     }
-}
+elif database_config == "local":
+    # The database is sqlite in the repository's local folder.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': LOCAL_DIR / 'db.sqlite3',
+        },
+    }
+else:
+    raise RuntimeError("Improper setting of environment variable $ptp_perf_db. Please specify either 'cluster' oder 'local'.")
 
 
 # Password validation

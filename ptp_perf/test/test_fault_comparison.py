@@ -165,7 +165,7 @@ class FaultComparisonCharts(TestCase):
                 logging.info(f"No data for benchmark {benchmark}")
 
     def test_software_fault_peer_comparison(self):
-        for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5]:
+        for cluster in [config.CLUSTER_PI, config.CLUSTER_PI5, config.CLUSTER_PETALINUX, config.CLUSTER_TK1]:
             axis_containers = []
             try:
                 benchmark = BenchmarkDB.SOFTWARE_FAULT_SLAVE
@@ -188,7 +188,7 @@ class FaultComparisonCharts(TestCase):
                             ylabel='Faulty Peer\nClock Offset',
                             yticks_interval=None,
                             ylimit_bottom=0,
-                            ylimit_top=250 * units.MICROSECONDS_TO_SECONDS,
+                            ylimit_top=60 * units.MICROSECONDS_TO_SECONDS,
                             grid=False,
                         ).add_elements(
                             *ComparisonLineElement(

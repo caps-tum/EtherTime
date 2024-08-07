@@ -60,7 +60,10 @@ class PTPProfile(models.Model):
     @property
     def benchmark(self) -> "Benchmark":
         from ptp_perf.registry.benchmark_db import BenchmarkDB
-        return BenchmarkDB.get(self.benchmark_id)
+        try:
+            return BenchmarkDB.get(self.benchmark_id)
+        except KeyError:
+            return None
 
     @property
     def endpoint_master(self) -> "PTPEndpoint":
