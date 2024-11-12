@@ -55,7 +55,7 @@ EtherTime performs evaluations across several sets of benchmarks:
 
 EtherTime provides a web interface for data visualization and analysis. The interface is built using Django and Bokeh, and it allows users to view and interact with the collected data. The interface supports both interactive summary tables that can be sorted and filtered and interactive time series plots that can be zoomed and panned for detailed inspection.
 
-![ethertime_demo.svg](doc%2Fproject%2Fres%2Fethertime_demo.svg)
+![ethertime_demo.svg](doc/project/res/ethertime_demo.svg)
 
 _Fig. 1: The user interface of EtherTime, showing different aspects of interacting with the data. Due to various filters, options for sorting, aggregations, and interactive elements, browsing and analyzing the data is quick and easy not only within a profile, but across the entire dataset. This helps combat the combinatorial complexity of studying numerous configurations._
 
