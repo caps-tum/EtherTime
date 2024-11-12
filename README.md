@@ -34,11 +34,13 @@ EtherTime currently supports four implementations of time synchronization protoc
 
 ### Embedded Platforms
 
-EtherTime has been tested to work on the following platforms with Ubuntu 22.04 and Debian 11:
+EtherTime has been proven to work on the following platforms with Ubuntu 22.04 and Debian 11:
 
 - **Raspberry Pi 4 and 5**: Featuring hardware timestamping and integrated real-time clocks.
 - **Xilinx ZUBoard 1CG**: Combining ARM Cortex A53 and R5F cores, adapted for Debian with Xilinx Kernels.
 - **NVIDIA Jetson TK-1**: 32-bit ARMv7 boards running Ubuntu 22.04 LTS with a customized kernel.
+
+System requirements include Python 3.10+, PostgreSQL on the orchestrator, and the installation of time synchronization packages (linuxptp, chrony, ptpd) on the workers. Most recent Linux-based boards should be able to run EtherTime without issues.
 
 ### Evaluation Metrics
 
@@ -48,6 +50,15 @@ EtherTime performs evaluations across several sets of benchmarks:
 - **Resource Contention**: Performance under network, cpu, memory and auxiliary subsystem contention.
 - **Fault Tolerance**: Behavior and reliability in the presence of faults originating from hardware or software.
 - **Scalability/Resource Consumption**: Analysis of scalability and resource usage as the number of slaves handled by the server increase.
+
+### Data Analysis
+
+EtherTime provides a web interface for data visualization and analysis. The interface is built using Django and Bokeh, and it allows users to view and interact with the collected data. The interface supports both interactive summary tables that can be sorted and filtered and interactive time series plots that can be zoomed and panned for detailed inspection.
+
+![ethertime_demo.svg](doc%2Fproject%2Fres%2Fethertime_demo.svg)
+
+_Fig. 1: The user interface of EtherTime, showing different aspects of interacting with the data. Due to various filters, options for sorting, aggregations, and interactive elements, browsing and analyzing the data is quick and easy not only within a profile, but across the entire dataset. This helps combat the combinatorial complexity of studying numerous configurations._
+
 
 ## Getting Started
 
