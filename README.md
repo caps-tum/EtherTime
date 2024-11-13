@@ -51,7 +51,7 @@ EtherTime performs evaluations across several sets of benchmarks:
 - **Fault Tolerance**: Behavior and reliability in the presence of faults originating from hardware or software.
 - **Scalability/Resource Consumption**: Analysis of scalability and resource usage as the number of slaves handled by the server increase.
 
-### Data Analysis
+### <a name="data-analysis"></a> Data Analysis
 
 EtherTime provides a web interface for data visualization and analysis. The interface is built using Django and Bokeh, and it allows users to view and interact with the collected data. The interface supports both interactive summary tables that can be sorted and filtered and interactive time series plots that can be zoomed and panned for detailed inspection.
 
